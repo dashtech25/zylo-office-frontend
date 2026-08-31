@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zylo Office — Frontend
 
-## Getting Started
+Socle frontend de Zylo Office (Next.js 15 / App Router). Cette première phase
+construit uniquement le `core/` applicatif (authentification, client API,
+routes protégées, shell de navigation) — aucune page de module métier n'est
+encore implémentée. Voir `grande_phases.md` (racine du projet) pour
+l'architecture complète.
 
-First, run the development server:
+## Stack
+
+- **Next.js 15** (App Router, Turbopack), **React 19**, **TypeScript**
+- **Tailwind CSS 4**
+- Aucune librairie d'état globale ajoutée pour l'instant — `AuthContext`
+  (React Context) suffit au périmètre du socle
+
+## Démarrage local
+
+Prérequis : le backend (`zylo-office-backend`) doit tourner sur le port 3007.
 
 ```bash
+npm install
+cp .env.local.example .env.local   # NEXT_PUBLIC_API_URL=http://localhost:3007
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Le serveur écoute sur `http://localhost:3006`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```text
+src/
+├── app/
+│   ├── (auth)/login/     # pages publiques (non protégées)
+│   └── (app)/            # zone authentifiée — layout.tsx applique ProtectedRoute + AppShell
+├── core/
+│   ├── api/client.ts     # seul point d'appel HTTP vers le backend — jamais de fetch() direct ailleurs
+│   ├── auth/             # tokens, AuthContext, ProtectedRoute
+│   └── layout/AppShell   # sidebar catégorisée (entrées actives / "À venir")
+└── modules/              # dossiers de modules métier futurs — vide pour l'instant
+```
 
-## Learn More
+Convention : tout appel réseau passe par `core/api/client.ts` (gestion
+uniforme des erreurs `{error:{code,message,details}}` et du refresh
+automatique du token sur 401). Toute page protégée vit sous `app/(app)/`, qui
+applique déjà `ProtectedRoute` + `AppShell` — pas besoin de le refaire page
+par page.
 
-To learn more about Next.js, take a look at the following resources:
+## Git
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Stratégie : `main` → `develop` → `remy`. Chaque tâche = une issue + une
+branche dédiée, fusionnée dans `remy` après vérification réelle dans le
+navigateur (pas seulement une revue de code).
