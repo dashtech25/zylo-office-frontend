@@ -2,7 +2,7 @@ import { getRequestConfig } from "next-intl/server";
 import { cookies } from "next/headers";
 import { defaultLocale, isLocale, localeCookieName } from "./config";
 
-const namespaces = ["common", "navigation", "auth"] as const;
+const namespaces = ["common", "navigation", "auth", "dashboard", "applications", "organizations"] as const;
 
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();

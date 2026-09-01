@@ -1,0 +1,10 @@
+{
+  "title": "Organisations",
+  "subtitle": "Organisations auxquelles vous appartenez.",
+  "current": "Organisation active",
+  "select": "Sélectionner",
+  "emptyState": {
+    "title": "Aucune organisation",
+    "description": "Vous n'appartenez à aucune organisation pour le moment."
+  }
+}

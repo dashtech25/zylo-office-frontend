@@ -1,0 +1,15 @@
+{
+  "title": "Zylo Office Dashboard",
+  "subtitle": "Accédez rapidement à vos applications.",
+  "sectionTitle": "Applications",
+  "openLink": "Ouvrir",
+  "emptyState": {
+    "title": "Aucune application installée",
+    "description": "Installez une application depuis la marketplace pour qu'elle apparaisse ici.",
+    "action": "Voir les applications"
+  },
+  "noOrganization": {
+    "title": "Aucune organisation",
+    "description": "Vous n'appartenez à aucune organisation pour le moment."
+  }
+}
