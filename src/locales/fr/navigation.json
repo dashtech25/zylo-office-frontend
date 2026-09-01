@@ -1,16 +1,13 @@
 {
   "sections": {
-    "main": "Principal",
-    "modules": "Modules",
-    "administration": "Administration"
+    "home": "Accueil",
+    "applications": "Applications",
+    "management": "Gestion"
   },
   "items": {
     "dashboard": "Tableau de bord",
+    "applications": "Applications",
     "organizations": "Organisations",
-    "zyloLiquid": "Zylo Liquid",
-    "crm": "CRM",
-    "stock": "Stock",
-    "accounting": "Comptabilité",
     "users": "Utilisateurs",
     "roles": "Rôles & permissions",
     "settings": "Paramètres",

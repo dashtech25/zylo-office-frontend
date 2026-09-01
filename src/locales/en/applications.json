@@ -1,0 +1,20 @@
+{
+  "title": "Applications",
+  "subtitle": "Install and manage your organization's applications.",
+  "status": {
+    "active": "Installed",
+    "inactive": "Not installed",
+    "trial": "Trial"
+  },
+  "actions": {
+    "install": "Install",
+    "uninstall": "Uninstall"
+  },
+  "version": "Version {version}",
+  "activatedSince": "Installed since {date}",
+  "confirmUninstall": "Uninstall this application for your organization?",
+  "toasts": {
+    "installed": "Application installed successfully.",
+    "uninstalled": "Application uninstalled."
+  }
+}

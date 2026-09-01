@@ -25,5 +25,11 @@
     "page": "Page {page}"
   },
   "appName": "Zylo Office",
-  "appDescription": "Plateforme ERP/CRM modulaire Zylo Office"
+  "appDescription": "Plateforme ERP/CRM modulaire Zylo Office",
+  "header": {
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "account": "Compte",
+    "logout": "Déconnexion"
+  }
 }
