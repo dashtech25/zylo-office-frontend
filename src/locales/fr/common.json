@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "retry": "Réessayer",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "open": "Ouvrir"
+  },
+  "states": {
+    "loading": "Chargement…",
+    "empty": "Aucun résultat",
+    "error": "Une erreur est survenue",
+    "comingSoon": "À venir"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Page précédente",
+    "next": "Page suivante",
+    "page": "Page {page}"
+  },
+  "appName": "Zylo Office",
+  "appDescription": "Plateforme ERP/CRM modulaire Zylo Office"
+}
