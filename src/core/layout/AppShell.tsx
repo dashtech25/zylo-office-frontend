@@ -1,88 +1,112 @@
 "use client";
 
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/core/auth/AuthContext";
+import { LocaleSwitcher } from "@/shared/i18n/LocaleSwitcher";
+import { Avatar, Badge, Button } from "@/shared/ui";
+import { cn } from "@/shared/lib/cn";
 
 interface SidebarEntry {
-  label: string;
+  labelKey: string;
   href?: string;
   comingSoon?: boolean;
 }
 
 interface SidebarSection {
-  title: string;
+  titleKey: string;
   entries: SidebarEntry[];
 }
 
 /** Sidebar catégorisée avec entrées actives/désactivées ("À venir") — même
  * principe que la sidebar déjà validée sur station-simulator, adapté aux
- * modules de Zylo Office. */
+ * modules de Zylo Office. Les libellés viennent de navigation.json — aucun
+ * texte en dur (instruction.md §8-11). */
 const SECTIONS: SidebarSection[] = [
   {
-    title: "PRINCIPAL",
+    titleKey: "sections.main",
     entries: [
-      { label: "Tableau de bord", href: "/" },
-      { label: "Organisations", href: "/organizations" },
+      { labelKey: "items.dashboard", href: "/" },
+      { labelKey: "items.organizations", href: "/organizations" },
     ],
   },
   {
-    title: "MODULES",
+    titleKey: "sections.modules",
     entries: [
-      { label: "Zylo Liquid", comingSoon: true },
-      { label: "CRM", comingSoon: true },
-      { label: "Stock", comingSoon: true },
-      { label: "Comptabilité", comingSoon: true },
+      { labelKey: "items.zyloLiquid", comingSoon: true },
+      { labelKey: "items.crm", comingSoon: true },
+      { labelKey: "items.stock", comingSoon: true },
+      { labelKey: "items.accounting", comingSoon: true },
     ],
   },
   {
-    title: "ADMINISTRATION",
+    titleKey: "sections.administration",
     entries: [
-      { label: "Utilisateurs", comingSoon: true },
-      { label: "Rôles & permissions", comingSoon: true },
-      { label: "Paramètres", comingSoon: true },
+      { labelKey: "items.uiPreview", href: "/ui-preview" },
+      { labelKey: "items.users", comingSoon: true },
+      { labelKey: "items.roles", comingSoon: true },
+      { labelKey: "items.settings", comingSoon: true },
     ],
   },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const t = useTranslations("navigation");
+  const tCommon = useTranslations("common");
 
   return (
     <div className="flex h-screen">
-      <aside className="w-60 shrink-0 border-r border-neutral-800 bg-neutral-950 text-neutral-200 flex flex-col">
-        <div className="px-4 py-4 font-semibold text-white border-b border-neutral-800">Zylo Office</div>
+      <aside className="flex w-60 shrink-0 flex-col border-r border-secondary-active bg-secondary text-white/80">
+        <div className="border-b border-white/10 px-4 py-4 font-semibold text-white">{tCommon("appName")}</div>
         <nav className="flex-1 overflow-y-auto py-2">
           {SECTIONS.map((section) => (
-            <div key={section.title} className="px-2 py-2">
-              <h6 className="px-2 pb-1 text-[11px] font-semibold tracking-wide text-neutral-500">{section.title}</h6>
-              {section.entries.map((entry) => (
-                <button
-                  key={entry.label}
-                  type="button"
-                  disabled={entry.comingSoon}
-                  className="w-full flex items-center justify-between rounded px-2 py-1.5 text-sm text-left disabled:text-neutral-600 disabled:cursor-not-allowed hover:not-disabled:bg-neutral-800"
-                >
-                  <span>{entry.label}</span>
-                  {entry.comingSoon && (
-                    <span className="text-[10px] rounded bg-neutral-800 px-1.5 py-0.5 text-neutral-500">À venir</span>
-                  )}
-                </button>
-              ))}
+            <div key={section.titleKey} className="px-2 py-2">
+              <h6 className="px-2 pb-1 text-caption font-semibold tracking-wide text-white/50">
+                {t(section.titleKey)}
+              </h6>
+              {section.entries.map((entry) => {
+                const label = t(entry.labelKey);
+                const content = (
+                  <>
+                    <span>{label}</span>
+                    {entry.comingSoon && (
+                      <Badge tone="idle" size="sm" className="bg-white/10 text-white/60">
+                        {tCommon("states.comingSoon")}
+                      </Badge>
+                    )}
+                  </>
+                );
+                const className = cn(
+                  "flex w-full items-center justify-between rounded-button px-2 py-1.5 text-body-sm text-left transition-colors",
+                  entry.comingSoon ? "cursor-not-allowed text-white/40" : "hover:bg-white/10"
+                );
+                return entry.comingSoon || !entry.href ? (
+                  <button key={entry.labelKey} type="button" disabled className={className}>
+                    {content}
+                  </button>
+                ) : (
+                  <Link key={entry.labelKey} href={entry.href} className={className}>
+                    {content}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>
       </aside>
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 shrink-0 border-b border-neutral-200 flex items-center justify-between px-4">
-          <span className="text-sm text-neutral-500">{user?.email}</span>
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="text-sm rounded border border-neutral-300 px-3 py-1 hover:bg-neutral-100"
-          >
-            Se déconnecter
-          </button>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border-subtle px-4">
+          <LocaleSwitcher />
+          <div className="flex items-center gap-3">
+            {user?.email && <Avatar name={user.email} size="sm" />}
+            <span className="text-body-sm text-text-muted">{user?.email}</span>
+            <Button variant="outline" size="sm" onClick={() => logout()}>
+              {t("logout")}
+            </Button>
+          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-surface-muted p-6">{children}</main>
       </div>
     </div>
   );

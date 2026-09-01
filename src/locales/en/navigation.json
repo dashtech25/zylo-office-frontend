@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "main": "Main",
+    "modules": "Modules",
+    "administration": "Administration"
+  },
+  "items": {
+    "dashboard": "Dashboard",
+    "organizations": "Organizations",
+    "zyloLiquid": "Zylo Liquid",
+    "crm": "CRM",
+    "stock": "Stock",
+    "accounting": "Accounting",
+    "users": "Users",
+    "roles": "Roles & permissions",
+    "settings": "Settings",
+    "uiPreview": "Component preview"
+  },
+  "logout": "Log out"
+}

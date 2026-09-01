@@ -1,26 +1,175 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens — source unique de vérité pour Zylo Office.
+ * Voir docs/frontend-foundations.md pour la justification de chaque valeur
+ * (héritage AlloTech / prototype Zylo Liquid / décision autonome).
+ *
+ * Light-only pour l'instant (aucune source ne demande de dark mode) :
+ * une seule couche de variables, prête à être dupliquée sous
+ * `[data-theme="dark"]` plus tard sans changer les composants (ils ne
+ * consomment jamais un hex directement, seulement ces tokens).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand — valeurs imposées par instruction.md */
+  --color-primary: #3498db;
+  --color-primary-hover: #2f86c9;
+  --color-primary-active: #2874a6;
+  --color-primary-muted: #eaf4fc;
+
+  --color-secondary: #2c3e50;
+  --color-secondary-hover: #24333f;
+  --color-secondary-active: #1c2830;
+  --color-secondary-muted: #e7eaed;
+
+  /* Feedback générique — repris de la palette IEC 62682/ISA-101 du
+     prototype Zylo Liquid (prototype.html, variables --ok/--major/--crit/--brand) */
+  --color-success: #0d9488;
+  --color-success-muted: #e6f6f4;
+  --color-warning: #d97706;
+  --color-warning-muted: #fdf3e7;
+  --color-error: #dc2626;
+  --color-error-muted: #fdeaea;
+  --color-info: #5ebcfc;
+  --color-info-muted: #eef8ff;
+
+  /* Sévérité — tokens réservés aux futurs statuts métier (équipements,
+     alarmes, commandes...). Les composants génériques ignorent ces noms :
+     ils exposent une prop `tone`, le mapping statut→tone vit dans les
+     modules, jamais dans shared/ui (cf. rapport AlloTech §13/§16). */
+  --color-severity-critical: #dc2626;
+  --color-severity-critical-bg: #fdeaea;
+  --color-severity-major: #d97706;
+  --color-severity-major-bg: #fdf3e7;
+  --color-severity-minor: #0891b2;
+  --color-severity-minor-bg: #e6f6fa;
+  --color-severity-ok: #0d9488;
+  --color-severity-ok-bg: #e6f6f4;
+  --color-severity-maintenance: #7c3aed;
+  --color-severity-maintenance-bg: #f2ecfd;
+  --color-severity-pending: #ca8a04;
+  --color-severity-pending-bg: #fbf3d9;
+  --color-severity-idle: #94a3b8;
+  --color-severity-idle-bg: #eef1f5;
+
+  /* Neutres — fréquences d'usage observées dans prototype.html */
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef2f6;
+
+  --color-text: #0a141b;
+  --color-text-muted: #41576b;
+  --color-text-disabled: #8fa6ba;
+
+  --color-border: #c6d0da;
+  --color-border-subtle: #e5ebf1;
+  --color-border-strong: #8fa6ba;
+
+  /* Radius nommés */
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+
+  /* Ombres nommées — échelle à 3 niveaux (repos / hover / overlay), pattern
+     repris d'AlloTech, valeurs redéfinies pour une identité plus sobre */
+  --shadow-soft: 0 1px 2px 0 rgb(10 20 27 / 0.06);
+  --shadow-card: 0 1px 3px 0 rgb(10 20 27 / 0.08), 0 1px 2px -1px rgb(10 20 27 / 0.06);
+  --shadow-elevated: 0 12px 32px -8px rgb(10 20 27 / 0.22);
+
+  /* Transitions */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+  --color-primary-muted: var(--color-primary-muted);
+
+  --color-secondary: var(--color-secondary);
+  --color-secondary-hover: var(--color-secondary-hover);
+  --color-secondary-active: var(--color-secondary-active);
+  --color-secondary-muted: var(--color-secondary-muted);
+
+  --color-success: var(--color-success);
+  --color-success-muted: var(--color-success-muted);
+  --color-warning: var(--color-warning);
+  --color-warning-muted: var(--color-warning-muted);
+  --color-error: var(--color-error);
+  --color-error-muted: var(--color-error-muted);
+  --color-info: var(--color-info);
+  --color-info-muted: var(--color-info-muted);
+
+  --color-severity-critical: var(--color-severity-critical);
+  --color-severity-critical-bg: var(--color-severity-critical-bg);
+  --color-severity-major: var(--color-severity-major);
+  --color-severity-major-bg: var(--color-severity-major-bg);
+  --color-severity-minor: var(--color-severity-minor);
+  --color-severity-minor-bg: var(--color-severity-minor-bg);
+  --color-severity-ok: var(--color-severity-ok);
+  --color-severity-ok-bg: var(--color-severity-ok-bg);
+  --color-severity-maintenance: var(--color-severity-maintenance);
+  --color-severity-maintenance-bg: var(--color-severity-maintenance-bg);
+  --color-severity-pending: var(--color-severity-pending);
+  --color-severity-pending-bg: var(--color-severity-pending-bg);
+  --color-severity-idle: var(--color-severity-idle);
+  --color-severity-idle-bg: var(--color-severity-idle-bg);
+
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-disabled: var(--color-text-disabled);
+
+  --color-border: var(--color-border);
+  --color-border-subtle: var(--color-border-subtle);
+  --color-border-strong: var(--color-border-strong);
+
+  --radius-button: var(--radius-button);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-card: var(--shadow-card);
+  --shadow-elevated: var(--shadow-elevated);
+
+  /* Échelle typographique — compacte, orientée densité de données
+     (proche de prototype.html, à l'inverse de l'échelle "éditoriale"
+     d'AlloTech) */
+  --text-display: 1.75rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.125rem;
+  --text-h3: 0.9375rem;
+  --text-h4: 0.875rem;
+  --text-body-lg: 1rem;
+  --text-body-md: 0.875rem;
+  --text-body-sm: 0.8125rem;
+  --text-caption: 0.75rem;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Alignement des chiffres — KPI, colonnes numériques (convention observée
+   à la fois chez AlloTech et dans prototype.html) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
