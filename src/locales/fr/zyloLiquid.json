@@ -1,0 +1,121 @@
+{
+  "appName": "Zylo Liquid",
+  "breadcrumb": "Tableau de bord réseau",
+  "backToOffice": "Retour Zylo Office",
+  "sync": {
+    "label": "Synchronisé il y a {minutes} min"
+  },
+  "nav": {
+    "sections": {
+      "supervision": "Supervision",
+      "history": "Historiques",
+      "configuration": "Configuration"
+    },
+    "items": {
+      "dashboard": "Tableau de bord",
+      "stations": "Stations",
+      "alerts": "Alertes",
+      "deliveries": "Livraisons",
+      "leaks": "Fuites",
+      "measurements": "Mesures",
+      "network": "Mon réseau",
+      "settings": "Paramètres"
+    }
+  },
+  "statusBar": {
+    "stationsActive": "{count} stations actives",
+    "stationsOffline": "{count} hors ligne",
+    "alertsActive": "{count} alertes actives",
+    "periods": {
+      "now": "Maintenant",
+      "today": "Aujourd'hui",
+      "7d": "7 jours",
+      "30d": "30 jours",
+      "custom": "Date précise"
+    }
+  },
+  "stockSynthesis": {
+    "title": "Synthèse stock réseau",
+    "currency": "Devise",
+    "ofCapacity": "sur {capacity} de capacité",
+    "stationsConcerned": "{count} stations concernées",
+    "stockValue": "Valeur du stock",
+    "valueUnavailable": "Valeur non calculable",
+    "totalNetwork": "Total réseau"
+  },
+  "productBreakdown": {
+    "title": "{product} — Répartition par cuve — {volume} sur {capacity}",
+    "stationsConcerned": "{count} stations concernées",
+    "tanksCount": "{count} cuves",
+    "totalStockValue": "Valeur totale du stock : {value}",
+    "columns": {
+      "stationTank": "Station / Cuve",
+      "volume": "Volume actuel (L)",
+      "capacity": "Capacité (L)",
+      "rate": "Taux",
+      "value": "Valeur du stock"
+    },
+    "subtotal": "Sous-total {station}",
+    "total": "Total réseau {product}",
+    "close": "Fermer"
+  },
+  "chart": {
+    "title": "Évolution du stock total réseau",
+    "unit": "Litre (L)",
+    "trend": "Tendance",
+    "vsPreviousPeriod": "vs période précédente",
+    "currentStock": "Stock actuel",
+    "totalCapacity": "Capacité totale",
+    "seriesLabel": "Stock total (L)",
+    "insufficientData": "Pas assez de données historiques pour cette période"
+  },
+  "stations": {
+    "title": "Stations du réseau",
+    "viewAll": "Voir toutes",
+    "columns": {
+      "station": "Station",
+      "status": "Statut",
+      "mainProduct": "Produit principal",
+      "currentStock": "Stock actuel",
+      "capacity": "Capacité",
+      "rate": "Taux",
+      "value": "Valeur"
+    },
+    "status": {
+      "online": "En ligne",
+      "offline": "Hors ligne"
+    },
+    "totalStations": "{count} stations au total",
+    "empty": "Aucune station enregistrée"
+  },
+  "alerts": {
+    "title": "Alertes actives",
+    "viewAll": "Voir toutes",
+    "empty": "Aucune alerte active",
+    "types": {
+      "level_high": "Niveau haut",
+      "level_high_pre_alarm": "Pré-alarme niveau haut",
+      "level_low": "Stock bas",
+      "water": "Eau détectée",
+      "leak": "Fuite détectée",
+      "sensor_offline": "Station hors ligne"
+    }
+  },
+  "activity": {
+    "title": "Activité récente",
+    "empty": "Aucune activité récente",
+    "columns": {
+      "time": "Heure",
+      "event": "Événement",
+      "station": "Station",
+      "details": "Détails"
+    },
+    "events": {
+      "delivery": "Livraison reçue",
+      "alert": "Alerte déclenchée",
+      "measurement": "Mesure automatique"
+    },
+    "deliveryDetails": "+ {volume} reçus",
+    "measurementDetails": "{tank} : {height} (mesure sonde)"
+  }
+}
