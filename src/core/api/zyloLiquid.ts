@@ -7,8 +7,25 @@ export interface Station {
   name: string;
   code: string;
   cityId: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  openingTime: string;
+  closingTime: string;
+  is24h: boolean;
   status: "active" | "maintenance" | "inactive";
   activeTankCount: number;
+}
+
+export interface CreateStationInput {
+  name: string;
+  code: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  openingTime?: string;
+  closingTime?: string;
+  is24h?: boolean;
 }
 
 export interface Tank {
@@ -111,6 +128,18 @@ function withOrg(organizationId: string) {
 
 export function listStations(organizationId: string, limit = 100): Promise<Page<Station>> {
   return apiFetch<Page<Station>>(`/zylo-liquid/stations?limit=${limit}`, withOrg(organizationId));
+}
+
+export function getStation(organizationId: string, stationId: string): Promise<Station> {
+  return apiFetch<Station>(`/zylo-liquid/stations/${stationId}`, withOrg(organizationId));
+}
+
+export function createStation(organizationId: string, data: CreateStationInput): Promise<Station> {
+  return apiFetch<Station>("/zylo-liquid/stations", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
 }
 
 export function listTanks(organizationId: string, limit = 100): Promise<Page<Tank>> {

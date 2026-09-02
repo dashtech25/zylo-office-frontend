@@ -1,6 +1,7 @@
 {
   "appName": "Zylo Liquid",
   "breadcrumb": "Tableau de bord réseau",
+  "breadcrumbStations": "Liste des stations",
   "backToOffice": "Retour Zylo Office",
   "sync": {
     "label": "Synchronisé il y a {minutes} min"
@@ -79,14 +80,42 @@
       "currentStock": "Stock actuel",
       "capacity": "Capacité",
       "rate": "Taux",
-      "value": "Valeur"
+      "value": "Valeur",
+      "products": "Stock par produit",
+      "sync": "Sync",
+      "actions": "Actions"
     },
     "status": {
       "online": "En ligne",
-      "offline": "Hors ligne"
+      "offline": "Hors ligne",
+      "active": "Active",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
     },
     "totalStations": "{count} stations au total",
-    "empty": "Aucune station enregistrée"
+    "empty": "Aucune station enregistrée",
+    "list": {
+      "pageTitle": "Stations du réseau",
+      "pageSubtitle": "{count} stations au total",
+      "export": "Exporter",
+      "add": "Ajouter une station",
+      "filterStatus": "Statut",
+      "filterAll": "Toutes",
+      "searchPlaceholder": "Rechercher une station...",
+      "noResults": "Aucune station ne correspond à votre recherche",
+      "clearSearch": "Effacer la recherche",
+      "totalNetwork": "TOTAL RÉSEAU",
+      "viewDetail": "Voir le détail"
+    },
+    "createModal": {
+      "title": "Ajouter une station",
+      "name": "Nom de la station",
+      "code": "Code",
+      "codeHint": "Identifiant court, unique dans votre réseau (ex. STA-01)",
+      "address": "Adresse",
+      "phone": "Téléphone",
+      "submit": "Créer la station"
+    }
   },
   "alerts": {
     "title": "Alertes actives",

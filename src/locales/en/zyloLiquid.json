@@ -1,6 +1,7 @@
 {
   "appName": "Zylo Liquid",
   "breadcrumb": "Network dashboard",
+  "breadcrumbStations": "Stations list",
   "backToOffice": "Back to Zylo Office",
   "sync": {
     "label": "Synced {minutes} min ago"
@@ -79,14 +80,42 @@
       "currentStock": "Current stock",
       "capacity": "Capacity",
       "rate": "Rate",
-      "value": "Value"
+      "value": "Value",
+      "products": "Stock by product",
+      "sync": "Sync",
+      "actions": "Actions"
     },
     "status": {
       "online": "Online",
-      "offline": "Offline"
+      "offline": "Offline",
+      "active": "Active",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
     },
     "totalStations": "{count} stations total",
-    "empty": "No station registered"
+    "empty": "No station registered",
+    "list": {
+      "pageTitle": "Network stations",
+      "pageSubtitle": "{count} stations total",
+      "export": "Export",
+      "add": "Add a station",
+      "filterStatus": "Status",
+      "filterAll": "All",
+      "searchPlaceholder": "Search a station...",
+      "noResults": "No station matches your search",
+      "clearSearch": "Clear search",
+      "totalNetwork": "TOTAL NETWORK",
+      "viewDetail": "View detail"
+    },
+    "createModal": {
+      "title": "Add a station",
+      "name": "Station name",
+      "code": "Code",
+      "codeHint": "Short identifier, unique in your network (e.g. STA-01)",
+      "address": "Address",
+      "phone": "Phone",
+      "submit": "Create station"
+    }
   },
   "alerts": {
     "title": "Active alerts",
