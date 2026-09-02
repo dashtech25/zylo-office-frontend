@@ -1,0 +1,121 @@
+{
+  "appName": "Zylo Liquid",
+  "breadcrumb": "Network dashboard",
+  "backToOffice": "Back to Zylo Office",
+  "sync": {
+    "label": "Synced {minutes} min ago"
+  },
+  "nav": {
+    "sections": {
+      "supervision": "Supervision",
+      "history": "History",
+      "configuration": "Configuration"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "stations": "Stations",
+      "alerts": "Alerts",
+      "deliveries": "Deliveries",
+      "leaks": "Leaks",
+      "measurements": "Measurements",
+      "network": "My network",
+      "settings": "Settings"
+    }
+  },
+  "statusBar": {
+    "stationsActive": "{count} active stations",
+    "stationsOffline": "{count} offline",
+    "alertsActive": "{count} active alerts",
+    "periods": {
+      "now": "Now",
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days",
+      "custom": "Specific date"
+    }
+  },
+  "stockSynthesis": {
+    "title": "Network stock summary",
+    "currency": "Currency",
+    "ofCapacity": "of {capacity} capacity",
+    "stationsConcerned": "{count} stations concerned",
+    "stockValue": "Stock value",
+    "valueUnavailable": "Value not calculable",
+    "totalNetwork": "Total network"
+  },
+  "productBreakdown": {
+    "title": "{product} — Breakdown by tank — {volume} of {capacity}",
+    "stationsConcerned": "{count} stations concerned",
+    "tanksCount": "{count} tanks",
+    "totalStockValue": "Total stock value: {value}",
+    "columns": {
+      "stationTank": "Station / Tank",
+      "volume": "Current volume (L)",
+      "capacity": "Capacity (L)",
+      "rate": "Rate",
+      "value": "Stock value"
+    },
+    "subtotal": "{station} subtotal",
+    "total": "{product} network total",
+    "close": "Close"
+  },
+  "chart": {
+    "title": "Total network stock trend",
+    "unit": "Liter (L)",
+    "trend": "Trend",
+    "vsPreviousPeriod": "vs previous period",
+    "currentStock": "Current stock",
+    "totalCapacity": "Total capacity",
+    "seriesLabel": "Total stock (L)",
+    "insufficientData": "Not enough historical data for this period"
+  },
+  "stations": {
+    "title": "Network stations",
+    "viewAll": "View all",
+    "columns": {
+      "station": "Station",
+      "status": "Status",
+      "mainProduct": "Main product",
+      "currentStock": "Current stock",
+      "capacity": "Capacity",
+      "rate": "Rate",
+      "value": "Value"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "totalStations": "{count} stations total",
+    "empty": "No station registered"
+  },
+  "alerts": {
+    "title": "Active alerts",
+    "viewAll": "View all",
+    "empty": "No active alert",
+    "types": {
+      "level_high": "High level",
+      "level_high_pre_alarm": "High level pre-alarm",
+      "level_low": "Low stock",
+      "water": "Water detected",
+      "leak": "Leak detected",
+      "sensor_offline": "Station offline"
+    }
+  },
+  "activity": {
+    "title": "Recent activity",
+    "empty": "No recent activity",
+    "columns": {
+      "time": "Time",
+      "event": "Event",
+      "station": "Station",
+      "details": "Details"
+    },
+    "events": {
+      "delivery": "Delivery received",
+      "alert": "Alert triggered",
+      "measurement": "Automatic measurement"
+    },
+    "deliveryDetails": "+ {volume} received",
+    "measurementDetails": "{tank}: {height} (sensor reading)"
+  }
+}
