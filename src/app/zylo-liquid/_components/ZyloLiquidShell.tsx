@@ -46,7 +46,7 @@ const SECTIONS: NavSection[] = [
     titleKey: "nav.sections.supervision",
     entries: [
       { labelKey: "nav.items.dashboard", href: "/zylo-liquid", icon: LayoutDashboard },
-      { labelKey: "nav.items.stations", icon: Network, comingSoon: true },
+      { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Network },
       { labelKey: "nav.items.alerts", icon: AlertTriangle, comingSoon: true },
     ],
   },
@@ -120,10 +120,23 @@ function AccountMenu() {
   );
 }
 
+/** Une entrée par route réelle du module — la clé de traduction du fil
+ * d'ariane suit le chemin le plus long qui préfixe l'URL courante, pour que
+ * les futures pages de détail (/zylo-liquid/stations/{id}...) retombent sur
+ * le titre de leur section tant qu'elles n'ont pas leur propre entrée. */
+const BREADCRUMB_BY_PATH: Record<string, string> = {
+  "/zylo-liquid": "breadcrumb",
+  "/zylo-liquid/stations": "breadcrumbStations",
+};
+
 export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("zyloLiquid");
   const tCommon = useTranslations("common");
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/zylo-liquid";
+  const breadcrumbKey =
+    Object.keys(BREADCRUMB_BY_PATH)
+      .filter((path) => pathname.startsWith(path))
+      .sort((a, b) => b.length - a.length)[0] ?? "/zylo-liquid";
 
   return (
     <div className="flex h-screen bg-surface-muted">
@@ -138,7 +151,8 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
               <h6 className="px-3 pb-1 text-caption font-bold uppercase tracking-wide text-white/40">{t(section.titleKey)}</h6>
               {section.entries.map((entry) => {
                 const label = t(entry.labelKey);
-                const active = entry.href === pathname;
+                const active =
+                  entry.href === "/zylo-liquid" ? pathname === "/zylo-liquid" : Boolean(entry.href && pathname?.startsWith(entry.href));
                 const Icon = entry.icon;
                 const className = cn(
                   "relative flex items-center gap-2 rounded-button px-3 py-2 text-body-sm font-medium transition-colors",
@@ -181,7 +195,7 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
             <Droplet className="size-5 text-primary" aria-hidden />
             <span className="text-body-md font-semibold">{t("appName")}</span>
             <span className="h-5 w-px bg-white/20" aria-hidden />
-            <span className="text-body-sm text-white/70">{t("breadcrumb")}</span>
+            <span className="text-body-sm text-white/70">{t(BREADCRUMB_BY_PATH[breadcrumbKey])}</span>
           </div>
           <div className="flex items-center gap-4">
             <button type="button" aria-label={tCommon("header.notifications")} className="relative rounded-full p-2 text-white/70 hover:bg-white/10">
