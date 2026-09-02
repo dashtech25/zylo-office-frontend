@@ -117,7 +117,7 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
           listFuelProducts(organizationId!),
           getNetworkSummary(organizationId!),
           listAlerts(organizationId!, { status: "active", limit: 20 }),
-          listDeliveries(organizationId!, 10),
+          listDeliveries(organizationId!, { limit: 10 }),
         ]);
         if (cancelled) return;
 

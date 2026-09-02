@@ -1,0 +1,76 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  getStation,
+  getStationCurrentState,
+  listAlerts,
+  listDeliveries,
+  listFuelProducts,
+  listLeakEvents,
+  listTanks,
+  type Alert,
+  type Delivery,
+  type FuelProduct,
+  type LeakEvent,
+  type Station,
+  type StationCurrentState,
+  type Tank,
+} from "@/core/api/zyloLiquid";
+
+export function useStationDetail(organizationId: string | null, stationId: string) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [station, setStation] = useState<Station | null>(null);
+  const [tanks, setTanks] = useState<Tank[]>([]);
+  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
+  const [currentState, setCurrentState] = useState<StationCurrentState | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [leakEvents, setLeakEvents] = useState<LeakEvent[]>([]);
+
+  const load = useCallback(async () => {
+    if (!organizationId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [stationData, tanksPage, fuelProductsPage, alertsPage, deliveriesPage, leakEventsPage] = await Promise.all([
+        getStation(organizationId, stationId),
+        listTanks(organizationId, 100, stationId),
+        listFuelProducts(organizationId),
+        listAlerts(organizationId, { status: "active", stationId, limit: 20 }),
+        listDeliveries(organizationId, { stationId, limit: 5 }),
+        listLeakEvents(organizationId, { stationId, limit: 5 }),
+      ]);
+      setStation(stationData);
+      setTanks(tanksPage.data);
+      setFuelProducts(fuelProductsPage.data);
+      setAlerts(alertsPage.data);
+      setDeliveries(deliveriesPage.data);
+      setLeakEvents(leakEventsPage.data);
+
+      if (stationData.status === "active") {
+        setCurrentState(await getStationCurrentState(organizationId, stationId));
+      } else {
+        setCurrentState(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [organizationId, stationId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
+  const tankStateById = new Map((currentState?.tanks ?? []).map((s) => [s.tankId, s]));
+
+  return { loading, error, station, tanks, fuelProducts, fuelProductById, currentState, tankStateById, alerts, deliveries, leakEvents, reload: load };
+}

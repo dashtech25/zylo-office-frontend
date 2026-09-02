@@ -146,5 +146,82 @@
     },
     "deliveryDetails": "+ {volume} reçus",
     "measurementDetails": "{tank} : {height} (mesure sonde)"
+  },
+  "stationDetail": {
+    "backLink": "Stations du réseau",
+    "sync": "Sync il y a {minutes} min",
+    "actions": {
+      "deliveries": "Livraisons",
+      "leaks": "Fuites",
+      "edit": "Modifier",
+      "deactivate": "Désactiver",
+      "reactivate": "Réactiver"
+    },
+    "alertsBanner": "{count} alertes actives",
+    "viewAll": "Voir toutes →",
+    "tanksSection": {
+      "title": "Cuves de la station",
+      "activeCount": "({count} cuves actives)",
+      "addTank": "Ajouter une cuve",
+      "empty": "Aucune cuve enregistrée pour cette station"
+    },
+    "tankCard": {
+      "capacity": "Capacité",
+      "product": "Produit",
+      "sensorConnected": "Sonde connectée",
+      "sensorDisconnected": "Sonde déconnectée",
+      "sensorNotConfigured": "Sonde non configurée",
+      "calibration": "Calibration",
+      "detail": "Détail →",
+      "notCalculable": "Volume non calculable"
+    },
+    "gauge": {
+      "empty": "VIDE",
+      "fuel": "CARBURANT",
+      "water": "EAU"
+    },
+    "panels": {
+      "alertsTitle": "Alertes ({count})",
+      "alertsEmpty": "Aucune alerte pour cette station",
+      "deliveriesTitle": "Livraisons récentes ({count})",
+      "deliveriesEmpty": "Aucune livraison récente",
+      "leaksTitle": "Fuites actives ({count})",
+      "leaksEmpty": "Aucune fuite détectée"
+    },
+    "editModal": {
+      "title": "Modifier la station"
+    },
+    "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
+    "confirmReactivate": "Réactiver cette station ?"
+  },
+  "addTank": {
+    "title": "Ajouter une cuve",
+    "submit": "Créer la cuve",
+    "sections": {
+      "basics": "Informations de base",
+      "thresholds": "Seuils d'alarme (tous en millimètres)",
+      "sensor": "Association capteur",
+      "calibration": "Table de calibration"
+    },
+    "tankNumber": "Numéro de cuve",
+    "capacity": "Capacité totale (L)",
+    "tankHeight": "Hauteur physique (mm)",
+    "tankHeightHint": "Hauteur intérieure totale de la cuve",
+    "existingProduct": "Produit existant",
+    "newProduct": "Nouveau produit",
+    "product": "Produit carburant",
+    "selectProduct": "Sélectionner un produit",
+    "newProductName": "Nom du produit",
+    "newProductCode": "Code court",
+    "thresholdHigh": "Alarme haut",
+    "thresholdPreAlarm": "Pré-alarme haut",
+    "thresholdLow": "Alarme bas",
+    "thresholdWater": "Alarme eau",
+    "sensorSerial": "Numéro de série de la sonde",
+    "sensorSerialHint": "Numéro de série physique (mesure de niveau carburant) — facultatif, associable plus tard",
+    "skipCalibration": "Créer sans calibration pour le moment",
+    "dropCsv": "Glisser-déposer votre fichier CSV ici ou cliquer pour parcourir",
+    "fileSelected": "{name} — {count} points chargés",
+    "csvFormatHint": "Format attendu : .csv (séparateur point-virgule ou virgule), deux colonnes : hauteur (mm), volume (L)"
   }
 }

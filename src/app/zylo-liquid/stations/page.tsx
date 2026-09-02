@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Circle, Download, Plus, Search } from "lucide-react";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
@@ -149,7 +150,9 @@ export default function StationsListPage() {
                   {filteredRows.map((row) => (
                     <tr key={row.station.id} className="border-b border-border-subtle/60 align-top">
                       <td className="py-3 pr-4">
-                        <p className="font-semibold text-text">{row.station.name}</p>
+                        <Link href={`/zylo-liquid/stations/${row.station.id}`} className="font-semibold text-text hover:text-primary hover:underline">
+                          {row.station.name}
+                        </Link>
                         <p className="text-caption text-text-muted">{row.station.code}</p>
                       </td>
                       <td className="py-3 pr-4">

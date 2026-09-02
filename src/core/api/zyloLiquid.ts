@@ -37,7 +37,26 @@ export interface Tank {
   capacityLiters: number;
   calibratedCapacityLiters: number | null;
   tankHeightMm: number | null;
+  heightAlarmMm: number;
+  heightAlertMm: number;
+  lowAlarmMm: number;
+  alertWaterMaxMm: number;
   active: boolean;
+}
+
+export interface CreateTankInput {
+  stationId: string;
+  tankNumber: number;
+  displayName: string;
+  capacityLiters: number;
+  tankHeightMm: number;
+  fuelProductId?: string;
+  newFuelProductName?: string;
+  newFuelProductCode?: string;
+  heightAlarmMm: number;
+  heightAlertMm: number;
+  lowAlarmMm: number;
+  alertWaterMaxMm?: number;
 }
 
 export interface FuelProduct {
@@ -49,6 +68,21 @@ export interface FuelProduct {
   active: boolean;
 }
 
+export interface CalibrationPoint {
+  heightMm: number;
+  volumeLiters: number;
+}
+
+export interface TankSensorMapping {
+  id: string;
+  hkSensorId: number;
+  tankId: string;
+  measurementType: "product_level" | "water_level" | "temperature";
+  validFrom: string;
+  validUntil: string | null;
+  active: boolean;
+}
+
 export interface TankCurrentState {
   tankId: string;
   tankNumber: number;
@@ -57,6 +91,11 @@ export interface TankCurrentState {
   heightMm: number | null;
   volumeLiters: number | null;
   volumeNotCalculableReason: string | null;
+  volumeLiters15C: number | null;
+  waterHeightMm: number | null;
+  waterVolumeLiters: number | null;
+  temperatureC: number | null;
+  emptyVolumeLiters: number | null;
   lastMeasurementAt: string | null;
   monetaryValue: number | null;
   currencyCode: string | null;
@@ -142,8 +181,57 @@ export function createStation(organizationId: string, data: CreateStationInput):
   });
 }
 
-export function listTanks(organizationId: string, limit = 100): Promise<Page<Tank>> {
-  return apiFetch<Page<Tank>>(`/zylo-liquid/tanks?limit=${limit}`, withOrg(organizationId));
+export function updateStation(organizationId: string, stationId: string, data: Partial<CreateStationInput>): Promise<Station> {
+  return apiFetch<Station>(`/zylo-liquid/stations/${stationId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function deactivateStation(organizationId: string, stationId: string): Promise<Station> {
+  return apiFetch<Station>(`/zylo-liquid/stations/${stationId}/deactivate`, { method: "POST", organizationId });
+}
+
+export function reactivateStation(organizationId: string, stationId: string): Promise<Station> {
+  return apiFetch<Station>(`/zylo-liquid/stations/${stationId}/reactivate`, { method: "POST", organizationId });
+}
+
+export function listTanks(organizationId: string, limit = 100, stationId?: string): Promise<Page<Tank>> {
+  const search = new URLSearchParams({ limit: String(limit) });
+  if (stationId) search.set("stationId", stationId);
+  return apiFetch<Page<Tank>>(`/zylo-liquid/tanks?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createTank(organizationId: string, data: CreateTankInput): Promise<Tank> {
+  return apiFetch<Tank>("/zylo-liquid/tanks", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function listTankCalibrationPoints(organizationId: string, tankId: string): Promise<CalibrationPoint[]> {
+  return apiFetch<CalibrationPoint[]>(`/zylo-liquid/tanks/${tankId}/calibration-points`, withOrg(organizationId));
+}
+
+export function replaceTankCalibrationPoints(organizationId: string, tankId: string, points: CalibrationPoint[]): Promise<unknown> {
+  return apiFetch(`/zylo-liquid/tanks/${tankId}/calibration-points`, {
+    method: "PUT",
+    organizationId,
+    body: JSON.stringify({ points }),
+  });
+}
+
+export function createTankSensorMapping(
+  organizationId: string,
+  data: { tankId: string; hkSerialNumber: string; measurementType: "product_level" | "water_level" | "temperature" }
+): Promise<TankSensorMapping> {
+  return apiFetch<TankSensorMapping>("/zylo-liquid/tank-sensor-mappings", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
 }
 
 export function listFuelProducts(organizationId: string, limit = 50): Promise<Page<FuelProduct>> {
@@ -162,17 +250,39 @@ export function getStationCurrentState(organizationId: string, stationId: string
   return apiFetch<StationCurrentState>(`/zylo-liquid/stations/${stationId}/current-state`, withOrg(organizationId));
 }
 
-export function listAlerts(organizationId: string, params: { status?: string; limit?: number } = {}): Promise<Page<Alert>> {
+export function listAlerts(
+  organizationId: string,
+  params: { status?: string; stationId?: string; tankId?: string; limit?: number } = {}
+): Promise<Page<Alert>> {
   const search = new URLSearchParams();
   if (params.status) search.set("status", params.status);
+  if (params.stationId) search.set("stationId", params.stationId);
+  if (params.tankId) search.set("tankId", params.tankId);
   search.set("limit", String(params.limit ?? 20));
   return apiFetch<Page<Alert>>(`/zylo-liquid/alerts?${search.toString()}`, withOrg(organizationId));
 }
 
-export function listDeliveries(organizationId: string, limit = 10): Promise<Page<Delivery>> {
-  return apiFetch<Page<Delivery>>(`/zylo-liquid/deliveries?limit=${limit}`, withOrg(organizationId));
+export function resolveAlert(organizationId: string, alertId: string, resolutionNote?: string): Promise<Alert> {
+  return apiFetch<Alert>(`/zylo-liquid/alerts/${alertId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify({ resolutionNote }),
+  });
 }
 
-export function listLeakEvents(organizationId: string, limit = 10): Promise<Page<LeakEvent>> {
-  return apiFetch<Page<LeakEvent>>(`/zylo-liquid/leak-events?limit=${limit}`, withOrg(organizationId));
+export function listDeliveries(organizationId: string, params: { stationId?: string; tankId?: string; limit?: number } = {}): Promise<Page<Delivery>> {
+  const search = new URLSearchParams();
+  if (params.stationId) search.set("stationId", params.stationId);
+  if (params.tankId) search.set("tankId", params.tankId);
+  search.set("limit", String(params.limit ?? 10));
+  return apiFetch<Page<Delivery>>(`/zylo-liquid/deliveries?${search.toString()}`, withOrg(organizationId));
+}
+
+export function listLeakEvents(organizationId: string, params: { stationId?: string; tankId?: string; result?: string; limit?: number } = {}): Promise<Page<LeakEvent>> {
+  const search = new URLSearchParams();
+  if (params.stationId) search.set("stationId", params.stationId);
+  if (params.tankId) search.set("tankId", params.tankId);
+  if (params.result) search.set("result", params.result);
+  search.set("limit", String(params.limit ?? 10));
+  return apiFetch<Page<LeakEvent>>(`/zylo-liquid/leak-events?${search.toString()}`, withOrg(organizationId));
 }

@@ -146,5 +146,82 @@
     },
     "deliveryDetails": "+ {volume} received",
     "measurementDetails": "{tank}: {height} (sensor reading)"
+  },
+  "stationDetail": {
+    "backLink": "Network stations",
+    "sync": "Synced {minutes} min ago",
+    "actions": {
+      "deliveries": "Deliveries",
+      "leaks": "Leaks",
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate"
+    },
+    "alertsBanner": "{count} active alerts",
+    "viewAll": "View all →",
+    "tanksSection": {
+      "title": "Station tanks",
+      "activeCount": "({count} active tanks)",
+      "addTank": "Add a tank",
+      "empty": "No tank registered for this station"
+    },
+    "tankCard": {
+      "capacity": "Capacity",
+      "product": "Product",
+      "sensorConnected": "Sensor connected",
+      "sensorDisconnected": "Sensor disconnected",
+      "sensorNotConfigured": "Sensor not configured",
+      "calibration": "Calibration",
+      "detail": "Detail →",
+      "notCalculable": "Volume not calculable"
+    },
+    "gauge": {
+      "empty": "EMPTY",
+      "fuel": "FUEL",
+      "water": "WATER"
+    },
+    "panels": {
+      "alertsTitle": "Alerts ({count})",
+      "alertsEmpty": "No alert for this station",
+      "deliveriesTitle": "Recent deliveries ({count})",
+      "deliveriesEmpty": "No recent delivery",
+      "leaksTitle": "Active leaks ({count})",
+      "leaksEmpty": "No leak detected"
+    },
+    "editModal": {
+      "title": "Edit station"
+    },
+    "confirmDeactivate": "Deactivate this station? Its history stays available.",
+    "confirmReactivate": "Reactivate this station?"
+  },
+  "addTank": {
+    "title": "Add a tank",
+    "submit": "Create tank",
+    "sections": {
+      "basics": "Basic information",
+      "thresholds": "Alarm thresholds (all in millimeters)",
+      "sensor": "Sensor association",
+      "calibration": "Calibration table"
+    },
+    "tankNumber": "Tank number",
+    "capacity": "Total capacity (L)",
+    "tankHeight": "Physical height (mm)",
+    "tankHeightHint": "Total interior height of the tank",
+    "existingProduct": "Existing product",
+    "newProduct": "New product",
+    "product": "Fuel product",
+    "selectProduct": "Select a product",
+    "newProductName": "Product name",
+    "newProductCode": "Short code",
+    "thresholdHigh": "High alarm",
+    "thresholdPreAlarm": "High pre-alarm",
+    "thresholdLow": "Low alarm",
+    "thresholdWater": "Water alarm",
+    "sensorSerial": "Sensor serial number",
+    "sensorSerialHint": "Physical serial number (fuel level measurement) — optional, can be associated later",
+    "skipCalibration": "Create without calibration for now",
+    "dropCsv": "Drag and drop your CSV file here or click to browse",
+    "fileSelected": "{name} — {count} points loaded",
+    "csvFormatHint": "Expected format: .csv (semicolon or comma separated), two columns: height (mm), volume (L)"
   }
 }
