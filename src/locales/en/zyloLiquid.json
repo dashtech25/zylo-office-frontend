@@ -2,6 +2,7 @@
   "appName": "Zylo Liquid",
   "breadcrumb": "Network dashboard",
   "breadcrumbStations": "Stations list",
+  "breadcrumbAlerts": "Alerts",
   "backToOffice": "Back to Zylo Office",
   "sync": {
     "label": "Synced {minutes} min ago"
@@ -120,7 +121,7 @@
   "alerts": {
     "title": "Active alerts",
     "viewAll": "View all",
-    "empty": "No active alert",
+    "empty": "No alert",
     "types": {
       "level_high": "High level",
       "level_high_pre_alarm": "High level pre-alarm",
@@ -128,6 +129,26 @@
       "water": "Water detected",
       "leak": "Leak detected",
       "sensor_offline": "Station offline"
+    },
+    "page": {
+      "title": "Alerts",
+      "subtitle": "{count} active alerts",
+      "filterStatus": "Filter by status",
+      "status": {
+        "active": "Active",
+        "resolved": "Resolved",
+        "all": "All"
+      },
+      "resolve": "Resolve"
+    },
+    "columns": {
+      "type": "Type",
+      "station": "Station",
+      "tank": "Tank",
+      "triggeredAt": "Triggered at",
+      "value": "Value",
+      "status": "Status",
+      "actions": "Actions"
     }
   },
   "activity": {

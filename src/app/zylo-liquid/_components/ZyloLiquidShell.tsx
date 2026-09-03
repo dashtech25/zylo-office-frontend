@@ -47,7 +47,7 @@ const SECTIONS: NavSection[] = [
     entries: [
       { labelKey: "nav.items.dashboard", href: "/zylo-liquid", icon: LayoutDashboard },
       { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Network },
-      { labelKey: "nav.items.alerts", icon: AlertTriangle, comingSoon: true },
+      { labelKey: "nav.items.alerts", href: "/zylo-liquid/alerts", icon: AlertTriangle },
     ],
   },
   {
@@ -127,6 +127,7 @@ function AccountMenu() {
 const BREADCRUMB_BY_PATH: Record<string, string> = {
   "/zylo-liquid": "breadcrumb",
   "/zylo-liquid/stations": "breadcrumbStations",
+  "/zylo-liquid/alerts": "breadcrumbAlerts",
 };
 
 export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
