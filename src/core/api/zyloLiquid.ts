@@ -8,6 +8,8 @@ export interface Station {
   code: string;
   cityId: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   phone: string | null;
   email: string | null;
   openingTime: string;

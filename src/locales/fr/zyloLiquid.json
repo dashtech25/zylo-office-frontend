@@ -11,6 +11,61 @@
   "sync": {
     "label": "Synchronisé il y a {minutes} min"
   },
+  "dashboard": {
+    "pageTitle": "Tableau de bord réseau",
+    "pageSubtitle": "{stations} station(s), {tanks} cuve(s), {products} produit(s). Vue consolidée du réseau.",
+    "actions": {
+      "reports": "Rapports & KPI",
+      "print": "Imprimer"
+    },
+    "reliabilityBanner": {
+      "offline": "Données de mesure indisponibles sur {count} station(s) ({names}). Les volumes et la valorisation de ces stations ne peuvent pas être considérés comme fiables tant que la transmission n'est pas rétablie."
+    },
+    "sections": {
+      "health": "1 · Santé opérationnelle du réseau — maintenant",
+      "integrity": "2 · Intégrité du stock — 30 derniers jours",
+      "value": "3 · Valeur — stock immobilisé et performance"
+    },
+    "kpis": {
+      "stationsAttention": {
+        "label": "Stations nécessitant une attention",
+        "subOk": "Toutes les stations sont nominales",
+        "subAlert": "Au moins une alerte active, ou données de mesure indisponibles"
+      },
+      "stockCoverage": { "label": "Couverture de stock la plus faible" },
+      "activeAlerts": { "label": "Alertes actives", "sub": "Toutes stations confondues" },
+      "atgAvailability": { "label": "Disponibilité des données ATG", "sub": "Part des stations dont les mesures sont à jour à l'instant présent" },
+      "lossRate": { "label": "Taux de perte réseau" },
+      "lossValue": { "label": "Perte valorisée sur 30 jours" },
+      "lossProjection": { "label": "Projection annualisée de la perte" },
+      "deliveryCompliance": { "label": "Conformité des livraisons" },
+      "stockValue": { "label": "Valeur du stock (prix de vente)", "sub": "{volume} en cuve · {pct} de la capacité" },
+      "sellableValue": { "label": "Dont réellement vendable" },
+      "fuelRevenue": { "label": "CA carburant 30 j" },
+      "grossMargin": { "label": "Marge brute carburant 30 j" },
+      "nonFuelRevenue": { "label": "CA non pétrolier 30 j" }
+    },
+    "mapCard": {
+      "title": "Où sont mes stations et laquelle demande mon attention ?",
+      "subtitle": "Positions géographiques réelles — cliquez sur une station.",
+      "noGeo": "Aucune coordonnée GPS enregistrée pour ces stations."
+    },
+    "stationCard": {
+      "attentionRequired": "Attention requise",
+      "nominal": "Nominale",
+      "dataUnavailable": "Données indisponibles"
+    },
+    "decisionsCard": {
+      "title": "Qu'est-ce qui exige une décision maintenant ?",
+      "subtitle": "{count} alerte(s) active(s), triées par ancienneté",
+      "viewTank": "Voir la cuve"
+    },
+    "deliveriesCard": {
+      "title": "Livraisons récentes",
+      "empty": "Aucune livraison détectée récemment"
+    },
+    "cashCard": { "title": "Répartition des encaissements" }
+  },
   "nav": {
     "sections": {
       "pilotage": "Pilotage",

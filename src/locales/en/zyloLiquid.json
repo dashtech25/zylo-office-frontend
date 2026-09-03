@@ -11,6 +11,61 @@
   "sync": {
     "label": "Synced {minutes} min ago"
   },
+  "dashboard": {
+    "pageTitle": "Network dashboard",
+    "pageSubtitle": "{stations} station(s), {tanks} tank(s), {products} product(s). Consolidated network view.",
+    "actions": {
+      "reports": "Reports & KPI",
+      "print": "Print"
+    },
+    "reliabilityBanner": {
+      "offline": "Measurement data unavailable on {count} station(s) ({names}). Volumes and valuation for these stations cannot be considered reliable until transmission is restored."
+    },
+    "sections": {
+      "health": "1 · Network operational health — right now",
+      "integrity": "2 · Stock integrity — last 30 days",
+      "value": "3 · Value — stock on hand and performance"
+    },
+    "kpis": {
+      "stationsAttention": {
+        "label": "Stations needing attention",
+        "subOk": "All stations are nominal",
+        "subAlert": "At least one active alert, or measurement data unavailable"
+      },
+      "stockCoverage": { "label": "Lowest stock coverage" },
+      "activeAlerts": { "label": "Active alerts", "sub": "Across all stations" },
+      "atgAvailability": { "label": "ATG data availability", "sub": "Share of stations whose measurements are up to date right now" },
+      "lossRate": { "label": "Network loss rate" },
+      "lossValue": { "label": "Loss value over 30 days" },
+      "lossProjection": { "label": "Annualized loss projection" },
+      "deliveryCompliance": { "label": "Delivery compliance" },
+      "stockValue": { "label": "Stock value (sale price)", "sub": "{volume} on hand · {pct} of capacity" },
+      "sellableValue": { "label": "Of which actually sellable" },
+      "fuelRevenue": { "label": "Fuel revenue, 30 d" },
+      "grossMargin": { "label": "Fuel gross margin, 30 d" },
+      "nonFuelRevenue": { "label": "Non-fuel revenue, 30 d" }
+    },
+    "mapCard": {
+      "title": "Where are my stations, and which one needs my attention?",
+      "subtitle": "Real geographic positions — click a station.",
+      "noGeo": "No GPS coordinates recorded for these stations."
+    },
+    "stationCard": {
+      "attentionRequired": "Attention required",
+      "nominal": "Nominal",
+      "dataUnavailable": "Data unavailable"
+    },
+    "decisionsCard": {
+      "title": "What needs a decision right now?",
+      "subtitle": "{count} active alert(s), sorted by age",
+      "viewTank": "View tank"
+    },
+    "deliveriesCard": {
+      "title": "Recent deliveries",
+      "empty": "No delivery detected recently"
+    },
+    "cashCard": { "title": "Payment breakdown" }
+  },
   "nav": {
     "sections": {
       "pilotage": "Steering",
