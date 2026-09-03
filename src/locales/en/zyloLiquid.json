@@ -14,6 +14,43 @@
   "sync": {
     "label": "Synced {minutes} min ago"
   },
+  "configuration": {
+    "pageTitle": "Configuration",
+    "pageSubtitle": "Organization, prices, thresholds and permissions. Changes take effect immediately across the app.",
+    "tabs": {
+      "prix": "Fuel prices",
+      "carburants": "Fuel catalog",
+      "seuils": "Alert thresholds",
+      "systeme": "Network configuration",
+      "orga": "Organization",
+      "roles": "Roles & permissions"
+    },
+    "fuelCatalog": {
+      "banner": "The catalog is shared across the whole network. A fuel product is never deleted — it is removed from the catalog, which preserves all history.",
+      "title": "Products",
+      "statusActive": "In catalog",
+      "statusInactive": "Removed",
+      "name": "Name",
+      "code": "Code",
+      "codeHint": "The code is the product's database key: it cannot be changed.",
+      "density": "Density (g/cm³)",
+      "color": "Display color",
+      "activeTanks": "Tanks in service",
+      "currentPrice": "Current price",
+      "save": "Save",
+      "deactivate": "Remove from catalog",
+      "reactivate": "Restore to catalog",
+      "addTitle": "Add a fuel product",
+      "addSubtitle": "Writes a row to your organization's fuel reference data.",
+      "namePlaceholder": "Premium diesel",
+      "codePlaceholder": "GOP",
+      "costPrice": "Cost price (FCFA / L)",
+      "sellPrice": "Sale price (FCFA / L)",
+      "create": "Create fuel product",
+      "saved": "Saved",
+      "codeRequired": "Name and code are required."
+    }
+  },
   "deliveries": {
     "pageTitle": "Deliveries",
     "pageSubtitle": "{count} reception(s) automatically detected — bill-of-lading comparison unavailable at Level 1",

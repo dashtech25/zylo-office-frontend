@@ -67,8 +67,30 @@ export interface FuelProduct {
   organizationId: string;
   name: string;
   code: string;
+  densityGPerCm3: number | null;
+  thermalExpansionCoefficient: number | null;
+  currentPriceFcfa: number | null;
+  currentCostFcfa: number | null;
   displayColor: string | null;
   active: boolean;
+}
+
+export interface CreateFuelProductInput {
+  name: string;
+  code: string;
+  densityGPerCm3?: number;
+  currentPriceFcfa?: number;
+  currentCostFcfa?: number;
+  displayColor?: string;
+}
+
+export interface UpdateFuelProductInput {
+  name?: string;
+  densityGPerCm3?: number;
+  currentPriceFcfa?: number;
+  currentCostFcfa?: number;
+  displayColor?: string;
+  active?: boolean;
 }
 
 export interface CalibrationPoint {
@@ -281,6 +303,22 @@ export function createTankSensorMapping(
 
 export function listFuelProducts(organizationId: string, limit = 50): Promise<Page<FuelProduct>> {
   return apiFetch<Page<FuelProduct>>(`/zylo-liquid/fuel-products?limit=${limit}`, withOrg(organizationId));
+}
+
+export function createFuelProduct(organizationId: string, data: CreateFuelProductInput): Promise<FuelProduct> {
+  return apiFetch<FuelProduct>("/zylo-liquid/fuel-products", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateFuelProduct(organizationId: string, fuelProductId: string, data: UpdateFuelProductInput): Promise<FuelProduct> {
+  return apiFetch<FuelProduct>(`/zylo-liquid/fuel-products/${fuelProductId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
 }
 
 export function getNetworkSummary(organizationId: string): Promise<NetworkSummary> {

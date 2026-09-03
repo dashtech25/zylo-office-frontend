@@ -14,6 +14,43 @@
   "sync": {
     "label": "Synchronisé il y a {minutes} min"
   },
+  "configuration": {
+    "pageTitle": "Configuration",
+    "pageSubtitle": "Organisation, prix, seuils et permissions. Les modifications sont immédiatement répercutées dans toute l'application.",
+    "tabs": {
+      "prix": "Prix carburant",
+      "carburants": "Catalogue carburants",
+      "seuils": "Seuils d'alerte",
+      "systeme": "Configuration réseau",
+      "orga": "Organisation",
+      "roles": "Rôles & permissions"
+    },
+    "fuelCatalog": {
+      "banner": "Le catalogue est partagé par tout le réseau. Un carburant n'est jamais supprimé — il est retiré du catalogue, ce qui préserve tout l'historique.",
+      "title": "Produits",
+      "statusActive": "Au catalogue",
+      "statusInactive": "Retiré",
+      "name": "Nom",
+      "code": "Code",
+      "codeHint": "Le code est la clé du produit dans la base : il n'est pas modifiable.",
+      "density": "Masse volumique (g/cm³)",
+      "color": "Couleur d'affichage",
+      "activeTanks": "Cuves en service",
+      "currentPrice": "Prix courant",
+      "save": "Enregistrer",
+      "deactivate": "Retirer du catalogue",
+      "reactivate": "Remettre au catalogue",
+      "addTitle": "Ajouter un carburant",
+      "addSubtitle": "Écrit une ligne dans le référentiel carburant de votre organisation.",
+      "namePlaceholder": "Gasoil premium",
+      "codePlaceholder": "GOP",
+      "costPrice": "Coût d'achat (FCFA / L)",
+      "sellPrice": "Prix de vente (FCFA / L)",
+      "create": "Créer le carburant",
+      "saved": "Enregistré",
+      "codeRequired": "Le nom et le code sont obligatoires."
+    }
+  },
   "deliveries": {
     "pageTitle": "Livraisons",
     "pageSubtitle": "{count} réception(s) détectée(s) automatiquement — comparatif bon de livraison indisponible au Niveau 1",
