@@ -6,10 +6,14 @@ import {
   getNetworkSummary,
   getStationCurrentState,
   listAlerts,
+  listCities,
+  listCurrencies,
   listFuelProducts,
   listStations,
   listTanks,
   type Alert,
+  type City,
+  type Currency,
   type FuelProduct,
   type NetworkSummary,
   type Station,
@@ -31,12 +35,15 @@ export interface StationProductBreakdown {
 export interface StationRow {
   station: Station;
   online: boolean;
+  state: "offline" | "critical" | "alert" | "online";
+  alertsCount: number;
   lastMeasurementAt: string | null;
   products: StationProductBreakdown[];
   totalVolumeLiters: number;
   totalCapacityLiters: number;
   totalValue: number | null;
   totalCurrencyCode: string | null;
+  pricingStatus: "complete" | "partial" | "none" | "mixed_currency";
 }
 
 export function useStationsList(organizationId: string | null) {
@@ -49,6 +56,8 @@ export function useStationsList(organizationId: string | null) {
   const [activeAlertsCount, setActiveAlertsCount] = useState(0);
   const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
+  const [cities, setCities] = useState<City[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   const load = useCallback(async () => {
     if (!organizationId) {
@@ -58,12 +67,14 @@ export function useStationsList(organizationId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const [stationsPage, tanksPage, fuelProductsPage, alertsPage, summary] = await Promise.all([
+      const [stationsPage, tanksPage, fuelProductsPage, alertsPage, summary, citiesPage, currenciesPage] = await Promise.all([
         listStations(organizationId),
         listTanks(organizationId),
         listFuelProducts(organizationId),
         listAlerts(organizationId, { status: "active", limit: 100 }),
         getNetworkSummary(organizationId),
+        listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
+        listCurrencies(organizationId).catch(() => ({ data: [] as Currency[], meta: { total: 0, limit: 0, offset: 0 } })),
       ]);
       const activeStations = stationsPage.data.filter((s) => s.status === "active");
       const states = await Promise.all(activeStations.map((s) => getStationCurrentState(organizationId, s.id)));
@@ -78,6 +89,8 @@ export function useStationsList(organizationId: string | null) {
       setActiveAlertsCount(alertsPage.meta.total);
       setActiveAlerts(alertsPage.data);
       setNetworkSummary(summary);
+      setCities(citiesPage.data);
+      setCurrencies(currenciesPage.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -91,6 +104,12 @@ export function useStationsList(organizationId: string | null) {
 
   const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
   const tankById = new Map(tanks.map((t) => [t.id, t]));
+  const alertsByStation = new Map<string, Alert[]>();
+  for (const alert of activeAlerts) {
+    const list = alertsByStation.get(alert.stationId) ?? [];
+    list.push(alert);
+    alertsByStation.set(alert.stationId, list);
+  }
 
   const rows: StationRow[] = stations.map((station) => {
     const state = statesByStation[station.id];
@@ -137,18 +156,28 @@ export function useStationsList(organizationId: string | null) {
     const totalCapacityLiters = tanks
       .filter((t) => t.stationId === station.id && t.active)
       .reduce((sum, t) => sum + (t.calibratedCapacityLiters ?? t.capacityLiters), 0);
-    const currencies = new Set(products.map((p) => p.currencyCode).filter((c): c is string => c !== null));
-    const totalValue = currencies.size === 1 ? products.reduce((sum, p) => sum + (p.monetaryValue ?? 0), 0) : null;
+    const currencyCodes = new Set(products.map((p) => p.currencyCode).filter((c): c is string => c !== null));
+    const pricedCount = products.filter((p) => p.currencyCode !== null).length;
+    const pricingStatus: "complete" | "partial" | "none" | "mixed_currency" =
+      currencyCodes.size > 1 ? "mixed_currency" : pricedCount === 0 ? "none" : pricedCount < products.length ? "partial" : "complete";
+    const totalValue = currencyCodes.size === 1 ? products.reduce((sum, p) => sum + (p.monetaryValue ?? 0), 0) : null;
+
+    const stationAlerts = alertsByStation.get(station.id) ?? [];
+    const hasCriticalAlert = stationAlerts.some((a) => a.type === "leak" || a.type === "level_high");
+    const rowState: "offline" | "critical" | "alert" | "online" = !online ? "offline" : hasCriticalAlert ? "critical" : stationAlerts.length > 0 ? "alert" : "online";
 
     return {
       station,
       online,
+      state: rowState,
+      alertsCount: stationAlerts.length,
       lastMeasurementAt,
       products,
       totalVolumeLiters,
       totalCapacityLiters,
       totalValue,
-      totalCurrencyCode: currencies.size === 1 ? [...currencies][0] : null,
+      totalCurrencyCode: currencyCodes.size === 1 ? [...currencyCodes][0] : null,
+      pricingStatus,
     };
   });
 
@@ -161,6 +190,9 @@ export function useStationsList(organizationId: string | null) {
     rows,
     stations,
     tanks,
+    fuelProducts,
+    cities,
+    currencies,
     activeAlertsCount,
     activeAlerts,
     stationsActiveCount,

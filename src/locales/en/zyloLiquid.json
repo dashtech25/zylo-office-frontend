@@ -78,6 +78,23 @@
       "codeRequired": "Name and code are required."
     }
   },
+  "leaks": {
+    "pageTitle": "Leaks",
+    "pageSubtitle": "{count} static leak test(s) recorded — {anomalies} anomaly(ies) detected",
+    "table": {
+      "date": "Date",
+      "station": "Station",
+      "tank": "Tank / product",
+      "rate": "Leak rate",
+      "result": "Result"
+    },
+    "result": {
+      "normal": "Normal",
+      "anomaly": "Anomaly"
+    },
+    "empty": "No leak test recorded.",
+    "banner": "Static detection only (station at rest) — water and temperature correction applied before threshold (0.38 L/h, EPA standard)."
+  },
   "deliveries": {
     "pageTitle": "Deliveries",
     "pageSubtitle": "{count} reception(s) automatically detected — bill-of-lading comparison unavailable at Level 1",
@@ -302,46 +319,74 @@
       "never": "No measurement"
     },
     "list": {
-      "pageTitle": "Stations",
-      "pageSubtitle": "{count} station(s) in scope",
+      "pageTitle": "Network stations",
+      "pageSubtitle": "{count} stations total",
       "print": "Print",
       "export": "Export",
       "add": "Add a station",
-      "filterStatus": "All statuses",
       "filterAll": "All",
-      "searchPlaceholder": "Name, code…",
-      "noResults": "No station matches your search",
+      "searchPlaceholder": "Search a station...",
+      "noResults": "No station matches the selected filters",
+      "clearFilters": "Clear filters",
       "clearSearch": "Clear search",
       "totalNetwork": "TOTAL NETWORK",
       "viewDetail": "View detail",
-      "network": {
-        "title": "Summary",
-        "stockTotal": "Total stock",
-        "avgFillRate": "Average fill rate",
-        "stockValue": "Stock value",
-        "minCoverage": "Minimum coverage",
-        "stationsInAlert": "Stations in alert",
-        "activeAlarms": "Active alarms",
-        "dataAvailability": "Data availability"
+      "currency": "Currency",
+      "badges": {
+        "active": "{count} active",
+        "offline": "{count} offline",
+        "alerts": "{count} active alerts"
       },
-      "map": {
-        "title": "Network footprint",
-        "subtitle": "Real geographic positions — click a marker to open the station",
-        "noGeo": "No GPS coordinates recorded for these stations."
+      "filters": {
+        "status": "Status",
+        "statusOptions": { "all": "All", "online": "Online", "offline": "Offline", "alert": "Alert", "critical": "Critical" },
+        "city": "City",
+        "cityAll": "All cities",
+        "product": "Product",
+        "productAll": "All products",
+        "sortBy": "Sort by",
+        "sortOptions": { "name": "Name A→Z", "lowestLevel": "Lowest level", "highestValue": "Highest stock value", "oldestSync": "Oldest sync" }
       },
-      "table": {
-        "title": "All stations",
-        "subtitle": "Sorted by criticality: stations needing attention appear first",
-        "station": "Station",
-        "type": "Type",
-        "tanks": "Tanks",
-        "stock": "Stock",
-        "fillRate": "Fill rate",
-        "value": "Stock value",
-        "coverage": "Min. coverage",
-        "pumps": "Pumps",
-        "alarms": "Alarms",
-        "data": "Data"
+      "columns": {
+        "station": "STATION",
+        "status": "STATUS",
+        "stockByProduct": "STOCK BY PRODUCT",
+        "stockByProductSub": "Volume · Capacity · Price · Value per product",
+        "totalValue": "STATION TOTAL VALUE",
+        "sync": "SYNC"
+      },
+      "empty": {
+        "title": "No station in your network",
+        "add": "+ Add a station"
+      },
+      "row": {
+        "tankCount": "{count} tank(s)",
+        "priceUndefined": "Price undefined",
+        "valueNotCalculable": "Value not calculable",
+        "partial": "(partial)",
+        "critical": "CRITICAL",
+        "conversionUnavailable": "Conversion unavailable",
+        "syncOffline": "offline"
+      },
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "alert": "Alert",
+        "critical": "Critical"
+      },
+      "menu": {
+        "viewDetail": "View detail",
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "viewAlerts": "View alerts",
+        "viewDeliveries": "View deliveries",
+        "viewLeaks": "View leaks"
+      },
+      "confirmDeactivate": "Deactivate this station? History remains available.",
+      "confirmReactivate": "Reactivate this station?",
+      "footer": {
+        "networkTotal": "Network total"
       }
     },
     "createModal": {
@@ -349,8 +394,11 @@
       "name": "Station name",
       "code": "Code",
       "codeHint": "Short identifier, unique in your network (e.g. STA-01)",
+      "city": "City",
+      "citySelectPlaceholder": "Select a city",
       "address": "Address",
       "phone": "Phone",
+      "email": "Email",
       "submit": "Create station"
     }
   },

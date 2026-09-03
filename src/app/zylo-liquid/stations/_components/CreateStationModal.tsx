@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ApiError } from "@/core/api/client";
-import { createStation, updateStation, type Station } from "@/core/api/zyloLiquid";
-import { Alert, Button, FormField, Input, Modal } from "@/shared/ui";
+import { createStation, listCities, updateStation, type City, type Station } from "@/core/api/zyloLiquid";
+import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
 
 export interface CreateStationModalProps {
   organizationId: string;
@@ -25,8 +25,11 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const isEdit = station !== undefined;
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [cityId, setCityId] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [cities, setCities] = useState<City[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,16 +37,27 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     if (open && station) {
       setName(station.name);
       setCode(station.code);
+      setCityId(station.cityId ?? "");
       setAddress(station.address ?? "");
       setPhone(station.phone ?? "");
+      setEmail(station.email ?? "");
     }
   }, [open, station]);
+
+  useEffect(() => {
+    if (!open) return;
+    listCities(organizationId, { limit: 100 })
+      .then((page) => setCities(page.data))
+      .catch(() => setCities([]));
+  }, [open, organizationId]);
 
   function reset() {
     setName("");
     setCode("");
+    setCityId("");
     setAddress("");
     setPhone("");
+    setEmail("");
     setError(null);
   }
 
@@ -53,9 +67,22 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     setError(null);
     try {
       if (isEdit && station) {
-        await updateStation(organizationId, station.id, { name, address: address || undefined, phone: phone || undefined });
+        await updateStation(organizationId, station.id, {
+          name,
+          cityId: cityId || undefined,
+          address: address || undefined,
+          phone: phone || undefined,
+          email: email || undefined,
+        });
       } else {
-        await createStation(organizationId, { name, code, address: address || undefined, phone: phone || undefined });
+        await createStation(organizationId, {
+          name,
+          code,
+          cityId: cityId || undefined,
+          address: address || undefined,
+          phone: phone || undefined,
+          email: email || undefined,
+        });
       }
       reset();
       onOpenChange(false);
@@ -97,11 +124,24 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
             {(field) => <Input {...field} value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />}
           </FormField>
         )}
+        <FormField label={t("createModal.city")}>
+          {(field) => (
+            <Select
+              {...field}
+              value={cityId}
+              onValueChange={setCityId}
+              options={[{ value: "", label: t("createModal.citySelectPlaceholder") }, ...cities.map((c) => ({ value: c.id, label: `${c.name} (${c.regionName}, ${c.countryName})` }))]}
+            />
+          )}
+        </FormField>
         <FormField label={t("createModal.address")}>
           {(field) => <Input {...field} value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} />}
         </FormField>
         <FormField label={t("createModal.phone")}>
           {(field) => <Input {...field} value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />}
+        </FormField>
+        <FormField label={t("createModal.email")}>
+          {(field) => <Input {...field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />}
         </FormField>
       </form>
     </Modal>

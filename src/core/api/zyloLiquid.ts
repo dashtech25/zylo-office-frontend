@@ -23,6 +23,7 @@ export interface Station {
 export interface CreateStationInput {
   name: string;
   code: string;
+  cityId?: string;
   address?: string;
   phone?: string;
   email?: string;
@@ -381,6 +382,23 @@ export interface Currency {
 
 export function listCurrencies(organizationId: string, limit = 50): Promise<Page<Currency>> {
   return apiFetch<Page<Currency>>(`/currencies?limit=${limit}`, withOrg(organizationId));
+}
+
+export interface City {
+  id: string;
+  name: string;
+  regionId: string;
+  regionName: string;
+  countryId: string;
+  countryName: string;
+  currencyCode: string;
+}
+
+export function listCities(organizationId: string, params: { q?: string; limit?: number } = {}): Promise<Page<City>> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  search.set("limit", String(params.limit ?? 100));
+  return apiFetch<Page<City>>(`/cities?${search.toString()}`, withOrg(organizationId));
 }
 
 export interface PriceHistoryEntry {

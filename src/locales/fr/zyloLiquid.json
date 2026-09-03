@@ -78,6 +78,23 @@
       "codeRequired": "Le nom et le code sont obligatoires."
     }
   },
+  "leaks": {
+    "pageTitle": "Fuites",
+    "pageSubtitle": "{count} test(s) de fuite statique enregistré(s) — {anomalies} anomalie(s) détectée(s)",
+    "table": {
+      "date": "Date",
+      "station": "Station",
+      "tank": "Cuve / produit",
+      "rate": "Taux de fuite",
+      "result": "Résultat"
+    },
+    "result": {
+      "normal": "Normal",
+      "anomaly": "Anomalie"
+    },
+    "empty": "Aucun test de fuite enregistré.",
+    "banner": "Détection statique uniquement (station à l'arrêt) — correction de l'eau et de la température appliquée avant seuil (0,38 L/h, standard EPA)."
+  },
   "deliveries": {
     "pageTitle": "Livraisons",
     "pageSubtitle": "{count} réception(s) détectée(s) automatiquement — comparatif bon de livraison indisponible au Niveau 1",
@@ -302,46 +319,74 @@
       "never": "Aucune mesure"
     },
     "list": {
-      "pageTitle": "Stations",
-      "pageSubtitle": "{count} station(s) sur le périmètre",
+      "pageTitle": "Stations du réseau",
+      "pageSubtitle": "{count} stations au total",
       "print": "Imprimer",
       "export": "Exporter",
       "add": "Ajouter une station",
-      "filterStatus": "Tous statuts",
       "filterAll": "Toutes",
-      "searchPlaceholder": "Nom, code…",
-      "noResults": "Aucune station ne correspond à votre recherche",
+      "searchPlaceholder": "Rechercher une station...",
+      "noResults": "Aucune station ne correspond aux filtres sélectionnés",
+      "clearFilters": "Effacer les filtres",
       "clearSearch": "Effacer la recherche",
       "totalNetwork": "TOTAL RÉSEAU",
       "viewDetail": "Voir le détail",
-      "network": {
-        "title": "Synthèse",
-        "stockTotal": "Stock total",
-        "avgFillRate": "Remplissage moyen",
-        "stockValue": "Valeur du stock",
-        "minCoverage": "Couverture minimale",
-        "stationsInAlert": "Stations en alerte",
-        "activeAlarms": "Alarmes actives",
-        "dataAvailability": "Disponibilité des données"
+      "currency": "Devise",
+      "badges": {
+        "active": "{count} actives",
+        "offline": "{count} hors ligne",
+        "alerts": "{count} alertes actives"
       },
-      "map": {
-        "title": "Implantation du réseau",
-        "subtitle": "Positions géographiques réelles — cliquez sur une pastille pour ouvrir la station",
-        "noGeo": "Aucune coordonnée GPS enregistrée pour ces stations."
+      "filters": {
+        "status": "Statut",
+        "statusOptions": { "all": "Tous", "online": "En ligne", "offline": "Hors ligne", "alert": "Alerte", "critical": "Critique" },
+        "city": "Ville",
+        "cityAll": "Toutes les villes",
+        "product": "Produit",
+        "productAll": "Tous les produits",
+        "sortBy": "Trier par",
+        "sortOptions": { "name": "Nom A→Z", "lowestLevel": "Niveau le plus bas", "highestValue": "Valeur stock décroissant", "oldestSync": "Dernière synchronisation" }
       },
-      "table": {
-        "title": "Toutes les stations",
-        "subtitle": "Triées par criticité : les stations demandant une attention apparaissent en premier",
-        "station": "Station",
-        "type": "Type",
-        "tanks": "Cuves",
-        "stock": "Stock",
-        "fillRate": "Remplissage",
-        "value": "Valeur du stock",
-        "coverage": "Couverture min.",
-        "pumps": "Pompes",
-        "alarms": "Alarmes",
-        "data": "Données"
+      "columns": {
+        "station": "STATION",
+        "status": "STATUT",
+        "stockByProduct": "STOCK PAR PRODUIT",
+        "stockByProductSub": "Volume · Capacité · Prix · Valeur par produit",
+        "totalValue": "VALEUR TOTALE STATION",
+        "sync": "SYNC"
+      },
+      "empty": {
+        "title": "Aucune station dans votre réseau",
+        "add": "+ Ajouter une station"
+      },
+      "row": {
+        "tankCount": "{count} cuve(s)",
+        "priceUndefined": "Prix non défini",
+        "valueNotCalculable": "Valeur non calculable",
+        "partial": "(partiel)",
+        "critical": "CRITIQUE",
+        "conversionUnavailable": "Conversion indisponible",
+        "syncOffline": "hors ligne"
+      },
+      "status": {
+        "online": "En ligne",
+        "offline": "Hors ligne",
+        "alert": "Alerte",
+        "critical": "Critique"
+      },
+      "menu": {
+        "viewDetail": "Voir le détail",
+        "edit": "Modifier",
+        "deactivate": "Désactiver",
+        "reactivate": "Réactiver",
+        "viewAlerts": "Voir les alertes",
+        "viewDeliveries": "Voir les livraisons",
+        "viewLeaks": "Voir les fuites"
+      },
+      "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
+      "confirmReactivate": "Réactiver cette station ?",
+      "footer": {
+        "networkTotal": "Total réseau"
       }
     },
     "createModal": {
@@ -349,8 +394,11 @@
       "name": "Nom de la station",
       "code": "Code",
       "codeHint": "Identifiant court, unique dans votre réseau (ex. STA-01)",
+      "city": "Ville",
+      "citySelectPlaceholder": "Sélectionner une ville",
       "address": "Adresse",
       "phone": "Téléphone",
+      "email": "Email",
       "submit": "Créer la station"
     }
   },
