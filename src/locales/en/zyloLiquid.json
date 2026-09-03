@@ -7,9 +7,34 @@
   "breadcrumb": "Network dashboard",
   "breadcrumbStations": "Stations list",
   "breadcrumbAlerts": "Alerts",
+  "breadcrumbTanks": "Tanks & ATG",
   "backToOffice": "Back to Zylo Office",
   "sync": {
     "label": "Synced {minutes} min ago"
+  },
+  "tanksNetwork": {
+    "pageTitle": "Tanks & ATG",
+    "pageSubtitle": "{count} tank(s) in scope — level, water, temperature and measurement freshness",
+    "filterStation": "All stations",
+    "filterProduct": "All products",
+    "searchPlaceholder": "Tank name, number, station…",
+    "empty": "No tank matches these criteria.",
+    "table": {
+      "title": "Tank summary table",
+      "subtitle": "The chart is never alone: every value is also readable as plain text",
+      "station": "Station",
+      "tank": "Tank",
+      "product": "Product",
+      "level": "Level",
+      "volume": "Volume",
+      "capacity": "Capacity",
+      "sellable": "Sellable",
+      "water": "Water",
+      "available": "Available space",
+      "temperature": "Temp.",
+      "coverage": "Coverage",
+      "data": "Reading"
+    }
   },
   "dashboard": {
     "pageTitle": "Network dashboard",

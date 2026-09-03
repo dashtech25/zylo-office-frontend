@@ -7,9 +7,34 @@
   "breadcrumb": "Tableau de bord réseau",
   "breadcrumbStations": "Liste des stations",
   "breadcrumbAlerts": "Alertes",
+  "breadcrumbTanks": "Cuves & ATG",
   "backToOffice": "Retour Zylo Office",
   "sync": {
     "label": "Synchronisé il y a {minutes} min"
+  },
+  "tanksNetwork": {
+    "pageTitle": "Cuves & ATG",
+    "pageSubtitle": "{count} cuve(s) sur le périmètre — niveau, eau, température et fraîcheur de la mesure",
+    "filterStation": "Toutes stations",
+    "filterProduct": "Tous produits",
+    "searchPlaceholder": "Nom de cuve, numéro, station…",
+    "empty": "Aucune cuve ne correspond à ces critères.",
+    "table": {
+      "title": "Tableau de synthèse des cuves",
+      "subtitle": "Le graphique n'est jamais seul : toutes les valeurs sont également lisibles en clair",
+      "station": "Station",
+      "tank": "Cuve",
+      "product": "Produit",
+      "level": "Niveau",
+      "volume": "Volume",
+      "capacity": "Capacité",
+      "sellable": "Vendable",
+      "water": "Eau",
+      "available": "Espace disponible",
+      "temperature": "Temp.",
+      "coverage": "Couverture",
+      "data": "Mesure"
+    }
   },
   "dashboard": {
     "pageTitle": "Tableau de bord réseau",
