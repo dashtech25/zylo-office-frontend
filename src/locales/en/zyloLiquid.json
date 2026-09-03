@@ -382,8 +382,10 @@
     "subtitle": "Capacity {capacity} · height {height} mm",
     "kpis": {
       "volume": "Measured volume",
+      "sellable": "Sellable volume",
       "available": "Available space",
       "water": "Water detected",
+      "coverage": "Stock coverage",
       "value": "Stock value",
       "temperature": "Temperature"
     },
@@ -396,6 +398,7 @@
       "gauge": "Gauge & composition",
       "history": "Measurement history",
       "alerts": "Alerts ({count})",
+      "gauging": "Manual gauging",
       "technical": "Technical sheet"
     },
     "composition": {
