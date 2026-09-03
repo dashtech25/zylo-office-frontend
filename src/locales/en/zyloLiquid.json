@@ -299,6 +299,24 @@
     },
     "alertsBanner": "{count} active alerts",
     "viewAll": "View all →",
+    "kpis": {
+      "stock": { "label": "Station stock", "sub": "{pct} of {capacity}" },
+      "coverage": { "label": "Minimum coverage" },
+      "activeAlarms": { "label": "Active alarms" },
+      "pumps": { "label": "Pumps available" },
+      "value": { "label": "Stock value" }
+    },
+    "tabs": {
+      "overview": "Overview / tanks",
+      "pumps": "Pumps & nozzles",
+      "staff": "Assigned staff",
+      "compliance": "Regulatory compliance",
+      "atg": "ATG measurement chain"
+    },
+    "charts": {
+      "sales": { "title": "What is this station's sales pace?", "subtitle": "Volume per day and per product — 30 days" },
+      "restock": { "title": "Is the station's stock replenishing?", "subtitle": "Vertical jumps are deliveries; gaps are missing measurements" }
+    },
     "tanksSection": {
       "title": "Station tanks",
       "activeCount": "({count} active tanks)",

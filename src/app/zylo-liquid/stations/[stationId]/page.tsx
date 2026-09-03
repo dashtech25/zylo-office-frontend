@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ChevronLeft, MoreVertical, Plus, Truck } from "lucide-react";
+import { AlertTriangle, Banknote, Bell, ChevronLeft, Fuel, Gauge, MoreVertical, Plus, Truck } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
@@ -8,19 +8,31 @@ import { useState } from "react";
 
 import { deactivateStation, reactivateStation } from "@/core/api/zyloLiquid";
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState } from "@/shared/ui";
+import { EmptyState } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
+import { Kpi } from "../../_components/Kpi";
 import { ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "../../_components/TankVisual";
 import { CreateStationModal } from "../_components/CreateStationModal";
 import { AddTankModal } from "./_components/AddTankModal";
 import { useStationDetail } from "./_lib/useStationDetail";
 
+const TABS = ["overview", "pumps", "staff", "compliance", "atg"] as const;
+
+/** Reproduit fidèlement `pageStation()` du prototype validé
+ * (prototype.html, ~ligne 3896) : bandeau de fiabilité, 5 KPI, 5 onglets
+ * (seul "Vue d'ensemble / cuves" a un contenu réel au Niveau 1 — les 4
+ * autres nécessitent un référentiel pompes/personnel/documents/ATG détaillé
+ * qui n'existe pas encore, ils restent visibles mais désactivés), grille de
+ * cuves avec sélecteur de représentation, et 2 graphiques (rythme de vente
+ * — hors périmètre, aucune vente individuelle au Niveau 1 ; reconstitution
+ * du stock — laissé désactivé dans cette itération, nécessite un historique
+ * agrégé par station non encore construit). Voir
+ * docs/modules/zylo-liquid/phase-3-prototype-compatibility-matrix.md. */
 export default function StationDetailPage() {
   const params = useParams<{ stationId: string }>();
   const stationId = params.stationId;
   const t = useTranslations("zyloLiquid.stationDetail");
-  const tStations = useTranslations("zyloLiquid.stations");
   const tAlerts = useTranslations("zyloLiquid.alerts");
   const tCommon = useTranslations("common");
   const format = useFormatter();
@@ -31,12 +43,12 @@ export default function StationDetailPage() {
   const [addTankOpen, setAddTankOpen] = useState(false);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mode, setMode] = useState<TankVisualMode>("horizontal");
+  const [mode, setMode] = useState<TankVisualMode>("vertical");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
 
   function formatVolume(liters: number): string {
     return `${format.number(Math.round(liters))} L`;
   }
-
   function formatMoney(value: number, currencyCode: string): string {
     try {
       return format.number(value, { style: "currency", currency: currencyCode, maximumFractionDigits: 0 });
@@ -44,9 +56,8 @@ export default function StationDetailPage() {
       return `${format.number(Math.round(value))} ${currencyCode}`;
     }
   }
-
   function formatTime(iso: string): string {
-    return format.dateTime(new Date(iso), { hour: "2-digit", minute: "2-digit" });
+    return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   }
 
   async function handleToggleStatus() {
@@ -70,61 +81,55 @@ export default function StationDetailPage() {
   if (data.loading) {
     return <PageSpinner label={tCommon("states.loading")} />;
   }
-
   if (!data.station) {
     return <EmptyState icon={AlertTriangle} title={tCommon("states.error")} description={data.error ?? undefined} />;
   }
 
   const { station } = data;
   const activeTanks = data.tanks.filter((tank) => tank.active);
+  const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
+  const offlineTanks = tankStates.filter((s) => s.sensorStatus === "offline" || s.sensorStatus === "not_configured");
+
+  const totalVolume = tankStates.reduce((sum, s) => sum + (s.volumeLiters ?? 0), 0);
+  const totalCapacity = activeTanks.reduce((sum, tk) => sum + (tk.calibratedCapacityLiters ?? tk.capacityLiters), 0);
+  const pct = totalCapacity > 0 ? (totalVolume / totalCapacity) * 100 : 0;
+  const currencies = new Set(tankStates.map((s) => s.currencyCode).filter((c): c is string => c !== null));
+  const totalValue = currencies.size === 1 ? tankStates.reduce((sum, s) => sum + (s.monetaryValue ?? 0), 0) : null;
+  const critical = data.alerts.some((a) => a.type === "leak" || a.type === "level_high");
 
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/zylo-liquid/stations" className="inline-flex w-fit items-center gap-1 text-body-sm text-text-muted hover:text-primary">
-        <ChevronLeft className="size-4" aria-hidden />
+    <>
+      <Link href="/zylo-liquid/stations" className="btn sm no-print" style={{ width: "fit-content", marginBottom: 4 }}>
+        <ChevronLeft width={14} height={14} strokeWidth={1.8} aria-hidden />
         {t("backLink")}
       </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-h1 font-bold text-text">{station.name}</h1>
-            <Badge tone={station.status === "active" ? "success" : station.status === "maintenance" ? "warning" : "neutral"} size="sm">
-              {tStations(`status.${station.status}`)}
-            </Badge>
+      <div className="page-head">
+        <div className="ph-text">
+          <h1>{station.name}</h1>
+          <div className="ph-sub">
+            {station.address ? `${station.address} · ` : ""}
+            {station.code} · {station.is24h ? "24h/24" : `${station.openingTime} – ${station.closingTime}`}
           </div>
-          <p className="mt-1 text-body-sm text-text-muted">
-            {station.code}
-            {station.address ? ` · ${station.address}` : ""}
-          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <a href="#deliveries-panel">
-            <Button variant="outline" size="sm">
-              <Truck className="size-4" aria-hidden />
-              {t("actions.deliveries")}
-            </Button>
+        <div className="page-actions no-print">
+          <a href="#deliveries-panel" className="btn sm">
+            <Truck width={14} height={14} strokeWidth={1.8} aria-hidden />
+            {t("actions.deliveries")}
           </a>
-          <a href="#leaks-panel">
-            <Button variant="outline" size="sm">
-              {t("actions.leaks")}
-            </Button>
+          <a href="#leaks-panel" className="btn sm">
+            {t("actions.leaks")}
           </a>
-          <Button size="sm" onClick={() => setEditOpen(true)}>
+          <button type="button" className="btn sm primary" onClick={() => setEditOpen(true)}>
             {t("actions.edit")}
-          </Button>
-          <div className="relative">
-            <Button variant="outline" size="sm" onClick={() => setMenuOpen((v) => !v)} aria-haspopup="menu" aria-expanded={menuOpen}>
-              <MoreVertical className="size-4" aria-hidden />
-            </Button>
+          </button>
+          <div style={{ position: "relative" }}>
+            <button type="button" className="btn sm" onClick={() => setMenuOpen((v) => !v)} aria-haspopup="menu" aria-expanded={menuOpen}>
+              <MoreVertical width={14} height={14} strokeWidth={1.8} aria-hidden />
+            </button>
             {menuOpen && (
-              <div role="menu" className="absolute right-0 top-full z-10 mt-1 w-44 rounded-card border border-border-subtle bg-surface p-1 shadow-elevated">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={handleToggleStatus}
-                  className="flex w-full items-center gap-2 rounded-button px-2 py-1.5 text-left text-body-sm text-text hover:bg-surface-muted"
-                >
+              <div role="menu" className="card" style={{ position: "absolute", right: 0, top: "100%", zIndex: 10, marginTop: 4, width: 180, padding: 6 }}>
+                <button type="button" role="menuitem" onClick={handleToggleStatus} className="sb-link" style={{ color: "var(--ink)" }}>
                   {station.status === "active" ? t("actions.deactivate") : t("actions.reactivate")}
                 </button>
               </div>
@@ -133,160 +138,191 @@ export default function StationDetailPage() {
         </div>
       </div>
 
-      {statusActionError && <Alert tone="error">{statusActionError}</Alert>}
-
-      {data.alerts.length > 0 && (
-        <div className="flex items-center gap-2 rounded-card border border-warning/30 bg-warning-muted px-4 py-3 text-warning">
-          <AlertTriangle className="size-5 shrink-0" aria-hidden />
-          <span className="font-medium">{t("alertsBanner", { count: data.alerts.length })}</span>
-          <span className="text-text-muted">
-            —{" "}
-            {data.alerts
-              .slice(0, 3)
-              .map((a) => tAlerts(`types.${a.type}`))
-              .join(" · ")}
-          </span>
-          <a href="#alerts-panel" className="ml-auto shrink-0 text-body-sm font-medium text-primary hover:underline">
-            {t("viewAll")}
-          </a>
+      {statusActionError && (
+        <div className="banner crit">
+          <div>{statusActionError}</div>
         </div>
       )}
 
-      <section>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-h2 font-semibold text-text">
-            {t("tanksSection.title")} <span className="text-body-sm font-normal text-text-muted">{t("tanksSection.activeCount", { count: activeTanks.length })}</span>
-          </h2>
-          <div className="flex items-center gap-2">
-            <ModeSwitcher mode={mode} onChange={setMode} />
-            <Button size="sm" onClick={() => setAddTankOpen(true)}>
-              <Plus className="size-4" aria-hidden />
-              {t("tanksSection.addTank")}
-            </Button>
-          </div>
+      {offlineTanks.length > 0 && (
+        <div className="banner major">
+          <div>{t("alertsBanner", { count: offlineTanks.length })}</div>
         </div>
+      )}
 
-        {activeTanks.length === 0 ? (
-          <EmptyState title={t("tanksSection.empty")} />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {activeTanks.map((tank) => {
-              const state = data.tankStateById.get(tank.id);
-              const product = data.fuelProductById.get(tank.fuelProductId);
-              return (
-                <Card key={tank.id}>
-                  <div className="flex flex-col gap-4 lg:flex-row">
-                    <div className="lg:w-24 lg:shrink-0">
-                      <p className="font-semibold text-text">{tank.displayName}</p>
-                      <Badge tone="primary" size="sm" className="mt-1">
-                        {product?.name ?? "?"}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-1 items-center justify-center">
-                      {state ? (
-                        state.volumeLiters === null ? (
-                          <p className="flex h-36 w-full items-center justify-center rounded-card border border-dashed border-border text-body-sm text-text-muted">
-                            {t("tankCard.notCalculable")}
-                          </p>
-                        ) : (
-                          <TankVisual tank={tank} state={state} mode={mode} fuelColor={product?.displayColor} />
-                        )
-                      ) : (
-                        <PageSpinner label={tCommon("states.loading")} />
-                      )}
-                    </div>
-                    <div className="flex shrink-0 flex-col gap-2 text-body-sm lg:w-48">
-                      <div className="flex justify-between">
-                        <span className="text-text-muted">{t("tankCard.capacity")}</span>
-                        <span className="tabular-nums text-text">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</span>
+      <div className="grid g5 kpi-scroll" style={{ marginBottom: 16 }}>
+        <Kpi
+          icon={Fuel}
+          label={t("kpis.stock.label")}
+          value={formatVolume(totalVolume)}
+          tone="brand"
+          sub={t("kpis.stock.sub", { pct: `${Math.round(pct)} %`, capacity: formatVolume(totalCapacity) })}
+        />
+        <Kpi icon={Gauge} label={t("kpis.coverage.label")} disabled />
+        <Kpi
+          icon={Bell}
+          label={t("kpis.activeAlarms.label")}
+          value={data.alerts.length}
+          tone={data.alerts.length ? (critical ? "crit" : "major") : "ok"}
+        />
+        <Kpi icon={Fuel} label={t("kpis.pumps.label")} disabled />
+        <Kpi icon={Banknote} label={t("kpis.value.label")} value={totalValue !== null && [...currencies][0] ? formatMoney(totalValue, [...currencies][0]) : "—"} tone="info" />
+      </div>
+
+      <div className="tabs">
+        {TABS.map((value) => (
+          <button key={value} type="button" className={tab === value ? "on" : ""} onClick={() => setTab(value)}>
+            {t(`tabs.${value}`)}
+          </button>
+        ))}
+      </div>
+
+      {tab !== "overview" ? (
+        <div className="empty">
+          <div className="e-t">{tCommon("states.comingSoon")}</div>
+        </div>
+      ) : (
+        <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-head">
+              <div style={{ flex: 1 }}>
+                <h2>{t("tanksSection.title")}</h2>
+                <div className="ch-sub">{t("tanksSection.activeCount", { count: activeTanks.length })}</div>
+              </div>
+              <ModeSwitcher mode={mode} onChange={setMode} />
+              <button type="button" className="btn sm primary" onClick={() => setAddTankOpen(true)}>
+                <Plus width={14} height={14} strokeWidth={1.8} aria-hidden />
+                {t("tanksSection.addTank")}
+              </button>
+            </div>
+
+            {activeTanks.length === 0 ? (
+              <div className="empty">
+                <div className="e-t">{t("tanksSection.empty")}</div>
+              </div>
+            ) : (
+              <div className="grid g4">
+                {activeTanks.map((tank) => {
+                  const state = data.tankStateById.get(tank.id);
+                  const product = data.fuelProductById.get(tank.fuelProductId);
+                  const tone = state?.sensorStatus === "offline" ? "alert-crit" : "";
+                  return (
+                    <div key={tank.id} className={`tankcard ${tone}`}>
+                      <div className="tank-top">
+                        <div style={{ flex: 1 }}>
+                          <div className="tt-name">{tank.displayName}</div>
+                          <div className="tt-prod">{product?.name ?? "?"}</div>
+                        </div>
+                        <span className={`badge ${state?.sensorStatus === "online" ? "b-ok" : state?.sensorStatus === "offline" ? "b-crit" : "b-idle"}`}>
+                          <span className="dot" />
+                          {state?.sensorStatus === "online" ? t("tankCard.sensorConnected") : state?.sensorStatus === "offline" ? t("tankCard.sensorDisconnected") : t("tankCard.sensorNotConfigured")}
+                        </span>
                       </div>
-                      <Badge tone={state?.sensorStatus === "online" ? "success" : state?.sensorStatus === "offline" ? "error" : "neutral"} size="sm" dot>
-                        {state?.sensorStatus === "online"
-                          ? t("tankCard.sensorConnected")
-                          : state?.sensorStatus === "offline"
-                            ? t("tankCard.sensorDisconnected")
-                            : t("tankCard.sensorNotConfigured")}
-                      </Badge>
-                      {state?.monetaryValue !== null && state?.currencyCode && (
-                        <p className="font-semibold tabular-nums text-text">{formatMoney(state.monetaryValue, state.currencyCode)}</p>
-                      )}
-                      <Link
-                        href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`}
-                        className="mt-1 inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
-                      >
+                      <div className="tank-body">
+                        <div style={{ display: "flex", justifyContent: "center", flex: "0 0 auto" }}>
+                          {state && state.volumeLiters !== null ? (
+                            <TankVisual tank={tank} state={state} mode={mode} fuelColor={product?.displayColor} />
+                          ) : (
+                            <div className="empty" style={{ padding: 12 }}>
+                              <div className="e-t small">{t("tankCard.notCalculable")}</div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="tank-figs">
+                          <div className="figrow">
+                            <span className="lab">{t("tankCard.capacity")}</span>
+                            <span className="val">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</span>
+                          </div>
+                          {state?.monetaryValue !== null && state?.currencyCode && (
+                            <div className="figrow">
+                              <span className="lab">{t("kpis.value.label")}</span>
+                              <span className="val">{formatMoney(state.monetaryValue, state.currencyCode)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Link href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`} className="small strong">
                         {t("tankCard.detail")}
                       </Link>
                     </div>
-                  </div>
-                </Card>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ marginTop: 12 }}>
+              <TankLegend />
+            </div>
           </div>
-        )}
-        <div className="mt-3">
-          <TankLegend />
-        </div>
-      </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card id="alerts-panel">
-          <h3 className="mb-3 text-h3 font-semibold text-text">{t("panels.alertsTitle", { count: data.alerts.length })}</h3>
+          <div className="grid g2" style={{ marginBottom: 16 }}>
+            <div className="card">
+              <h2>{t("charts.sales.title")}</h2>
+              <div className="ch-sub">{t("charts.sales.subtitle")}</div>
+              <div className="empty" style={{ marginTop: 12 }}>
+                <div className="e-t">{tCommon("states.comingSoon")}</div>
+              </div>
+            </div>
+            <div className="card">
+              <h2>{t("charts.restock.title")}</h2>
+              <div className="ch-sub">{t("charts.restock.subtitle")}</div>
+              <div className="empty" style={{ marginTop: 12 }}>
+                <div className="e-t">{tCommon("states.comingSoon")}</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="grid g3">
+        <div className="card" id="alerts-panel">
+          <h3>{t("panels.alertsTitle", { count: data.alerts.length })}</h3>
           {data.alerts.length === 0 ? (
-            <p className="text-body-sm text-text-muted">{t("panels.alertsEmpty")}</p>
+            <p className="small dim">{t("panels.alertsEmpty")}</p>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <div className="stack" style={{ gap: 8 }}>
               {data.alerts.map((a) => (
-                <li key={a.id} className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 size-4 text-warning" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-body-sm font-medium text-text">{tAlerts(`types.${a.type}`)}</p>
-                  </div>
-                  <span className="shrink-0 text-caption text-text-muted">{formatTime(a.triggeredAt)}</span>
-                </li>
+                <div key={a.id} className="row" style={{ justifyContent: "space-between" }}>
+                  <span className="small">{tAlerts(`types.${a.type}`)}</span>
+                  <span className="xsmall dim">{formatTime(a.triggeredAt)}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </Card>
+        </div>
 
-        <Card id="deliveries-panel">
-          <h3 className="mb-3 text-h3 font-semibold text-text">{t("panels.deliveriesTitle", { count: data.deliveries.length })}</h3>
+        <div className="card" id="deliveries-panel">
+          <h3>{t("panels.deliveriesTitle", { count: data.deliveries.length })}</h3>
           {data.deliveries.length === 0 ? (
-            <p className="text-body-sm text-text-muted">{t("panels.deliveriesEmpty")}</p>
+            <p className="small dim">{t("panels.deliveriesEmpty")}</p>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <div className="stack" style={{ gap: 8 }}>
               {data.deliveries.map((d) => (
-                <li key={d.id} className="flex items-start gap-2">
-                  <Truck className="mt-0.5 size-4 text-success" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-body-sm font-medium tabular-nums text-text">+{formatVolume(d.volumeLiters ?? 0)}</p>
-                  </div>
-                  <span className="shrink-0 text-caption text-text-muted">{formatTime(d.endTime)}</span>
-                </li>
+                <div key={d.id} className="row" style={{ justifyContent: "space-between" }}>
+                  <span className="small mono">+{formatVolume(d.volumeLiters ?? 0)}</span>
+                  <span className="xsmall dim">{formatTime(d.endTime)}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </Card>
+        </div>
 
-        <Card id="leaks-panel">
-          <h3 className="mb-3 text-h3 font-semibold text-text">{t("panels.leaksTitle", { count: data.leakEvents.filter((l) => l.result === "anomaly").length })}</h3>
+        <div className="card" id="leaks-panel">
+          <h3>{t("panels.leaksTitle", { count: data.leakEvents.filter((l) => l.result === "anomaly").length })}</h3>
           {data.leakEvents.filter((l) => l.result === "anomaly").length === 0 ? (
-            <p className="text-body-sm text-text-muted">{t("panels.leaksEmpty")}</p>
+            <p className="small dim">{t("panels.leaksEmpty")}</p>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <div className="stack" style={{ gap: 8 }}>
               {data.leakEvents
                 .filter((l) => l.result === "anomaly")
                 .map((l) => (
-                  <li key={l.id} className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 size-4 text-error" aria-hidden />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-body-sm font-medium tabular-nums text-text">{l.leakRateLph?.toFixed(2)} L/H</p>
-                    </div>
-                    <span className="shrink-0 text-caption text-text-muted">{formatTime(l.endTime)}</span>
-                  </li>
+                  <div key={l.id} className="row" style={{ justifyContent: "space-between" }}>
+                    <span className="small mono">{l.leakRateLph?.toFixed(2)} L/H</span>
+                    <span className="xsmall dim">{formatTime(l.endTime)}</span>
+                  </div>
                 ))}
-            </ul>
+            </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {currentOrganization && (
@@ -302,6 +338,6 @@ export default function StationDetailPage() {
           />
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -299,6 +299,24 @@
     },
     "alertsBanner": "{count} alertes actives",
     "viewAll": "Voir toutes →",
+    "kpis": {
+      "stock": { "label": "Stock station", "sub": "{pct} de {capacity}" },
+      "coverage": { "label": "Couverture minimale" },
+      "activeAlarms": { "label": "Alarmes actives" },
+      "pumps": { "label": "Pompes disponibles" },
+      "value": { "label": "Valeur du stock" }
+    },
+    "tabs": {
+      "overview": "Vue d'ensemble / cuves",
+      "pumps": "Pompes & pistolets",
+      "staff": "Personnel affecté",
+      "compliance": "Conformité réglementaire",
+      "atg": "Chaîne de mesure ATG"
+    },
+    "charts": {
+      "sales": { "title": "Quel est le rythme de vente de cette station ?", "subtitle": "Volume par jour et par produit — 30 jours" },
+      "restock": { "title": "Le stock de la station se reconstitue-t-il ?", "subtitle": "Les remontées verticales sont des livraisons ; les coupures sont des absences de mesure" }
+    },
     "tanksSection": {
       "title": "Cuves de la station",
       "activeCount": "({count} cuves actives)",
