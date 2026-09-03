@@ -173,18 +173,59 @@
     },
     "totalStations": "{count} stations au total",
     "empty": "Aucune station enregistrée",
+    "exploitationType": {
+      "propre": "En propre",
+      "franchise": "Franchise",
+      "revendeur_agree": "Revendeur agréé"
+    },
+    "freshness": {
+      "ok": "À jour",
+      "late": "En retard",
+      "old": "Indisponible",
+      "never": "Aucune mesure"
+    },
     "list": {
-      "pageTitle": "Stations du réseau",
-      "pageSubtitle": "{count} stations au total",
+      "pageTitle": "Stations",
+      "pageSubtitle": "{count} station(s) sur le périmètre",
+      "print": "Imprimer",
       "export": "Exporter",
       "add": "Ajouter une station",
-      "filterStatus": "Statut",
+      "filterStatus": "Tous statuts",
       "filterAll": "Toutes",
-      "searchPlaceholder": "Rechercher une station...",
+      "searchPlaceholder": "Nom, code…",
       "noResults": "Aucune station ne correspond à votre recherche",
       "clearSearch": "Effacer la recherche",
       "totalNetwork": "TOTAL RÉSEAU",
-      "viewDetail": "Voir le détail"
+      "viewDetail": "Voir le détail",
+      "network": {
+        "title": "Synthèse",
+        "stockTotal": "Stock total",
+        "avgFillRate": "Remplissage moyen",
+        "stockValue": "Valeur du stock",
+        "minCoverage": "Couverture minimale",
+        "stationsInAlert": "Stations en alerte",
+        "activeAlarms": "Alarmes actives",
+        "dataAvailability": "Disponibilité des données"
+      },
+      "map": {
+        "title": "Implantation du réseau",
+        "subtitle": "Positions géographiques réelles — cliquez sur une pastille pour ouvrir la station",
+        "noGeo": "Aucune coordonnée GPS enregistrée pour ces stations."
+      },
+      "table": {
+        "title": "Toutes les stations",
+        "subtitle": "Triées par criticité : les stations demandant une attention apparaissent en premier",
+        "station": "Station",
+        "type": "Type",
+        "tanks": "Cuves",
+        "stock": "Stock",
+        "fillRate": "Remplissage",
+        "value": "Valeur du stock",
+        "coverage": "Couverture min.",
+        "pumps": "Pompes",
+        "alarms": "Alarmes",
+        "data": "Données"
+      }
     },
     "createModal": {
       "title": "Ajouter une station",

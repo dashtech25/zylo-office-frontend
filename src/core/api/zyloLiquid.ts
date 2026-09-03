@@ -17,6 +17,7 @@ export interface Station {
   is24h: boolean;
   status: "active" | "maintenance" | "inactive";
   activeTankCount: number;
+  exploitationType: string;
 }
 
 export interface CreateStationInput {

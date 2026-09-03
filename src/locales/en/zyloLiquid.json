@@ -173,18 +173,59 @@
     },
     "totalStations": "{count} stations total",
     "empty": "No station registered",
+    "exploitationType": {
+      "propre": "Company-owned",
+      "franchise": "Franchise",
+      "revendeur_agree": "Authorized reseller"
+    },
+    "freshness": {
+      "ok": "Up to date",
+      "late": "Delayed",
+      "old": "Unavailable",
+      "never": "No measurement"
+    },
     "list": {
-      "pageTitle": "Network stations",
-      "pageSubtitle": "{count} stations total",
+      "pageTitle": "Stations",
+      "pageSubtitle": "{count} station(s) in scope",
+      "print": "Print",
       "export": "Export",
       "add": "Add a station",
-      "filterStatus": "Status",
+      "filterStatus": "All statuses",
       "filterAll": "All",
-      "searchPlaceholder": "Search a station...",
+      "searchPlaceholder": "Name, code…",
       "noResults": "No station matches your search",
       "clearSearch": "Clear search",
       "totalNetwork": "TOTAL NETWORK",
-      "viewDetail": "View detail"
+      "viewDetail": "View detail",
+      "network": {
+        "title": "Summary",
+        "stockTotal": "Total stock",
+        "avgFillRate": "Average fill rate",
+        "stockValue": "Stock value",
+        "minCoverage": "Minimum coverage",
+        "stationsInAlert": "Stations in alert",
+        "activeAlarms": "Active alarms",
+        "dataAvailability": "Data availability"
+      },
+      "map": {
+        "title": "Network footprint",
+        "subtitle": "Real geographic positions — click a marker to open the station",
+        "noGeo": "No GPS coordinates recorded for these stations."
+      },
+      "table": {
+        "title": "All stations",
+        "subtitle": "Sorted by criticality: stations needing attention appear first",
+        "station": "Station",
+        "type": "Type",
+        "tanks": "Tanks",
+        "stock": "Stock",
+        "fillRate": "Fill rate",
+        "value": "Stock value",
+        "coverage": "Min. coverage",
+        "pumps": "Pumps",
+        "alarms": "Alarms",
+        "data": "Data"
+      }
     },
     "createModal": {
       "title": "Add a station",

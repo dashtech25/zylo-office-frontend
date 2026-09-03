@@ -9,6 +9,7 @@ import {
   listFuelProducts,
   listStations,
   listTanks,
+  type Alert,
   type FuelProduct,
   type NetworkSummary,
   type Station,
@@ -46,6 +47,7 @@ export function useStationsList(organizationId: string | null) {
   const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
   const [statesByStation, setStatesByStation] = useState<Record<string, StationCurrentState>>({});
   const [activeAlertsCount, setActiveAlertsCount] = useState(0);
+  const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
 
   const load = useCallback(async () => {
@@ -60,7 +62,7 @@ export function useStationsList(organizationId: string | null) {
         listStations(organizationId),
         listTanks(organizationId),
         listFuelProducts(organizationId),
-        listAlerts(organizationId, { status: "active", limit: 1 }),
+        listAlerts(organizationId, { status: "active", limit: 100 }),
         getNetworkSummary(organizationId),
       ]);
       const activeStations = stationsPage.data.filter((s) => s.status === "active");
@@ -74,6 +76,7 @@ export function useStationsList(organizationId: string | null) {
       setFuelProducts(fuelProductsPage.data);
       setStatesByStation(byStation);
       setActiveAlertsCount(alertsPage.meta.total);
+      setActiveAlerts(alertsPage.data);
       setNetworkSummary(summary);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -159,6 +162,7 @@ export function useStationsList(organizationId: string | null) {
     stations,
     tanks,
     activeAlertsCount,
+    activeAlerts,
     stationsActiveCount,
     stationsOfflineCount,
     networkSummary,
