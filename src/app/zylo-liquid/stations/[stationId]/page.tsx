@@ -13,17 +13,9 @@ import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { AddTankModal } from "./_components/AddTankModal";
 import { CalibrationModal } from "./_components/CalibrationModal";
-import { TankCylinder } from "./_components/TankCylinder";
+import { TankCard } from "./_components/TankCard";
 import { CreateStationModal } from "../_components/CreateStationModal";
 import { useStationDetail } from "./_lib/useStationDetail";
-
-function freshnessTone(lastMeasurementAt: string | null): "ok" | "late" | "old" {
-  if (!lastMeasurementAt) return "old";
-  const ageMin = (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000;
-  if (ageMin <= 15) return "ok";
-  if (ageMin <= 60) return "late";
-  return "old";
-}
 
 /** Reconstruit la page détail d'une station selon la spécification détaillée
  * fournie par le commanditaire (ZoneA-D), remplaçant la version précédente
@@ -210,84 +202,18 @@ export default function StationDetailPage() {
           </div>
         ) : (
           <div className="stack" style={{ gap: 12 }}>
-            {activeTanks.map((tank) => {
-              const state = data.tankStateById.get(tank.id);
-              const product = data.fuelProductById.get(tank.fuelProductId);
-              const fresh = state ? freshnessTone(state.lastMeasurementAt) : "old";
-              const hasAlert = data.alerts.some((a) => a.tankId === tank.id);
-              const hasLeak = data.alerts.some((a) => a.tankId === tank.id && a.type === "leak");
-              const waterAlert = state?.waterHeightMm !== null && state?.waterHeightMm !== undefined && state.waterHeightMm >= tank.alertWaterMaxMm;
-              return (
-                <div
-                  key={tank.id}
-                  className="card"
-                  style={{ borderTop: hasLeak ? "3px solid var(--crit)" : hasAlert ? "3px solid var(--major)" : undefined }}
-                >
-                  <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
-                    <div className="row" style={{ gap: 8 }}>
-                      <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: state?.sensorStatus === "online" ? (fresh === "ok" ? "var(--ok)" : "var(--major)") : "var(--crit)",
-                        }}
-                      />
-                      <span className="strong">{tank.displayName}</span>
-                      <span className="badge b-info">
-                        <span className="dot" />
-                        {(product?.name ?? "?").toUpperCase()}
-                      </span>
-                      {waterAlert && (
-                        <span className="badge b-info" title={t("tankCard.waterAlert")}>
-                          {t("tankCard.waterAlert")}
-                        </span>
-                      )}
-                    </div>
-                    <div className="row" style={{ gap: 16 }}>
-                      <span className="xsmall dim">
-                        {t("tankCard.capacity")}: <span className="mono strong">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</span>
-                      </span>
-                      <span className="xsmall dim">
-                        {t("tankCard.product")}: <span className="strong">{product?.name ?? "?"}</span>
-                      </span>
-                      <span
-                        className="xsmall"
-                        style={{ color: fresh === "ok" ? "var(--ok)" : fresh === "late" ? "var(--major)" : "var(--crit)" }}
-                      >
-                        {state?.lastMeasurementAt ? t("tankCard.sync", { minutes: minutesAgo(state.lastMeasurementAt) }) : t("tankCard.syncOffline")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {state && state.heightMm !== null ? (
-                    <TankCylinder tank={tank} state={state} fuelColor={product?.displayColor ?? "var(--brand-deep)"} />
-                  ) : (
-                    <div className="empty" style={{ padding: 16 }}>
-                      <div className="e-t small">{t("tankCard.notCalculable")}</div>
-                    </div>
-                  )}
-
-                  <div className="row" style={{ justifyContent: "space-between", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
-                    <span
-                      className="xsmall"
-                      style={{ color: state?.sensorStatus === "online" ? "var(--ok)" : "var(--crit)" }}
-                    >
-                      ● {state?.sensorStatus === "online" ? t("tankCard.sensorConnected") : state?.sensorStatus === "offline" ? t("tankCard.sensorDisconnected") : t("tankCard.sensorNotConfigured")}
-                      {state?.lastMeasurementAt && `  ${t("tankCard.sync", { minutes: minutesAgo(state.lastMeasurementAt) })}`}
-                    </span>
-                    <div className="row" style={{ gap: 8 }}>
-                      <button type="button" className="btn sm" onClick={() => setCalibrationTank(tank)}>
-                        {t("tankCard.calibration")}
-                      </button>
-                      <Link className="btn sm primary" href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`}>
-                        {t("tankCard.detail")}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {activeTanks.map((tank) => (
+              <TankCard
+                key={tank.id}
+                tank={tank}
+                state={data.tankStateById.get(tank.id) ?? null}
+                fuelProduct={data.fuelProductById.get(tank.fuelProductId) ?? null}
+                calibrationPoints={data.calibrationByTank[tank.id] ?? []}
+                stationAlerts={data.alerts}
+                stationId={stationId}
+                onOpenCalibration={() => setCalibrationTank(tank)}
+              />
+            ))}
           </div>
         )}
       </div>

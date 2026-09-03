@@ -10,8 +10,10 @@ import {
   listDeliveries,
   listFuelProducts,
   listLeakEvents,
+  listTankCalibrationPoints,
   listTanks,
   type Alert,
+  type CalibrationPoint,
   type City,
   type Delivery,
   type FuelProduct,
@@ -32,6 +34,7 @@ export function useStationDetail(organizationId: string | null, stationId: strin
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [leakEvents, setLeakEvents] = useState<LeakEvent[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [calibrationByTank, setCalibrationByTank] = useState<Record<string, CalibrationPoint[]>>({});
 
   const load = useCallback(async () => {
     if (!organizationId) {
@@ -58,6 +61,14 @@ export function useStationDetail(organizationId: string | null, stationId: strin
       setLeakEvents(leakEventsPage.data);
       setCities(citiesPage.data);
 
+      const activeTanks = tanksPage.data.filter((tk) => tk.active);
+      const calibrationLists = await Promise.all(activeTanks.map((tk) => listTankCalibrationPoints(organizationId, tk.id).catch(() => [] as CalibrationPoint[])));
+      const calibrationMap: Record<string, CalibrationPoint[]> = {};
+      activeTanks.forEach((tk, i) => {
+        calibrationMap[tk.id] = calibrationLists[i];
+      });
+      setCalibrationByTank(calibrationMap);
+
       if (stationData.status === "active") {
         setCurrentState(await getStationCurrentState(organizationId, stationId));
       } else {
@@ -77,5 +88,20 @@ export function useStationDetail(organizationId: string | null, stationId: strin
   const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
   const tankStateById = new Map((currentState?.tanks ?? []).map((s) => [s.tankId, s]));
 
-  return { loading, error, station, tanks, fuelProducts, fuelProductById, currentState, tankStateById, alerts, deliveries, leakEvents, cities, reload: load };
+  return {
+    loading,
+    error,
+    station,
+    tanks,
+    fuelProducts,
+    fuelProductById,
+    currentState,
+    tankStateById,
+    alerts,
+    deliveries,
+    leakEvents,
+    cities,
+    calibrationByTank,
+    reload: load,
+  };
 }
