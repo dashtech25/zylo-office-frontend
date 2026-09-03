@@ -25,6 +25,33 @@
       "orga": "Organization",
       "roles": "Roles & permissions"
     },
+    "prices": {
+      "banner": "Administered price regime. Fuel sale prices are usually set by the regulator — it stays configurable here to keep history and value the stock.",
+      "addTitle": "Record a price",
+      "addSubtitle": "Writes a new row to the price history — a correction never overwrites a real change.",
+      "station": "Station",
+      "selectStation": "Select a station",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "currency": "Currency",
+      "sellPrice": "Sale price (per liter)",
+      "costPrice": "Cost price (per liter)",
+      "effectiveFrom": "Effective from",
+      "reason": "Change reason",
+      "create": "Save",
+      "historyTitle": "Price history",
+      "historySubtitle": "Most recent rows, across all stations and products",
+      "columns": {
+        "station": "Station",
+        "product": "Product",
+        "price": "Sale price",
+        "cost": "Cost price",
+        "margin": "Margin",
+        "effectiveFrom": "Effective since",
+        "future": "Scheduled"
+      },
+      "empty": "No price recorded."
+    },
     "fuelCatalog": {
       "banner": "The catalog is shared across the whole network. A fuel product is never deleted — it is removed from the catalog, which preserves all history.",
       "title": "Products",

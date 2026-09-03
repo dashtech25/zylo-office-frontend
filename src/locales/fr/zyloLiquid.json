@@ -25,6 +25,33 @@
       "orga": "Organisation",
       "roles": "Rôles & permissions"
     },
+    "prices": {
+      "banner": "Régime de prix administré. Le prix de vente des carburants est généralement fixé par l'autorité de régulation — il reste configurable ici pour tenir l'historique et valoriser le stock.",
+      "addTitle": "Enregistrer un prix",
+      "addSubtitle": "Écrit une nouvelle ligne dans l'historique des prix — une correction n'écrase jamais un changement réel.",
+      "station": "Station",
+      "selectStation": "Sélectionner une station",
+      "product": "Produit",
+      "selectProduct": "Sélectionner un produit",
+      "currency": "Devise",
+      "sellPrice": "Prix de vente (par litre)",
+      "costPrice": "Coût d'achat (par litre)",
+      "effectiveFrom": "En vigueur à partir de",
+      "reason": "Motif du changement",
+      "create": "Enregistrer",
+      "historyTitle": "Historique des prix",
+      "historySubtitle": "Dernières lignes enregistrées, toutes stations et produits confondus",
+      "columns": {
+        "station": "Station",
+        "product": "Produit",
+        "price": "Prix de vente",
+        "cost": "Coût d'achat",
+        "margin": "Marge",
+        "effectiveFrom": "En vigueur depuis",
+        "future": "Planifié"
+      },
+      "empty": "Aucun prix enregistré."
+    },
     "fuelCatalog": {
       "banner": "Le catalogue est partagé par tout le réseau. Un carburant n'est jamais supprimé — il est retiré du catalogue, ce qui préserve tout l'historique.",
       "title": "Produits",

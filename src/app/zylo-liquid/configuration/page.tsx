@@ -1,33 +1,87 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { useFuelCatalog } from "./_lib/useFuelCatalog";
+import { usePrices } from "./_lib/usePrices";
 
 const TABS = ["prix", "carburants", "seuils", "systeme", "orga", "roles"] as const;
+const REAL_TABS: (typeof TABS)[number][] = ["prix", "carburants"];
 
-/** Reproduit fidèlement l'onglet "Catalogue carburants" de pageConfiguration()
- * du prototype validé (prototype.html ~L6107) — le seul onglet dont les
- * champs correspondent tous à des colonnes réelles du modèle FuelProduct
- * (endpoint 1, déjà en production). Les 5 autres onglets restent
- * désactivés : "Prix carburant" nécessite le câblage frontend des
- * endpoints 14/15/16 (prochaine étape) ; "Seuils d'alerte"/"Configuration
- * réseau" du prototype sont des réglages globaux en pourcentage qui
- * n'existent pas au Niveau 1 (les seuils réels sont en mm, par cuve,
- * saisis à la création — endpoint 3) ; "Organisation"/"Rôles &
+/** Reproduit fidèlement les onglets "Catalogue carburants" et "Prix
+ * carburant" de pageConfiguration() du prototype validé (prototype.html
+ * ~L6107) — les seuls dont les champs correspondent à des données réelles
+ * (endpoints 1 et 15, déjà en production). Différence assumée pour "Prix" :
+ * le prototype montre un prix unique par produit, appliqué au réseau
+ * entier ; le modèle réel (`PriceHistory`) est par station + produit +
+ * période, avec devise résolue par station — reproduire un prix "global"
+ * inventerait une donnée qui n'existe pas. Le formulaire demande donc
+ * explicitement la station, conforme au modèle réel.
+ *
+ * Les 4 autres onglets restent désactivés : "Seuils d'alerte"/
+ * "Configuration réseau" du prototype sont des réglages globaux en
+ * pourcentage qui n'existent pas au Niveau 1 (seuils réels en mm, par
+ * cuve, saisis à la création — endpoint 3) ; "Organisation"/"Rôles &
  * permissions" relèvent du Core Zylo Office, pas de ce module. Voir
  * docs/modules/zylo-liquid/phase-3-prototype-compatibility-matrix.md. */
 export default function ConfigurationPage() {
   const t = useTranslations("zyloLiquid.configuration");
   const tCommon = useTranslations("common");
+  const format = useFormatter();
   const { currentOrganization } = useOrganization();
   const data = useFuelCatalog(currentOrganization?.id ?? null);
+  const prices = usePrices(currentOrganization?.id ?? null);
   const [tab, setTab] = useState<(typeof TABS)[number]>("carburants");
+
+  const [priceStationId, setPriceStationId] = useState("");
+  const [priceProductId, setPriceProductId] = useState("");
+  const [priceCurrencyId, setPriceCurrencyId] = useState("");
+  const [priceAmount, setPriceAmount] = useState("");
+  const [costAmount, setCostAmount] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState(() => new Date().toISOString().slice(0, 16));
+  const [priceReason, setPriceReason] = useState("");
+  const [creatingPrice, setCreatingPrice] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  function formatMoney(value: number, currencyCode: string): string {
+    try {
+      return format.number(value, { style: "currency", currency: currencyCode, maximumFractionDigits: 2 });
+    } catch {
+      return `${format.number(value, { maximumFractionDigits: 2 })} ${currencyCode}`;
+    }
+  }
+
+  async function handleCreatePrice() {
+    if (!priceStationId || !priceProductId || !priceAmount) {
+      setPriceError(t("fuelCatalog.codeRequired"));
+      return;
+    }
+    setCreatingPrice(true);
+    setPriceError(null);
+    try {
+      await prices.create({
+        stationId: priceStationId,
+        fuelProductId: priceProductId,
+        priceAmount: Number(priceAmount),
+        costAmount: costAmount ? Number(costAmount) : undefined,
+        currencyId: priceCurrencyId || undefined,
+        effectiveFrom: new Date(effectiveFrom).toISOString(),
+        changeReason: priceReason.trim() || undefined,
+      });
+      setPriceAmount("");
+      setCostAmount("");
+      setPriceReason("");
+    } catch (err) {
+      setPriceError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setCreatingPrice(false);
+    }
+  }
   const [savingId, setSavingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -114,10 +168,147 @@ export default function ConfigurationPage() {
         ))}
       </div>
 
-      {tab !== "carburants" ? (
+      {!REAL_TABS.includes(tab) ? (
         <div className="empty">
           <div className="e-t">{tCommon("states.comingSoon")}</div>
         </div>
+      ) : tab === "prix" ? (
+        <>
+          <div className="banner info">
+            <div>{t("prices.banner")}</div>
+          </div>
+
+          {priceError && (
+            <div className="banner crit">
+              <div>{priceError}</div>
+            </div>
+          )}
+          {prices.error && (
+            <div className="banner crit">
+              <div>{prices.error}</div>
+            </div>
+          )}
+
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h2>{t("prices.addTitle")}</h2>
+            <div className="ch-sub">{t("prices.addSubtitle")}</div>
+            <div className="sep" />
+            <div className="grid g3">
+              <div className="field">
+                <label className="f">{t("prices.station")}</label>
+                <select className="f" value={priceStationId} onChange={(e) => setPriceStationId(e.target.value)}>
+                  <option value="">{t("prices.selectStation")}</option>
+                  {prices.stations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label className="f">{t("prices.product")}</label>
+                <select className="f" value={priceProductId} onChange={(e) => setPriceProductId(e.target.value)}>
+                  <option value="">{t("prices.selectProduct")}</option>
+                  {data.products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label className="f">{t("prices.currency")}</label>
+                <select className="f" value={priceCurrencyId} onChange={(e) => setPriceCurrencyId(e.target.value)}>
+                  <option value="">—</option>
+                  {prices.currencies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label className="f">{t("prices.sellPrice")}</label>
+                <input className="f" type="number" step="1" value={priceAmount} onChange={(e) => setPriceAmount(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="f">{t("prices.costPrice")}</label>
+                <input className="f" type="number" step="1" value={costAmount} onChange={(e) => setCostAmount(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="f">{t("prices.effectiveFrom")}</label>
+                <input className="f" type="datetime-local" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
+              </div>
+            </div>
+            <div className="field">
+              <label className="f">{t("prices.reason")}</label>
+              <input className="f" value={priceReason} onChange={(e) => setPriceReason(e.target.value)} />
+            </div>
+            <button type="button" className="btn primary" onClick={handleCreatePrice} disabled={creatingPrice}>
+              <Plus width={16} height={16} strokeWidth={1.8} aria-hidden />
+              {t("prices.create")}
+            </button>
+          </div>
+
+          {prices.loading ? (
+            <PageSpinner label={tCommon("states.loading")} />
+          ) : (
+            <div className="card" style={{ padding: 0 }}>
+              <div style={{ padding: 16 }} className="card-head">
+                <div style={{ flex: 1 }}>
+                  <h2>{t("prices.historyTitle")}</h2>
+                  <div className="ch-sub">{t("prices.historySubtitle")}</div>
+                </div>
+              </div>
+              {prices.prices.length === 0 ? (
+                <div className="empty" style={{ margin: 16 }}>
+                  <div className="e-t">{t("prices.empty")}</div>
+                </div>
+              ) : (
+                <div className="tw" style={{ border: "none" }}>
+                  <table className="t">
+                    <thead>
+                      <tr>
+                        <th>{t("prices.columns.station")}</th>
+                        <th>{t("prices.columns.product")}</th>
+                        <th className="r">{t("prices.columns.price")}</th>
+                        <th className="r">{t("prices.columns.cost")}</th>
+                        <th className="r">{t("prices.columns.margin")}</th>
+                        <th>{t("prices.columns.effectiveFrom")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {prices.prices.map((entry) => {
+                        const station = prices.stations.find((s) => s.id === entry.stationId);
+                        const product = data.products.find((p) => p.id === entry.fuelProductId);
+                        const currency = prices.currencies.find((c) => c.id === entry.currencyId);
+                        const code = currency?.code ?? "";
+                        return (
+                          <tr key={entry.id}>
+                            <td>{station?.name ?? "—"}</td>
+                            <td>{product?.name ?? "—"}</td>
+                            <td className="r mono">{formatMoney(entry.priceAmount, code)}</td>
+                            <td className="r mono">{entry.costAmount === null ? "—" : formatMoney(entry.costAmount, code)}</td>
+                            <td className="r mono">{entry.costAmount === null ? "—" : formatMoney(entry.priceAmount - entry.costAmount, code)}</td>
+                            <td>
+                              {format.dateTime(new Date(entry.effectiveFrom), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              {entry.isFuture && (
+                                <span className="badge b-pending" style={{ marginLeft: 6 }}>
+                                  <span className="dot" />
+                                  {t("prices.columns.future")}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       ) : (
         <>
           <div className="banner info">

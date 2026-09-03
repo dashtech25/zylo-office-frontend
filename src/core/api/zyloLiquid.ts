@@ -369,3 +369,70 @@ export function listLeakEvents(organizationId: string, params: { stationId?: str
   search.set("limit", String(params.limit ?? 10));
   return apiFetch<Page<LeakEvent>>(`/zylo-liquid/leak-events?${search.toString()}`, withOrg(organizationId));
 }
+
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+  decimalPlaces: number;
+  active: boolean;
+}
+
+export function listCurrencies(organizationId: string, limit = 50): Promise<Page<Currency>> {
+  return apiFetch<Page<Currency>>(`/currencies?limit=${limit}`, withOrg(organizationId));
+}
+
+export interface PriceHistoryEntry {
+  id: string;
+  stationId: string;
+  fuelProductId: string;
+  currencyId: string;
+  priceAmount: number;
+  costAmount: number | null;
+  effectiveFrom: string;
+  changeReason: string | null;
+  createdBy: string;
+  isFuture: boolean;
+}
+
+export interface CreatePriceHistoryInput {
+  stationId: string;
+  fuelProductId: string;
+  priceAmount: number;
+  costAmount?: number;
+  currencyId?: string;
+  effectiveFrom: string;
+  changeReason?: string;
+}
+
+export function listPrices(
+  organizationId: string,
+  params: { stationId?: string; fuelProductId?: string; limit?: number } = {}
+): Promise<Page<PriceHistoryEntry>> {
+  const search = new URLSearchParams();
+  if (params.stationId) search.set("stationId", params.stationId);
+  if (params.fuelProductId) search.set("fuelProductId", params.fuelProductId);
+  search.set("limit", String(params.limit ?? 50));
+  return apiFetch<Page<PriceHistoryEntry>>(`/zylo-liquid/prices?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createPriceHistory(organizationId: string, data: CreatePriceHistoryInput): Promise<PriceHistoryEntry> {
+  return apiFetch<PriceHistoryEntry>("/zylo-liquid/prices", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function updatePriceHistory(
+  organizationId: string,
+  priceId: string,
+  data: { priceAmount?: number; costAmount?: number; currencyId?: string; changeReason?: string }
+): Promise<PriceHistoryEntry> {
+  return apiFetch<PriceHistoryEntry>(`/zylo-liquid/prices/${priceId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}

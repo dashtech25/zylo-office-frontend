@@ -96,7 +96,7 @@ const NAV: NavGroup[] = [
   {
     titleKey: "nav.sections.systeme",
     entries: [
-      { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon, comingSoon: true },
+      { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon },
       { labelKey: "nav.items.utilisateurs", href: "/zylo-liquid/utilisateurs", icon: Users, comingSoon: true },
       { labelKey: "nav.items.sante", href: "/zylo-liquid/sante", icon: Activity, comingSoon: true },
       { labelKey: "nav.items.journalAudit", href: "/zylo-liquid/journal-audit", icon: ClipboardList, comingSoon: true },
