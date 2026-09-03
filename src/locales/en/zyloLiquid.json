@@ -8,9 +8,36 @@
   "breadcrumbStations": "Stations list",
   "breadcrumbAlerts": "Alerts",
   "breadcrumbTanks": "Tanks & ATG",
+  "breadcrumbDeliveries": "Deliveries",
   "backToOffice": "Back to Zylo Office",
   "sync": {
     "label": "Synced {minutes} min ago"
+  },
+  "deliveries": {
+    "pageTitle": "Deliveries",
+    "pageSubtitle": "{count} reception(s) automatically detected — bill-of-lading comparison unavailable at Level 1",
+    "kpis": {
+      "volumeReceived": { "label": "Volume received", "sub": "{count} delivery(ies) detected" },
+      "gapCumulative": { "label": "Cumulative bill / measurement gap" },
+      "complianceRate": { "label": "Compliance rate" },
+      "financialImpact": { "label": "Financial impact of discrepancies" }
+    },
+    "suppliers": { "title": "Supplier reliability" },
+    "chart": { "title": "At what pace is the network resupplied?", "subtitle": "Volume detected per day (liters)" },
+    "table": {
+      "title": "Detected receptions log",
+      "subtitle": "Delivery identified automatically by a level jump — no manual entry at Level 1",
+      "date": "Date",
+      "station": "Station",
+      "tank": "Tank / product",
+      "supplier": "Supplier",
+      "declared": "Declared",
+      "received": "Received (measured)",
+      "gap": "Gap",
+      "impact": "Impact",
+      "status": "Status"
+    },
+    "empty": "No delivery detected in this period."
   },
   "tanksNetwork": {
     "pageTitle": "Tanks & ATG",

@@ -69,7 +69,7 @@ const NAV: NavGroup[] = [
     entries: [
       { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Building2 },
       { labelKey: "nav.items.cuves", href: "/zylo-liquid/cuves", icon: Gauge },
-      { labelKey: "nav.items.deliveries", icon: Truck, comingSoon: true },
+      { labelKey: "nav.items.deliveries", href: "/zylo-liquid/livraisons", icon: Truck },
       { labelKey: "nav.items.approvisionnement", icon: Package, comingSoon: true },
       { labelKey: "nav.items.reconciliation", icon: Scale, comingSoon: true },
     ],
@@ -112,6 +112,7 @@ const BREADCRUMB_BY_PATH: Record<string, string> = {
   "/zylo-liquid/stations": "breadcrumbStations",
   "/zylo-liquid/alerts": "breadcrumbAlerts",
   "/zylo-liquid/cuves": "breadcrumbTanks",
+  "/zylo-liquid/livraisons": "breadcrumbDeliveries",
 };
 
 export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {

@@ -8,9 +8,36 @@
   "breadcrumbStations": "Liste des stations",
   "breadcrumbAlerts": "Alertes",
   "breadcrumbTanks": "Cuves & ATG",
+  "breadcrumbDeliveries": "Livraisons",
   "backToOffice": "Retour Zylo Office",
   "sync": {
     "label": "Synchronisé il y a {minutes} min"
+  },
+  "deliveries": {
+    "pageTitle": "Livraisons",
+    "pageSubtitle": "{count} réception(s) détectée(s) automatiquement — comparatif bon de livraison indisponible au Niveau 1",
+    "kpis": {
+      "volumeReceived": { "label": "Volume reçu", "sub": "{count} livraison(s) détectée(s)" },
+      "gapCumulative": { "label": "Écart cumulé bon / mesure" },
+      "complianceRate": { "label": "Taux de conformité" },
+      "financialImpact": { "label": "Impact financier des écarts" }
+    },
+    "suppliers": { "title": "Fiabilité par fournisseur" },
+    "chart": { "title": "À quel rythme le réseau est-il réapprovisionné ?", "subtitle": "Volume détecté par jour (litres)" },
+    "table": {
+      "title": "Journal des réceptions détectées",
+      "subtitle": "Livraison identifiée automatiquement par variation de niveau — aucune saisie manuelle au Niveau 1",
+      "date": "Date",
+      "station": "Station",
+      "tank": "Cuve / produit",
+      "supplier": "Fournisseur",
+      "declared": "Déclaré",
+      "received": "Reçu (mesuré)",
+      "gap": "Écart",
+      "impact": "Impact",
+      "status": "Statut"
+    },
+    "empty": "Aucune livraison détectée sur cette période."
   },
   "tanksNetwork": {
     "pageTitle": "Cuves & ATG",
