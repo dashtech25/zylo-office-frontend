@@ -30,6 +30,7 @@
     "notifications": "Notifications",
     "messages": "Messages",
     "account": "Account",
-    "logout": "Log out"
+    "logout": "Log out",
+    "menu": "Menu"
   }
 }

@@ -30,6 +30,7 @@
     "notifications": "Notifications",
     "messages": "Messages",
     "account": "Compte",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "menu": "Menu"
   }
 }

@@ -1,5 +1,9 @@
 {
   "appName": "Zylo Liquid",
+  "appSub": "Supervision ATG",
+  "sbFoot": "Données réelles — API Zylo Liquid",
+  "comingSoonTooltip": "Disponible dans une prochaine phase",
+  "allNetwork": "Tout le réseau",
   "breadcrumb": "Tableau de bord réseau",
   "breadcrumbStations": "Liste des stations",
   "breadcrumbAlerts": "Alertes",
@@ -9,18 +13,37 @@
   },
   "nav": {
     "sections": {
-      "supervision": "Supervision",
-      "history": "Historiques",
-      "configuration": "Configuration"
+      "pilotage": "Pilotage",
+      "exploitation": "Exploitation",
+      "commerce": "Commerce & caisse",
+      "technique": "Technique & conformité",
+      "systeme": "Système"
     },
     "items": {
       "dashboard": "Tableau de bord",
+      "alerts": "Centre d'alertes",
+      "rapports": "Rapports & KPI",
       "stations": "Stations",
-      "alerts": "Alertes",
+      "cuves": "Cuves & ATG",
       "deliveries": "Livraisons",
+      "approvisionnement": "Approvisionnement",
+      "reconciliation": "Réconciliation de stock",
+      "ventes": "Journal des ventes",
+      "shifts": "Shifts",
+      "caisse": "Caisse du jour",
+      "caisseEcarts": "Écarts de caisse",
+      "credit": "Clients à crédit",
+      "maintenance": "Maintenance",
+      "securite": "Sécurité & HSE",
+      "reglementaire": "Réglementaire",
+      "audit": "Audit & inspections",
+      "configuration": "Configuration",
+      "utilisateurs": "Utilisateurs & accès",
+      "sante": "Santé du système",
+      "journalAudit": "Journal d'audit",
+      "hypotheses": "Hypothèses & non-déterminés",
       "leaks": "Fuites",
       "measurements": "Mesures",
-      "network": "Mon réseau",
       "settings": "Paramètres"
     }
   },
