@@ -3,6 +3,7 @@
   "appSub": "ATG Supervision",
   "sbFoot": "Real data — Zylo Liquid API",
   "comingSoonTooltip": "Available in a future phase",
+  "comingSoonPageSubtitle": "This feature depends on data that Zylo Liquid Level 1 does not provide yet (tank telemetry only) — it will be enabled in a future phase.",
   "allNetwork": "Whole network",
   "breadcrumb": "Network dashboard",
   "breadcrumbStations": "Stations list",

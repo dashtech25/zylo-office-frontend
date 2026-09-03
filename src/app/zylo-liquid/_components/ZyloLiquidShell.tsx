@@ -61,7 +61,7 @@ const NAV: NavGroup[] = [
     entries: [
       { labelKey: "nav.items.dashboard", href: "/zylo-liquid", icon: Home },
       { labelKey: "nav.items.alerts", href: "/zylo-liquid/alerts", icon: Bell },
-      { labelKey: "nav.items.rapports", icon: Activity, comingSoon: true },
+      { labelKey: "nav.items.rapports", href: "/zylo-liquid/rapports", icon: Activity, comingSoon: true },
     ],
   },
   {
@@ -70,43 +70,45 @@ const NAV: NavGroup[] = [
       { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Building2 },
       { labelKey: "nav.items.cuves", href: "/zylo-liquid/cuves", icon: Gauge },
       { labelKey: "nav.items.deliveries", href: "/zylo-liquid/livraisons", icon: Truck },
-      { labelKey: "nav.items.approvisionnement", icon: Package, comingSoon: true },
-      { labelKey: "nav.items.reconciliation", icon: Scale, comingSoon: true },
+      { labelKey: "nav.items.approvisionnement", href: "/zylo-liquid/approvisionnement", icon: Package, comingSoon: true },
+      { labelKey: "nav.items.reconciliation", href: "/zylo-liquid/reconciliation", icon: Scale, comingSoon: true },
     ],
   },
   {
     titleKey: "nav.sections.commerce",
     entries: [
-      { labelKey: "nav.items.ventes", icon: Fuel, comingSoon: true },
-      { labelKey: "nav.items.shifts", icon: Users, comingSoon: true },
-      { labelKey: "nav.items.caisse", icon: Banknote, comingSoon: true },
-      { labelKey: "nav.items.caisseEcarts", icon: Scale, comingSoon: true },
-      { labelKey: "nav.items.credit", icon: Users, comingSoon: true },
+      { labelKey: "nav.items.ventes", href: "/zylo-liquid/ventes", icon: Fuel, comingSoon: true },
+      { labelKey: "nav.items.shifts", href: "/zylo-liquid/shifts", icon: Users, comingSoon: true },
+      { labelKey: "nav.items.caisse", href: "/zylo-liquid/caisse", icon: Banknote, comingSoon: true },
+      { labelKey: "nav.items.caisseEcarts", href: "/zylo-liquid/caisse-ecarts", icon: Scale, comingSoon: true },
+      { labelKey: "nav.items.credit", href: "/zylo-liquid/credit", icon: Users, comingSoon: true },
     ],
   },
   {
     titleKey: "nav.sections.technique",
     entries: [
-      { labelKey: "nav.items.maintenance", icon: Wrench, comingSoon: true },
-      { labelKey: "nav.items.securite", icon: ShieldCheck, comingSoon: true },
-      { labelKey: "nav.items.reglementaire", icon: FileText, comingSoon: true },
-      { labelKey: "nav.items.audit", icon: ClipboardList, comingSoon: true },
+      { labelKey: "nav.items.maintenance", href: "/zylo-liquid/maintenance", icon: Wrench, comingSoon: true },
+      { labelKey: "nav.items.securite", href: "/zylo-liquid/securite", icon: ShieldCheck, comingSoon: true },
+      { labelKey: "nav.items.reglementaire", href: "/zylo-liquid/reglementaire", icon: FileText, comingSoon: true },
+      { labelKey: "nav.items.audit", href: "/zylo-liquid/audit", icon: ClipboardList, comingSoon: true },
     ],
   },
   {
     titleKey: "nav.sections.systeme",
     entries: [
-      { labelKey: "nav.items.configuration", icon: SettingsIcon, comingSoon: true },
-      { labelKey: "nav.items.utilisateurs", icon: Users, comingSoon: true },
-      { labelKey: "nav.items.sante", icon: Activity, comingSoon: true },
-      { labelKey: "nav.items.journalAudit", icon: ClipboardList, comingSoon: true },
-      { labelKey: "nav.items.hypotheses", icon: BookOpen, comingSoon: true },
+      { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon, comingSoon: true },
+      { labelKey: "nav.items.utilisateurs", href: "/zylo-liquid/utilisateurs", icon: Users, comingSoon: true },
+      { labelKey: "nav.items.sante", href: "/zylo-liquid/sante", icon: Activity, comingSoon: true },
+      { labelKey: "nav.items.journalAudit", href: "/zylo-liquid/journal-audit", icon: ClipboardList, comingSoon: true },
+      { labelKey: "nav.items.hypotheses", href: "/zylo-liquid/hypotheses", icon: BookOpen, comingSoon: true },
     ],
   },
 ];
 
-/** Une entrée par route réelle du module — la clé de traduction du fil
- * d'ariane suit le chemin le plus long qui préfixe l'URL courante. */
+/** Fil d'ariane pour les pages qui ont un libellé propre, distinct de leur
+ * entrée de sidebar (ex. sous-pages de détail). Pour toute autre route, le
+ * libellé est dérivé directement de `NAV` (une seule source de vérité pour
+ * les libellés de page, cohérent avec la sidebar). */
 const BREADCRUMB_BY_PATH: Record<string, string> = {
   "/zylo-liquid": "breadcrumb",
   "/zylo-liquid/stations": "breadcrumbStations",
@@ -115,6 +117,10 @@ const BREADCRUMB_BY_PATH: Record<string, string> = {
   "/zylo-liquid/livraisons": "breadcrumbDeliveries",
 };
 
+const NAV_LABEL_BY_HREF: Record<string, string> = Object.fromEntries(
+  NAV.flatMap((group) => group.entries).filter((entry): entry is NavEntry & { href: string } => !!entry.href).map((entry) => [entry.href, entry.labelKey])
+);
+
 export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("zyloLiquid");
   const tCommon = useTranslations("common");
@@ -122,10 +128,11 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [navOpen, setNavOpen] = useState(false);
 
-  const breadcrumbKey =
+  const breadcrumbPath =
     Object.keys(BREADCRUMB_BY_PATH)
       .filter((path) => pathname.startsWith(path))
       .sort((a, b) => b.length - a.length)[0] ?? "/zylo-liquid";
+  const breadcrumbLabel = NAV_LABEL_BY_HREF[pathname] ? t(NAV_LABEL_BY_HREF[pathname]) : t(BREADCRUMB_BY_PATH[breadcrumbPath] ?? "breadcrumb");
 
   return (
     <div className="zl-shell shell">
@@ -152,7 +159,7 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
                 const label = t(entry.labelKey);
                 const Icon = entry.icon;
                 const active = entry.href === "/zylo-liquid" ? pathname === "/zylo-liquid" : Boolean(entry.href && pathname?.startsWith(entry.href));
-                if (entry.comingSoon || !entry.href) {
+                if (!entry.href) {
                   return (
                     <button key={entry.labelKey} type="button" className="sb-link" disabled title={t("comingSoonTooltip")} style={{ opacity: 0.45, cursor: "not-allowed" }}>
                       <Icon className="ic" width={17} height={17} strokeWidth={1.8} aria-hidden />
@@ -165,10 +172,12 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
                     key={entry.labelKey}
                     href={entry.href}
                     className={`sb-link${active ? " active" : ""}`}
+                    title={entry.comingSoon ? t("comingSoonTooltip") : undefined}
                     onClick={() => setNavOpen(false)}
                   >
                     <Icon className="ic" width={17} height={17} strokeWidth={1.8} aria-hidden />
                     <span>{label}</span>
+                    {entry.comingSoon && <span className="cnt">{tCommon("states.comingSoon")}</span>}
                   </Link>
                 );
               })}
@@ -189,7 +198,7 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
               <ChevronRight width={12} height={12} strokeWidth={1.8} aria-hidden />
             </span>
             <span className="strong" style={{ color: "var(--ink)" }}>
-              {t(BREADCRUMB_BY_PATH[breadcrumbKey])}
+              {breadcrumbLabel}
             </span>
           </div>
           <div className="spacer" />

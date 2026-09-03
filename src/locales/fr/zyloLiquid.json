@@ -3,6 +3,7 @@
   "appSub": "Supervision ATG",
   "sbFoot": "Données réelles — API Zylo Liquid",
   "comingSoonTooltip": "Disponible dans une prochaine phase",
+  "comingSoonPageSubtitle": "Cette fonctionnalité dépend de données que le Niveau 1 de Zylo Liquid ne fournit pas encore (télémétrie de cuves uniquement) — elle sera activée dans une prochaine phase.",
   "allNetwork": "Tout le réseau",
   "breadcrumb": "Tableau de bord réseau",
   "breadcrumbStations": "Liste des stations",
