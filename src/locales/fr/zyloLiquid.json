@@ -194,6 +194,99 @@
     "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
     "confirmReactivate": "Réactiver cette station ?"
   },
+  "tankVisual": {
+    "modes": {
+      "switcherLabel": "Mode de représentation de la cuve",
+      "vertical": { "label": "Jauge verticale", "desc": "Colonne proportionnelle au volume mesuré." },
+      "horizontal": { "label": "Cuve horizontale", "desc": "Niveau physique mesuré ; volume calculé par la table de calibration." },
+      "anneau": { "label": "Composition", "desc": "Répartition volumétrique carburant / eau / espace disponible." },
+      "compact": { "label": "Barre compacte", "desc": "Comparaison rapide de plusieurs cuves." }
+    },
+    "figures": {
+      "volume": "Volume mesuré",
+      "capacity": "Capacité totale",
+      "fillRate": "Remplissage",
+      "water": "Eau détectée",
+      "available": "Espace disponible",
+      "temperature": "Température",
+      "value": "Valeur du stock"
+    },
+    "legend": {
+      "normal": "Carburant — niveau normal",
+      "threshold": "Seuil atteint",
+      "critical": "Seuil critique atteint",
+      "water": "Eau en fond de cuve",
+      "available": "Espace disponible"
+    }
+  },
+  "tankDetail": {
+    "backLink": "← {station}",
+    "subtitle": "Capacité {capacity} · hauteur {height} mm",
+    "kpis": {
+      "volume": "Volume mesuré",
+      "available": "Espace disponible",
+      "water": "Eau détectée",
+      "value": "Valeur du stock",
+      "temperature": "Température"
+    },
+    "sensorStatus": {
+      "online": "Sonde connectée",
+      "offline": "Sonde déconnectée",
+      "not_configured": "Sonde non configurée"
+    },
+    "tabs": {
+      "gauge": "Jauge & composition",
+      "history": "Historique de mesure",
+      "alerts": "Alarmes ({count})",
+      "technical": "Fiche technique"
+    },
+    "composition": {
+      "title": "Composition du volume",
+      "fuel": "Carburant",
+      "water": "Eau",
+      "available": "Espace disponible"
+    },
+    "allModes": {
+      "title": "Les quatre représentations, côte à côte",
+      "subtitle": "Une même donnée admet plusieurs représentations légitimes ; aucune n'est imposée."
+    },
+    "history": {
+      "title": "Volume mesuré dans le temps",
+      "subtitle": "{count} mesures affichées",
+      "empty": "Pas assez de mesures pour tracer un historique"
+    },
+    "alerts": {
+      "empty": "Aucune alarme sur cette cuve",
+      "status": {
+        "active": "Active",
+        "resolved": "Résolue"
+      }
+    },
+    "technical": {
+      "characteristics": "Caractéristiques de la cuve",
+      "product": "Produit",
+      "capacity": "Capacité nominale",
+      "height": "Hauteur physique",
+      "calibrationPoints": "Points de calibration",
+      "dataSource": "Source de la mesure",
+      "thresholds": "Seuils configurés",
+      "thresholdName": "Seuil",
+      "thresholdValue": "Hauteur",
+      "thresholdHigh": "Niveau haut",
+      "thresholdPreAlarm": "Pré-alarme niveau haut",
+      "thresholdLow": "Niveau bas",
+      "thresholdWater": "Eau maximale",
+      "sensors": "Capteurs associés",
+      "noSensor": "Aucun capteur associé à cette cuve",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "measurementType": {
+        "product_level": "Niveau carburant",
+        "water_level": "Niveau eau",
+        "temperature": "Température"
+      }
+    }
+  },
   "addTank": {
     "title": "Ajouter une cuve",
     "submit": "Créer la cuve",

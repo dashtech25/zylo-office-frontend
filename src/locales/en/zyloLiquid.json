@@ -194,6 +194,99 @@
     "confirmDeactivate": "Deactivate this station? Its history stays available.",
     "confirmReactivate": "Reactivate this station?"
   },
+  "tankVisual": {
+    "modes": {
+      "switcherLabel": "Tank representation mode",
+      "vertical": { "label": "Vertical gauge", "desc": "Column proportional to the measured volume." },
+      "horizontal": { "label": "Horizontal tank", "desc": "Measured physical level; volume computed from the calibration table." },
+      "anneau": { "label": "Composition", "desc": "Volumetric breakdown: fuel / water / available space." },
+      "compact": { "label": "Compact bar", "desc": "Quick comparison across several tanks." }
+    },
+    "figures": {
+      "volume": "Measured volume",
+      "capacity": "Total capacity",
+      "fillRate": "Fill rate",
+      "water": "Water detected",
+      "available": "Available space",
+      "temperature": "Temperature",
+      "value": "Stock value"
+    },
+    "legend": {
+      "normal": "Fuel — normal level",
+      "threshold": "Threshold reached",
+      "critical": "Critical threshold reached",
+      "water": "Water at tank bottom",
+      "available": "Available space"
+    }
+  },
+  "tankDetail": {
+    "backLink": "← {station}",
+    "subtitle": "Capacity {capacity} · height {height} mm",
+    "kpis": {
+      "volume": "Measured volume",
+      "available": "Available space",
+      "water": "Water detected",
+      "value": "Stock value",
+      "temperature": "Temperature"
+    },
+    "sensorStatus": {
+      "online": "Sensor connected",
+      "offline": "Sensor disconnected",
+      "not_configured": "Sensor not configured"
+    },
+    "tabs": {
+      "gauge": "Gauge & composition",
+      "history": "Measurement history",
+      "alerts": "Alerts ({count})",
+      "technical": "Technical sheet"
+    },
+    "composition": {
+      "title": "Volume composition",
+      "fuel": "Fuel",
+      "water": "Water",
+      "available": "Available space"
+    },
+    "allModes": {
+      "title": "The four representations, side by side",
+      "subtitle": "The same data admits several legitimate representations; none is imposed."
+    },
+    "history": {
+      "title": "Measured volume over time",
+      "subtitle": "{count} measurements shown",
+      "empty": "Not enough measurements to draw a history"
+    },
+    "alerts": {
+      "empty": "No alert on this tank",
+      "status": {
+        "active": "Active",
+        "resolved": "Resolved"
+      }
+    },
+    "technical": {
+      "characteristics": "Tank characteristics",
+      "product": "Product",
+      "capacity": "Nominal capacity",
+      "height": "Physical height",
+      "calibrationPoints": "Calibration points",
+      "dataSource": "Measurement source",
+      "thresholds": "Configured thresholds",
+      "thresholdName": "Threshold",
+      "thresholdValue": "Height",
+      "thresholdHigh": "High level",
+      "thresholdPreAlarm": "High level pre-alarm",
+      "thresholdLow": "Low level",
+      "thresholdWater": "Maximum water",
+      "sensors": "Associated sensors",
+      "noSensor": "No sensor associated with this tank",
+      "active": "Active",
+      "inactive": "Inactive",
+      "measurementType": {
+        "product_level": "Fuel level",
+        "water_level": "Water level",
+        "temperature": "Temperature"
+      }
+    }
+  },
   "addTank": {
     "title": "Add a tank",
     "submit": "Create tank",

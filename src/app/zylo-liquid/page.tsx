@@ -199,7 +199,12 @@ export default function ZyloLiquidDashboardPage() {
               ) : (
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="flex-1">
-                    <TrendChart points={data.chartPoints} formatVolume={formatVolume} formatDate={formatDateShort} seriesLabel={t("chart.seriesLabel")} />
+                    <TrendChart
+                      points={data.chartPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
+                      formatValue={formatVolume}
+                      formatDate={formatDateShort}
+                      seriesLabel={t("chart.seriesLabel")}
+                    />
                   </div>
                   <div className="flex shrink-0 flex-col gap-3 sm:w-40">
                     <div>

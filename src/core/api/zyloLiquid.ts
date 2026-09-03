@@ -83,6 +83,15 @@ export interface TankSensorMapping {
   active: boolean;
 }
 
+export interface TankMeasurement {
+  id: number;
+  measuredAt: string;
+  rawValue: number;
+  unit: string | null;
+  volumeLiters: number | null;
+  isCorrection: boolean;
+}
+
 export interface TankCurrentState {
   tankId: string;
   tankNumber: number;
@@ -209,6 +218,39 @@ export function createTank(organizationId: string, data: CreateTankInput): Promi
     organizationId,
     body: JSON.stringify(data),
   });
+}
+
+export function getTank(organizationId: string, tankId: string): Promise<Tank> {
+  return apiFetch<Tank>(`/zylo-liquid/tanks/${tankId}`, withOrg(organizationId));
+}
+
+export function updateTank(organizationId: string, tankId: string, data: Partial<CreateTankInput>): Promise<Tank> {
+  return apiFetch<Tank>(`/zylo-liquid/tanks/${tankId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function getTankCurrentState(organizationId: string, tankId: string): Promise<TankCurrentState> {
+  return apiFetch<TankCurrentState>(`/zylo-liquid/tanks/${tankId}/current-state`, withOrg(organizationId));
+}
+
+export function listTankMeasurements(
+  organizationId: string,
+  tankId: string,
+  params: { fromDate?: string; toDate?: string; limit?: number } = {}
+): Promise<Page<TankMeasurement>> {
+  const search = new URLSearchParams();
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
+  search.set("limit", String(params.limit ?? 200));
+  return apiFetch<Page<TankMeasurement>>(`/zylo-liquid/tanks/${tankId}/measurements?${search.toString()}`, withOrg(organizationId));
+}
+
+export function listTankSensorMappings(organizationId: string, tankId: string): Promise<Page<TankSensorMapping>> {
+  const search = new URLSearchParams({ tankId, limit: "20" });
+  return apiFetch<Page<TankSensorMapping>>(`/zylo-liquid/tank-sensor-mappings?${search.toString()}`, withOrg(organizationId));
 }
 
 export function listTankCalibrationPoints(organizationId: string, tankId: string): Promise<CalibrationPoint[]> {

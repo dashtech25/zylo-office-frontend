@@ -11,9 +11,9 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Button, Card, EmptyState } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
+import { ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "../../_components/TankVisual";
 import { CreateStationModal } from "../_components/CreateStationModal";
 import { AddTankModal } from "./_components/AddTankModal";
-import { TankGauge } from "./_components/TankGauge";
 import { useStationDetail } from "./_lib/useStationDetail";
 
 export default function StationDetailPage() {
@@ -31,6 +31,7 @@ export default function StationDetailPage() {
   const [addTankOpen, setAddTankOpen] = useState(false);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mode, setMode] = useState<TankVisualMode>("horizontal");
 
   function formatVolume(liters: number): string {
     return `${format.number(Math.round(liters))} L`;
@@ -152,14 +153,17 @@ export default function StationDetailPage() {
       )}
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-h2 font-semibold text-text">
             {t("tanksSection.title")} <span className="text-body-sm font-normal text-text-muted">{t("tanksSection.activeCount", { count: activeTanks.length })}</span>
           </h2>
-          <Button size="sm" onClick={() => setAddTankOpen(true)}>
-            <Plus className="size-4" aria-hidden />
-            {t("tanksSection.addTank")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ModeSwitcher mode={mode} onChange={setMode} />
+            <Button size="sm" onClick={() => setAddTankOpen(true)}>
+              <Plus className="size-4" aria-hidden />
+              {t("tanksSection.addTank")}
+            </Button>
+          </div>
         </div>
 
         {activeTanks.length === 0 ? (
@@ -178,21 +182,14 @@ export default function StationDetailPage() {
                         {product?.name ?? "?"}
                       </Badge>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex flex-1 items-center justify-center">
                       {state ? (
                         state.volumeLiters === null ? (
-                          <p className="flex h-36 items-center justify-center rounded-card border border-dashed border-border text-body-sm text-text-muted">
+                          <p className="flex h-36 w-full items-center justify-center rounded-card border border-dashed border-border text-body-sm text-text-muted">
                             {t("tankCard.notCalculable")}
                           </p>
                         ) : (
-                          <TankGauge
-                            tank={tank}
-                            state={state}
-                            fuelProductName={product?.name ?? "?"}
-                            displayColor={product?.displayColor ?? null}
-                            formatVolume={formatVolume}
-                            labels={{ empty: t("gauge.empty"), fuel: t("gauge.fuel"), water: t("gauge.water") }}
-                          />
+                          <TankVisual tank={tank} state={state} mode={mode} fuelColor={product?.displayColor} />
                         )
                       ) : (
                         <PageSpinner label={tCommon("states.loading")} />
@@ -213,6 +210,12 @@ export default function StationDetailPage() {
                       {state?.monetaryValue !== null && state?.currencyCode && (
                         <p className="font-semibold tabular-nums text-text">{formatMoney(state.monetaryValue, state.currencyCode)}</p>
                       )}
+                      <Link
+                        href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`}
+                        className="mt-1 inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
+                      >
+                        {t("tankCard.detail")}
+                      </Link>
                     </div>
                   </div>
                 </Card>
@@ -220,6 +223,9 @@ export default function StationDetailPage() {
             })}
           </div>
         )}
+        <div className="mt-3">
+          <TankLegend />
+        </div>
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

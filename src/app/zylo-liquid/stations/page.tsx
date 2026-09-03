@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Circle, Download, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
@@ -30,6 +31,7 @@ export default function StationsListPage() {
   const tStatus = useTranslations("zyloLiquid.statusBar");
   const tCommon = useTranslations("common");
   const format = useFormatter();
+  const router = useRouter();
   const { currentOrganization } = useOrganization();
   const data = useStationsList(currentOrganization?.id ?? null);
 
@@ -148,9 +150,17 @@ export default function StationsListPage() {
                 </thead>
                 <tbody>
                   {filteredRows.map((row) => (
-                    <tr key={row.station.id} className="border-b border-border-subtle/60 align-top">
+                    <tr
+                      key={row.station.id}
+                      className="cursor-pointer border-b border-border-subtle/60 align-top hover:bg-surface-muted"
+                      onClick={() => router.push(`/zylo-liquid/stations/${row.station.id}`)}
+                    >
                       <td className="py-3 pr-4">
-                        <Link href={`/zylo-liquid/stations/${row.station.id}`} className="font-semibold text-text hover:text-primary hover:underline">
+                        <Link
+                          href={`/zylo-liquid/stations/${row.station.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-semibold text-text hover:text-primary hover:underline"
+                        >
                           {row.station.name}
                         </Link>
                         <p className="text-caption text-text-muted">{row.station.code}</p>

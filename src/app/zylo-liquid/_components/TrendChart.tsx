@@ -1,10 +1,13 @@
 "use client";
 
-import type { ChartPoint } from "@/app/zylo-liquid/_lib/useNetworkDashboard";
+export interface TrendChartPoint {
+  at: string;
+  value: number;
+}
 
 interface Props {
-  points: ChartPoint[];
-  formatVolume: (liters: number) => string;
+  points: TrendChartPoint[];
+  formatValue: (value: number) => string;
   formatDate: (iso: string) => string;
   seriesLabel: string;
 }
@@ -16,13 +19,15 @@ const PADDING = 24;
 /** Ligne de tendance minimale en SVG pur — aucune librairie de graphique
  * n'est installée dans le projet ; en ajouter une pour une seule courbe ne
  * se justifie pas (cohérent avec le choix déjà fait ailleurs d'éviter une
- * dépendance pour un composant simple, ex. le menu compte de AppShell). */
-export function TrendChart({ points, formatVolume, formatDate, seriesLabel }: Props) {
+ * dépendance pour un composant simple, ex. le menu compte de AppShell).
+ * Générique sur la valeur tracée — réutilisé par le stock réseau (Page 1)
+ * et l'historique de niveau d'une cuve (Page 4), jamais dupliqué. */
+export function TrendChart({ points, formatValue, formatDate, seriesLabel }: Props) {
   if (points.length < 2) {
     return null;
   }
 
-  const values = points.map((p) => p.totalVolumeLiters);
+  const values = points.map((p) => p.value);
   const min = Math.min(...values, 0);
   const max = Math.max(...values, 1);
   const range = max - min || 1;
@@ -30,7 +35,7 @@ export function TrendChart({ points, formatVolume, formatDate, seriesLabel }: Pr
   const stepX = (WIDTH - PADDING * 2) / (points.length - 1);
   const coords = points.map((p, i) => {
     const x = PADDING + i * stepX;
-    const y = PADDING + (1 - (p.totalVolumeLiters - min) / range) * (HEIGHT - PADDING * 2);
+    const y = PADDING + (1 - (p.value - min) / range) * (HEIGHT - PADDING * 2);
     return { x, y, point: p };
   });
 
@@ -55,7 +60,7 @@ export function TrendChart({ points, formatVolume, formatDate, seriesLabel }: Pr
           {formatDate(c.point.at)}
         </text>
       ))}
-      <title>{points.map((p) => `${formatDate(p.at)}: ${formatVolume(p.totalVolumeLiters)}`).join("\n")}</title>
+      <title>{points.map((p) => `${formatDate(p.at)}: ${formatValue(p.value)}`).join("\n")}</title>
     </svg>
   );
 }
