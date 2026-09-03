@@ -459,6 +459,7 @@
   "stationDetail": {
     "backLink": "Network stations",
     "sync": "Synced {minutes} min ago",
+    "syncNever": "Never synced",
     "actions": {
       "deliveries": "Deliveries",
       "leaks": "Leaks",
@@ -466,54 +467,51 @@
       "deactivate": "Deactivate",
       "reactivate": "Reactivate"
     },
-    "alertsBanner": "{count} active alerts",
-    "viewAll": "View all →",
-    "kpis": {
-      "stock": { "label": "Station stock", "sub": "{pct} of {capacity}" },
-      "coverage": { "label": "Minimum coverage" },
-      "activeAlarms": { "label": "Active alarms" },
-      "pumps": { "label": "Pumps available" },
-      "value": { "label": "Stock value" }
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "alert": "Alert",
+      "critical": "Critical"
     },
-    "tabs": {
-      "overview": "Overview / tanks",
-      "pumps": "Pumps & nozzles",
-      "staff": "Assigned staff",
-      "compliance": "Regulatory compliance",
-      "atg": "ATG measurement chain"
-    },
-    "charts": {
-      "sales": { "title": "What is this station's sales pace?", "subtitle": "Volume per day and per product — 30 days" },
-      "restock": { "title": "Is the station's stock replenishing?", "subtitle": "Vertical jumps are deliveries; gaps are missing measurements" }
+    "alertsBanner": {
+      "count": "{count} active alerts",
+      "viewAll": "View all →"
     },
     "tanksSection": {
       "title": "Station tanks",
       "activeCount": "({count} active tanks)",
-      "addTank": "Add a tank",
+      "addTank": "+ Add a tank",
       "empty": "No tank registered for this station"
     },
     "tankCard": {
       "capacity": "Capacity",
       "product": "Product",
+      "sync": "sync {minutes} min",
+      "syncOffline": "offline",
       "sensorConnected": "Sensor connected",
       "sensorDisconnected": "Sensor disconnected",
       "sensorNotConfigured": "Sensor not configured",
+      "waterAlert": "High water level",
       "calibration": "Calibration",
       "detail": "Detail →",
       "notCalculable": "Volume not calculable"
     },
-    "gauge": {
-      "empty": "EMPTY",
-      "fuel": "FUEL",
-      "water": "WATER"
+    "calibrationModal": {
+      "title": "Calibration — {tank}",
+      "empty": "No calibration",
+      "pointCount": "Loaded points",
+      "maxHeight": "Max loaded height",
+      "tankHeight": "Tank physical height",
+      "height": "Height",
+      "volume": "Volume",
+      "upload": "+ Load table",
+      "replace": "Replace table"
     },
-    "panels": {
-      "alertsTitle": "Alerts ({count})",
-      "alertsEmpty": "No alert for this station",
-      "deliveriesTitle": "Recent deliveries ({count})",
-      "deliveriesEmpty": "No recent delivery",
-      "leaksTitle": "Active leaks ({count})",
-      "leaksEmpty": "No leak detected"
+    "columns": {
+      "alerts": { "title": "Alerts ({count})", "empty": "No alert for this station" },
+      "deliveries": { "title": "Recent deliveries ({count})", "empty": "No recent delivery", "volume": "{volume}" },
+      "leaks": { "title": "Active leaks ({count})", "empty": "No active leak", "rate": "Rate: {rate} L/h", "status": "Ongoing" },
+      "viewAll": "View all →"
     },
     "editModal": {
       "title": "Edit station"
@@ -641,10 +639,22 @@
     "thresholdLow": "Low alarm",
     "thresholdWater": "Water alarm",
     "sensorSerial": "Sensor serial number",
-    "sensorSerialHint": "Physical serial number (fuel level measurement) — optional, can be associated later",
+    "sensorSerialHint": "Physical serial number — optional, can be associated later",
+    "measurementType": "Measurement type",
+    "measurementTypes": {
+      "productLevel": "Fuel level",
+      "waterLevel": "Water level",
+      "temperature": "Temperature"
+    },
+    "addAnotherSensor": "+ Add another sensor",
     "skipCalibration": "Create without calibration for now",
     "dropCsv": "Drag and drop your CSV file here or click to browse",
     "fileSelected": "{name} — {count} points loaded",
-    "csvFormatHint": "Expected format: .csv (semicolon or comma separated), two columns: height (mm), volume (L)"
+    "csvFormatHint": "Expected format: .csv (semicolon or comma separated), two columns: height (mm), volume (L)",
+    "validation": {
+      "tankNumberPositive": "Must be positive",
+      "tankNumberDuplicate": "Number already used",
+      "thresholdOrder": "Thresholds must follow the logical order: High alarm > High pre-alarm > Low alarm"
+    }
   }
 }

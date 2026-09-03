@@ -459,6 +459,7 @@
   "stationDetail": {
     "backLink": "Stations du réseau",
     "sync": "Sync il y a {minutes} min",
+    "syncNever": "Aucune synchronisation",
     "actions": {
       "deliveries": "Livraisons",
       "leaks": "Fuites",
@@ -466,54 +467,51 @@
       "deactivate": "Désactiver",
       "reactivate": "Réactiver"
     },
-    "alertsBanner": "{count} alertes actives",
-    "viewAll": "Voir toutes →",
-    "kpis": {
-      "stock": { "label": "Stock station", "sub": "{pct} de {capacity}" },
-      "coverage": { "label": "Couverture minimale" },
-      "activeAlarms": { "label": "Alarmes actives" },
-      "pumps": { "label": "Pompes disponibles" },
-      "value": { "label": "Valeur du stock" }
+    "status": {
+      "online": "En ligne",
+      "offline": "Hors ligne",
+      "alert": "Alerte",
+      "critical": "Critique"
     },
-    "tabs": {
-      "overview": "Vue d'ensemble / cuves",
-      "pumps": "Pompes & pistolets",
-      "staff": "Personnel affecté",
-      "compliance": "Conformité réglementaire",
-      "atg": "Chaîne de mesure ATG"
-    },
-    "charts": {
-      "sales": { "title": "Quel est le rythme de vente de cette station ?", "subtitle": "Volume par jour et par produit — 30 jours" },
-      "restock": { "title": "Le stock de la station se reconstitue-t-il ?", "subtitle": "Les remontées verticales sont des livraisons ; les coupures sont des absences de mesure" }
+    "alertsBanner": {
+      "count": "{count} alertes actives",
+      "viewAll": "Voir toutes →"
     },
     "tanksSection": {
       "title": "Cuves de la station",
       "activeCount": "({count} cuves actives)",
-      "addTank": "Ajouter une cuve",
+      "addTank": "+ Ajouter une cuve",
       "empty": "Aucune cuve enregistrée pour cette station"
     },
     "tankCard": {
       "capacity": "Capacité",
       "product": "Produit",
+      "sync": "sync {minutes} min",
+      "syncOffline": "hors ligne",
       "sensorConnected": "Sonde connectée",
       "sensorDisconnected": "Sonde déconnectée",
       "sensorNotConfigured": "Sonde non configurée",
+      "waterAlert": "Niveau eau élevé",
       "calibration": "Calibration",
       "detail": "Détail →",
       "notCalculable": "Volume non calculable"
     },
-    "gauge": {
-      "empty": "VIDE",
-      "fuel": "CARBURANT",
-      "water": "EAU"
+    "calibrationModal": {
+      "title": "Calibration — {tank}",
+      "empty": "Aucune calibration",
+      "pointCount": "Points chargés",
+      "maxHeight": "Hauteur max chargée",
+      "tankHeight": "Hauteur physique de la cuve",
+      "height": "Hauteur",
+      "volume": "Volume",
+      "upload": "+ Charger la table",
+      "replace": "Remplacer la table"
     },
-    "panels": {
-      "alertsTitle": "Alertes ({count})",
-      "alertsEmpty": "Aucune alerte pour cette station",
-      "deliveriesTitle": "Livraisons récentes ({count})",
-      "deliveriesEmpty": "Aucune livraison récente",
-      "leaksTitle": "Fuites actives ({count})",
-      "leaksEmpty": "Aucune fuite détectée"
+    "columns": {
+      "alerts": { "title": "Alertes ({count})", "empty": "Aucune alerte pour cette station" },
+      "deliveries": { "title": "Livraisons récentes ({count})", "empty": "Aucune livraison récente", "volume": "{volume}" },
+      "leaks": { "title": "Fuites actives ({count})", "empty": "Aucune fuite active", "rate": "Débit : {rate} L/h", "status": "En cours" },
+      "viewAll": "Voir toutes →"
     },
     "editModal": {
       "title": "Modifier la station"
@@ -641,10 +639,22 @@
     "thresholdLow": "Alarme bas",
     "thresholdWater": "Alarme eau",
     "sensorSerial": "Numéro de série de la sonde",
-    "sensorSerialHint": "Numéro de série physique (mesure de niveau carburant) — facultatif, associable plus tard",
+    "sensorSerialHint": "Numéro de série physique — facultatif, associable plus tard",
+    "measurementType": "Type de mesure",
+    "measurementTypes": {
+      "productLevel": "Niveau carburant",
+      "waterLevel": "Niveau eau",
+      "temperature": "Température"
+    },
+    "addAnotherSensor": "+ Ajouter un autre capteur",
     "skipCalibration": "Créer sans calibration pour le moment",
     "dropCsv": "Glisser-déposer votre fichier CSV ici ou cliquer pour parcourir",
     "fileSelected": "{name} — {count} points chargés",
-    "csvFormatHint": "Format attendu : .csv (séparateur point-virgule ou virgule), deux colonnes : hauteur (mm), volume (L)"
+    "csvFormatHint": "Format attendu : .csv (séparateur point-virgule ou virgule), deux colonnes : hauteur (mm), volume (L)",
+    "validation": {
+      "tankNumberPositive": "Doit être positif",
+      "tankNumberDuplicate": "Numéro déjà utilisé",
+      "thresholdOrder": "Les seuils doivent respecter l'ordre logique : Alarme haut > Pré-alarme haut > Alarme bas"
+    }
   }
 }

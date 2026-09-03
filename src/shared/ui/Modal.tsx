@@ -30,18 +30,27 @@ export interface ModalProps extends VariantProps<typeof contentVariants> {
   children?: React.ReactNode;
   footer?: React.ReactNode;
   closeLabel: string;
+  /** Empêche la fermeture au clic extérieur (garde uniquement Échap et le
+   * bouton de fermeture explicite) — utile pour un formulaire long où une
+   * fermeture accidentelle perdrait la saisie. Comportement par défaut de
+   * Radix inchangé (ferme au clic extérieur) tant que ce prop est omis. */
+  preventOutsideClose?: boolean;
 }
 
 /** Wrapper Radix Dialog — remplace le pattern createPortal + gestion Échap
  * manuelle observé chez AlloTech (Modal.tsx) par un focus trap et une
  * fermeture clavier/aria gérés par construction (trou d'accessibilité
  * identifié dans le rapport §21 pour les composants faits main). */
-export function Modal({ open, onOpenChange, title, description, children, footer, size, closeLabel }: ModalProps) {
+export function Modal({ open, onOpenChange, title, description, children, footer, size, closeLabel, preventOutsideClose }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-secondary/40 transition-opacity duration-200 data-[state=closed]:opacity-0" />
-        <Dialog.Content className={cn(contentVariants({ size }))}>
+        <Dialog.Content
+          className={cn(contentVariants({ size }))}
+          onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
+          onInteractOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
+        >
           <div className="mb-4 flex items-start justify-between gap-4 border-b border-border-subtle pb-4">
             <div>
               <Dialog.Title className="text-h4 font-semibold text-text">{title}</Dialog.Title>

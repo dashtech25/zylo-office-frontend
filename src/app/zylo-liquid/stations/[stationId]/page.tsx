@@ -1,34 +1,39 @@
 "use client";
 
-import { AlertTriangle, Banknote, Bell, ChevronLeft, Fuel, Gauge, MoreVertical, Plus, Truck } from "lucide-react";
+import { AlertTriangle, Droplet, MoreVertical, Truck } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { deactivateStation, reactivateStation } from "@/core/api/zyloLiquid";
+import { deactivateStation, reactivateStation, type Tank } from "@/core/api/zyloLiquid";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { EmptyState } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
-import { Kpi } from "../../_components/Kpi";
-import { ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "../../_components/TankVisual";
-import { CreateStationModal } from "../_components/CreateStationModal";
 import { AddTankModal } from "./_components/AddTankModal";
+import { CalibrationModal } from "./_components/CalibrationModal";
+import { TankCylinder } from "./_components/TankCylinder";
+import { CreateStationModal } from "../_components/CreateStationModal";
 import { useStationDetail } from "./_lib/useStationDetail";
 
-const TABS = ["overview", "pumps", "staff", "compliance", "atg"] as const;
+function freshnessTone(lastMeasurementAt: string | null): "ok" | "late" | "old" {
+  if (!lastMeasurementAt) return "old";
+  const ageMin = (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000;
+  if (ageMin <= 15) return "ok";
+  if (ageMin <= 60) return "late";
+  return "old";
+}
 
-/** Reproduit fidèlement `pageStation()` du prototype validé
- * (prototype.html, ~ligne 3896) : bandeau de fiabilité, 5 KPI, 5 onglets
- * (seul "Vue d'ensemble / cuves" a un contenu réel au Niveau 1 — les 4
- * autres nécessitent un référentiel pompes/personnel/documents/ATG détaillé
- * qui n'existe pas encore, ils restent visibles mais désactivés), grille de
- * cuves avec sélecteur de représentation, et 2 graphiques (rythme de vente
- * — hors périmètre, aucune vente individuelle au Niveau 1 ; reconstitution
- * du stock — laissé désactivé dans cette itération, nécessite un historique
- * agrégé par station non encore construit). Voir
- * docs/modules/zylo-liquid/phase-3-prototype-compatibility-matrix.md. */
+/** Reconstruit la page détail d'une station selon la spécification détaillée
+ * fournie par le commanditaire (ZoneA-D), remplaçant la version précédente
+ * calquée sur le prototype pour cette page précise.
+ *
+ * Deux écarts assumés avec la spécification, documentés plutôt que
+ * masqués : le champ "Gérant" (ligne d'info secondaire, modal Modifier)
+ * n'existe sur aucune colonne de `Station` — omis, jamais inventé. La
+ * colonne Livraisons ne montre pas de "Livreur" : aucune entité fournisseur
+ * n'existe au Niveau 1 (déjà noté sur la page Livraisons/PR #24). */
 export default function StationDetailPage() {
   const params = useParams<{ stationId: string }>();
   const stationId = params.stationId;
@@ -41,23 +46,27 @@ export default function StationDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [addTankOpen, setAddTankOpen] = useState(false);
+  const [calibrationTank, setCalibrationTank] = useState<Tank | null>(null);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mode, setMode] = useState<TankVisualMode>("vertical");
-  const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
 
   function formatVolume(liters: number): string {
     return `${format.number(Math.round(liters))} L`;
   }
-  function formatMoney(value: number, currencyCode: string): string {
-    try {
-      return format.number(value, { style: "currency", currency: currencyCode, maximumFractionDigits: 0 });
-    } catch {
-      return `${format.number(Math.round(value))} ${currencyCode}`;
-    }
-  }
   function formatTime(iso: string): string {
-    return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  function minutesAgo(iso: string): number {
+    // Math.max(0, ...) : une mesure horodatée dans le futur par rapport à
+    // l'horloge du navigateur (dérive d'horloge du simulateur de démo,
+    // donnée réelle mais non fiable pour un calcul de fraîcheur) ne doit
+    // jamais s'afficher comme un nombre de minutes négatif — traitée comme
+    // "à l'instant" plutôt que dans un sens ou l'autre.
+    return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  }
+
+  function scrollTo(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function handleToggleStatus() {
@@ -87,39 +96,59 @@ export default function StationDetailPage() {
 
   const { station } = data;
   const activeTanks = data.tanks.filter((tank) => tank.active);
-  const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
-  const offlineTanks = tankStates.filter((s) => s.sensorStatus === "offline" || s.sensorStatus === "not_configured");
+  const city = station.cityId ? data.cities.find((c) => c.id === station.cityId) : null;
 
-  const totalVolume = tankStates.reduce((sum, s) => sum + (s.volumeLiters ?? 0), 0);
-  const totalCapacity = activeTanks.reduce((sum, tk) => sum + (tk.calibratedCapacityLiters ?? tk.capacityLiters), 0);
-  const pct = totalCapacity > 0 ? (totalVolume / totalCapacity) * 100 : 0;
-  const currencies = new Set(tankStates.map((s) => s.currencyCode).filter((c): c is string => c !== null));
-  const totalValue = currencies.size === 1 ? tankStates.reduce((sum, s) => sum + (s.monetaryValue ?? 0), 0) : null;
-  const critical = data.alerts.some((a) => a.type === "leak" || a.type === "level_high");
+  const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
+  const stationOnline = tankStates.some((s) => s.sensorStatus === "online");
+  const criticalAlert = data.alerts.some((a) => a.type === "leak" || a.type === "level_high");
+  const stationState: "offline" | "critical" | "alert" | "online" = !stationOnline ? "offline" : criticalAlert ? "critical" : data.alerts.length > 0 ? "alert" : "online";
+
+  const lastStationSync = tankStates.reduce<string | null>((latest, s) => {
+    if (!s.lastMeasurementAt) return latest;
+    return !latest || s.lastMeasurementAt > latest ? s.lastMeasurementAt : latest;
+  }, null);
+
+  const activeLeakAlerts = data.alerts.filter((a) => a.type === "leak");
+  const anomalyLeaksByTank = new Map<string, (typeof data.leakEvents)[number]>();
+  for (const leak of data.leakEvents.filter((l) => l.result === "anomaly")) {
+    const existing = anomalyLeaksByTank.get(leak.tankId);
+    if (!existing || leak.endTime > existing.endTime) anomalyLeaksByTank.set(leak.tankId, leak);
+  }
 
   return (
     <>
-      <Link href="/zylo-liquid/stations" className="btn sm no-print" style={{ width: "fit-content", marginBottom: 4 }}>
-        <ChevronLeft width={14} height={14} strokeWidth={1.8} aria-hidden />
-        {t("backLink")}
-      </Link>
+      <div className="crumbs" style={{ marginBottom: 4 }}>
+        <Link href="/zylo-liquid/stations">{t("backLink")}</Link>
+        <span className="sep">›</span>
+        <span className="strong" style={{ color: "var(--ink)" }}>
+          {station.name}
+        </span>
+      </div>
 
       <div className="page-head">
         <div className="ph-text">
-          <h1>{station.name}</h1>
+          <div className="row" style={{ gap: 10, alignItems: "center" }}>
+            <h1>{station.name}</h1>
+            <span className={`badge ${stationState === "critical" ? "b-crit" : stationState === "alert" ? "b-major" : stationState === "offline" ? "b-idle" : "b-ok"}`}>
+              <span className="dot" />
+              {t(`status.${stationState}`)}
+            </span>
+          </div>
           <div className="ph-sub">
-            {station.address ? `${station.address} · ` : ""}
-            {station.code} · {station.is24h ? "24h/24" : `${station.openingTime} – ${station.closingTime}`}
+            {city ? city.name : "—"}
+            {" · "}
+            {lastStationSync ? t("sync", { minutes: minutesAgo(lastStationSync) }) : t("syncNever")}
           </div>
         </div>
         <div className="page-actions no-print">
-          <a href="#deliveries-panel" className="btn sm">
+          <button type="button" className="btn sm" onClick={() => scrollTo("deliveries-column")}>
             <Truck width={14} height={14} strokeWidth={1.8} aria-hidden />
             {t("actions.deliveries")}
-          </a>
-          <a href="#leaks-panel" className="btn sm">
+          </button>
+          <button type="button" className="btn sm" onClick={() => scrollTo("leaks-column")}>
+            <Droplet width={14} height={14} strokeWidth={1.8} aria-hidden />
             {t("actions.leaks")}
-          </a>
+          </button>
           <button type="button" className="btn sm primary" onClick={() => setEditOpen(true)}>
             {t("actions.edit")}
           </button>
@@ -144,182 +173,216 @@ export default function StationDetailPage() {
         </div>
       )}
 
-      {offlineTanks.length > 0 && (
-        <div className="banner major">
-          <div>{t("alertsBanner", { count: offlineTanks.length })}</div>
+      {data.alerts.length > 0 && (
+        <div className={`banner ${criticalAlert ? "crit" : "major"}`}>
+          <div>
+            <b>{t("alertsBanner.count", { count: data.alerts.length })}</b>
+            {" — "}
+            {data.alerts
+              .slice(0, 4)
+              .map((a) => {
+                const tank = data.tanks.find((tk) => tk.id === a.tankId);
+                return `${tAlerts(`types.${a.type}`)} · ${tank?.displayName ?? "?"}`;
+              })
+              .join(" | ")}
+            {"  "}
+            <a href="#alerts-column" onClick={(e) => { e.preventDefault(); scrollTo("alerts-column"); }} style={{ marginLeft: 6 }}>
+              {t("alertsBanner.viewAll")}
+            </a>
+          </div>
         </div>
       )}
 
-      <div className="grid g5 kpi-scroll" style={{ marginBottom: 16 }}>
-        <Kpi
-          icon={Fuel}
-          label={t("kpis.stock.label")}
-          value={formatVolume(totalVolume)}
-          tone="brand"
-          sub={t("kpis.stock.sub", { pct: `${Math.round(pct)} %`, capacity: formatVolume(totalCapacity) })}
-        />
-        <Kpi icon={Gauge} label={t("kpis.coverage.label")} disabled />
-        <Kpi
-          icon={Bell}
-          label={t("kpis.activeAlarms.label")}
-          value={data.alerts.length}
-          tone={data.alerts.length ? (critical ? "crit" : "major") : "ok"}
-        />
-        <Kpi icon={Fuel} label={t("kpis.pumps.label")} disabled />
-        <Kpi icon={Banknote} label={t("kpis.value.label")} value={totalValue !== null && [...currencies][0] ? formatMoney(totalValue, [...currencies][0]) : "—"} tone="info" />
-      </div>
-
-      <div className="tabs">
-        {TABS.map((value) => (
-          <button key={value} type="button" className={tab === value ? "on" : ""} onClick={() => setTab(value)}>
-            {t(`tabs.${value}`)}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-head">
+          <div style={{ flex: 1 }}>
+            <h2>{t("tanksSection.title")}</h2>
+            <div className="ch-sub">{t("tanksSection.activeCount", { count: activeTanks.length })}</div>
+          </div>
+          <button type="button" className="btn sm" onClick={() => setAddTankOpen(true)}>
+            {t("tanksSection.addTank")}
           </button>
-        ))}
-      </div>
-
-      {tab !== "overview" ? (
-        <div className="empty">
-          <div className="e-t">{tCommon("states.comingSoon")}</div>
         </div>
-      ) : (
-        <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-head">
-              <div style={{ flex: 1 }}>
-                <h2>{t("tanksSection.title")}</h2>
-                <div className="ch-sub">{t("tanksSection.activeCount", { count: activeTanks.length })}</div>
-              </div>
-              <ModeSwitcher mode={mode} onChange={setMode} />
-              <button type="button" className="btn sm primary" onClick={() => setAddTankOpen(true)}>
-                <Plus width={14} height={14} strokeWidth={1.8} aria-hidden />
-                {t("tanksSection.addTank")}
-              </button>
-            </div>
 
-            {activeTanks.length === 0 ? (
-              <div className="empty">
-                <div className="e-t">{t("tanksSection.empty")}</div>
-              </div>
-            ) : (
-              <div className="grid g4">
-                {activeTanks.map((tank) => {
-                  const state = data.tankStateById.get(tank.id);
-                  const product = data.fuelProductById.get(tank.fuelProductId);
-                  const tone = state?.sensorStatus === "offline" ? "alert-crit" : "";
-                  return (
-                    <div key={tank.id} className={`tankcard ${tone}`}>
-                      <div className="tank-top">
-                        <div style={{ flex: 1 }}>
-                          <div className="tt-name">{tank.displayName}</div>
-                          <div className="tt-prod">{product?.name ?? "?"}</div>
-                        </div>
-                        <span className={`badge ${state?.sensorStatus === "online" ? "b-ok" : state?.sensorStatus === "offline" ? "b-crit" : "b-idle"}`}>
-                          <span className="dot" />
-                          {state?.sensorStatus === "online" ? t("tankCard.sensorConnected") : state?.sensorStatus === "offline" ? t("tankCard.sensorDisconnected") : t("tankCard.sensorNotConfigured")}
+        {activeTanks.length === 0 ? (
+          <div className="empty">
+            <div className="e-t">{t("tanksSection.empty")}</div>
+          </div>
+        ) : (
+          <div className="stack" style={{ gap: 12 }}>
+            {activeTanks.map((tank) => {
+              const state = data.tankStateById.get(tank.id);
+              const product = data.fuelProductById.get(tank.fuelProductId);
+              const fresh = state ? freshnessTone(state.lastMeasurementAt) : "old";
+              const hasAlert = data.alerts.some((a) => a.tankId === tank.id);
+              const hasLeak = data.alerts.some((a) => a.tankId === tank.id && a.type === "leak");
+              const waterAlert = state?.waterHeightMm !== null && state?.waterHeightMm !== undefined && state.waterHeightMm >= tank.alertWaterMaxMm;
+              return (
+                <div
+                  key={tank.id}
+                  className="card"
+                  style={{ borderTop: hasLeak ? "3px solid var(--crit)" : hasAlert ? "3px solid var(--major)" : undefined }}
+                >
+                  <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+                    <div className="row" style={{ gap: 8 }}>
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: state?.sensorStatus === "online" ? (fresh === "ok" ? "var(--ok)" : "var(--major)") : "var(--crit)",
+                        }}
+                      />
+                      <span className="strong">{tank.displayName}</span>
+                      <span className="badge b-info">
+                        <span className="dot" />
+                        {(product?.name ?? "?").toUpperCase()}
+                      </span>
+                      {waterAlert && (
+                        <span className="badge b-info" title={t("tankCard.waterAlert")}>
+                          {t("tankCard.waterAlert")}
                         </span>
-                      </div>
-                      <div className="tank-body">
-                        <div style={{ display: "flex", justifyContent: "center", flex: "0 0 auto" }}>
-                          {state && state.volumeLiters !== null ? (
-                            <TankVisual tank={tank} state={state} mode={mode} fuelColor={product?.displayColor} />
-                          ) : (
-                            <div className="empty" style={{ padding: 12 }}>
-                              <div className="e-t small">{t("tankCard.notCalculable")}</div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="tank-figs">
-                          <div className="figrow">
-                            <span className="lab">{t("tankCard.capacity")}</span>
-                            <span className="val">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</span>
-                          </div>
-                          {state?.monetaryValue !== null && state?.currencyCode && (
-                            <div className="figrow">
-                              <span className="lab">{t("kpis.value.label")}</span>
-                              <span className="val">{formatMoney(state.monetaryValue, state.currencyCode)}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <Link href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`} className="small strong">
+                      )}
+                    </div>
+                    <div className="row" style={{ gap: 16 }}>
+                      <span className="xsmall dim">
+                        {t("tankCard.capacity")}: <span className="mono strong">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</span>
+                      </span>
+                      <span className="xsmall dim">
+                        {t("tankCard.product")}: <span className="strong">{product?.name ?? "?"}</span>
+                      </span>
+                      <span
+                        className="xsmall"
+                        style={{ color: fresh === "ok" ? "var(--ok)" : fresh === "late" ? "var(--major)" : "var(--crit)" }}
+                      >
+                        {state?.lastMeasurementAt ? t("tankCard.sync", { minutes: minutesAgo(state.lastMeasurementAt) }) : t("tankCard.syncOffline")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {state && state.heightMm !== null ? (
+                    <TankCylinder tank={tank} state={state} fuelColor={product?.displayColor ?? "var(--brand-deep)"} />
+                  ) : (
+                    <div className="empty" style={{ padding: 16 }}>
+                      <div className="e-t small">{t("tankCard.notCalculable")}</div>
+                    </div>
+                  )}
+
+                  <div className="row" style={{ justifyContent: "space-between", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                    <span
+                      className="xsmall"
+                      style={{ color: state?.sensorStatus === "online" ? "var(--ok)" : "var(--crit)" }}
+                    >
+                      ● {state?.sensorStatus === "online" ? t("tankCard.sensorConnected") : state?.sensorStatus === "offline" ? t("tankCard.sensorDisconnected") : t("tankCard.sensorNotConfigured")}
+                      {state?.lastMeasurementAt && `  ${t("tankCard.sync", { minutes: minutesAgo(state.lastMeasurementAt) })}`}
+                    </span>
+                    <div className="row" style={{ gap: 8 }}>
+                      <button type="button" className="btn sm" onClick={() => setCalibrationTank(tank)}>
+                        {t("tankCard.calibration")}
+                      </button>
+                      <Link className="btn sm primary" href={`/zylo-liquid/stations/${stationId}/tanks/${tank.id}`}>
                         {t("tankCard.detail")}
                       </Link>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-            <div style={{ marginTop: 12 }}>
-              <TankLegend />
-            </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          <div className="grid g2" style={{ marginBottom: 16 }}>
-            <div className="card">
-              <h2>{t("charts.sales.title")}</h2>
-              <div className="ch-sub">{t("charts.sales.subtitle")}</div>
-              <div className="empty" style={{ marginTop: 12 }}>
-                <div className="e-t">{tCommon("states.comingSoon")}</div>
-              </div>
-            </div>
-            <div className="card">
-              <h2>{t("charts.restock.title")}</h2>
-              <div className="ch-sub">{t("charts.restock.subtitle")}</div>
-              <div className="empty" style={{ marginTop: 12 }}>
-                <div className="e-t">{tCommon("states.comingSoon")}</div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        )}
+      </div>
 
       <div className="grid g3">
-        <div className="card" id="alerts-panel">
-          <h3>{t("panels.alertsTitle", { count: data.alerts.length })}</h3>
+        <div className="card" id="alerts-column">
+          <div className="card-head">
+            <h2 style={{ flex: 1 }}>{t("columns.alerts.title", { count: data.alerts.length })}</h2>
+            <Link href={`/zylo-liquid/alerts?station=${stationId}`}>{t("columns.viewAll")}</Link>
+          </div>
           {data.alerts.length === 0 ? (
-            <p className="small dim">{t("panels.alertsEmpty")}</p>
+            <p className="small dim">{t("columns.alerts.empty")}</p>
           ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              {data.alerts.map((a) => (
-                <div key={a.id} className="row" style={{ justifyContent: "space-between" }}>
-                  <span className="small">{tAlerts(`types.${a.type}`)}</span>
-                  <span className="xsmall dim">{formatTime(a.triggeredAt)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card" id="deliveries-panel">
-          <h3>{t("panels.deliveriesTitle", { count: data.deliveries.length })}</h3>
-          {data.deliveries.length === 0 ? (
-            <p className="small dim">{t("panels.deliveriesEmpty")}</p>
-          ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              {data.deliveries.map((d) => (
-                <div key={d.id} className="row" style={{ justifyContent: "space-between" }}>
-                  <span className="small mono">+{formatVolume(d.volumeLiters ?? 0)}</span>
-                  <span className="xsmall dim">{formatTime(d.endTime)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card" id="leaks-panel">
-          <h3>{t("panels.leaksTitle", { count: data.leakEvents.filter((l) => l.result === "anomaly").length })}</h3>
-          {data.leakEvents.filter((l) => l.result === "anomaly").length === 0 ? (
-            <p className="small dim">{t("panels.leaksEmpty")}</p>
-          ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              {data.leakEvents
-                .filter((l) => l.result === "anomaly")
-                .map((l) => (
-                  <div key={l.id} className="row" style={{ justifyContent: "space-between" }}>
-                    <span className="small mono">{l.leakRateLph?.toFixed(2)} L/H</span>
-                    <span className="xsmall dim">{formatTime(l.endTime)}</span>
+            <div className="stack" style={{ gap: 10 }}>
+              {data.alerts.map((a) => {
+                const tank = data.tanks.find((tk) => tk.id === a.tankId);
+                const critical = a.type === "leak" || a.type === "level_high";
+                return (
+                  <div key={a.id} className="row" style={{ gap: 8, alignItems: "flex-start" }}>
+                    <AlertTriangle width={14} height={14} strokeWidth={1.8} color={critical ? "var(--crit)" : "var(--major)"} style={{ marginTop: 2, flexShrink: 0 }} aria-hidden />
+                    <div style={{ flex: 1 }}>
+                      <div className="small strong">{tAlerts(`types.${a.type}`)}</div>
+                      <div className="xsmall dim">{tank?.displayName ?? "?"}</div>
+                    </div>
+                    <span className="xsmall dim">{minutesAgo(a.triggeredAt)} min</span>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="card" id="deliveries-column">
+          <div className="card-head">
+            <h2 style={{ flex: 1 }}>{t("columns.deliveries.title", { count: data.deliveries.length })}</h2>
+            <Link href={`/zylo-liquid/livraisons?station=${stationId}`}>{t("columns.viewAll")}</Link>
+          </div>
+          {data.deliveries.length === 0 ? (
+            <p className="small dim">{t("columns.deliveries.empty")}</p>
+          ) : (
+            <div className="stack" style={{ gap: 10 }}>
+              {data.deliveries.map((d) => {
+                const tank = data.tanks.find((tk) => tk.id === d.tankId);
+                const product = tank ? data.fuelProductById.get(tank.fuelProductId) : null;
+                return (
+                  <div key={d.id} className="row" style={{ gap: 8, alignItems: "flex-start" }}>
+                    <Truck width={14} height={14} strokeWidth={1.8} color="var(--ok)" style={{ marginTop: 2, flexShrink: 0 }} aria-hidden />
+                    <div style={{ flex: 1 }}>
+                      <div className="small strong">
+                        {(product?.name ?? "?").toUpperCase()} · {tank?.displayName ?? "?"}
+                      </div>
+                      <div className="xsmall dim mono">+{formatVolume(d.volumeLiters ?? 0)}</div>
+                    </div>
+                    <span className="xsmall dim">{formatTime(d.endTime)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="card" id="leaks-column">
+          <div className="card-head">
+            <h2 style={{ flex: 1, color: activeLeakAlerts.length > 0 ? "var(--crit)" : undefined }}>{t("columns.leaks.title", { count: activeLeakAlerts.length })}</h2>
+            <Link href={`/zylo-liquid/fuites?station=${stationId}`}>{t("columns.viewAll")}</Link>
+          </div>
+          {activeLeakAlerts.length === 0 ? (
+            <p className="small dim">{t("columns.leaks.empty")}</p>
+          ) : (
+            <div className="stack" style={{ gap: 10 }}>
+              {activeLeakAlerts.map((a) => {
+                const tank = data.tanks.find((tk) => tk.id === a.tankId);
+                const product = tank ? data.fuelProductById.get(tank.fuelProductId) : null;
+                const rate = anomalyLeaksByTank.get(a.tankId)?.leakRateLph;
+                return (
+                  <div key={a.id} className="row" style={{ gap: 8, alignItems: "flex-start" }}>
+                    <Droplet width={14} height={14} strokeWidth={1.8} color="var(--crit)" style={{ marginTop: 2, flexShrink: 0 }} aria-hidden />
+                    <div style={{ flex: 1 }}>
+                      <div className="small strong">
+                        {tank?.displayName ?? "?"} {product?.name ?? ""}
+                      </div>
+                      {rate != null && (
+                        <div className="xsmall" style={{ color: "var(--crit)" }}>
+                          {t("columns.leaks.rate", { rate: format.number(rate, { maximumFractionDigits: 1 }) })}
+                        </div>
+                      )}
+                      <div className="xsmall dim">{formatTime(a.triggeredAt)}</div>
+                    </div>
+                    <span className="badge b-crit">
+                      <span className="dot" />
+                      {t("columns.leaks.status")}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -332,10 +395,20 @@ export default function StationDetailPage() {
             organizationId={currentOrganization.id}
             stationId={stationId}
             fuelProducts={data.fuelProducts}
+            existingTankNumbers={data.tanks.map((tk) => tk.tankNumber)}
             open={addTankOpen}
             onOpenChange={setAddTankOpen}
             onCreated={data.reload}
           />
+          {calibrationTank && (
+            <CalibrationModal
+              organizationId={currentOrganization.id}
+              tank={calibrationTank}
+              open={!!calibrationTank}
+              onOpenChange={(open) => !open && setCalibrationTank(null)}
+              onUpdated={data.reload}
+            />
+          )}
         </>
       )}
     </>

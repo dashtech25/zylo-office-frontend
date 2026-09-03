@@ -6,11 +6,13 @@ import {
   getStation,
   getStationCurrentState,
   listAlerts,
+  listCities,
   listDeliveries,
   listFuelProducts,
   listLeakEvents,
   listTanks,
   type Alert,
+  type City,
   type Delivery,
   type FuelProduct,
   type LeakEvent,
@@ -29,6 +31,7 @@ export function useStationDetail(organizationId: string | null, stationId: strin
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [leakEvents, setLeakEvents] = useState<LeakEvent[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
 
   const load = useCallback(async () => {
     if (!organizationId) {
@@ -38,13 +41,14 @@ export function useStationDetail(organizationId: string | null, stationId: strin
     setLoading(true);
     setError(null);
     try {
-      const [stationData, tanksPage, fuelProductsPage, alertsPage, deliveriesPage, leakEventsPage] = await Promise.all([
+      const [stationData, tanksPage, fuelProductsPage, alertsPage, deliveriesPage, leakEventsPage, citiesPage] = await Promise.all([
         getStation(organizationId, stationId),
         listTanks(organizationId, 100, stationId),
         listFuelProducts(organizationId),
         listAlerts(organizationId, { status: "active", stationId, limit: 20 }),
         listDeliveries(organizationId, { stationId, limit: 5 }),
         listLeakEvents(organizationId, { stationId, limit: 5 }),
+        listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
       ]);
       setStation(stationData);
       setTanks(tanksPage.data);
@@ -52,6 +56,7 @@ export function useStationDetail(organizationId: string | null, stationId: strin
       setAlerts(alertsPage.data);
       setDeliveries(deliveriesPage.data);
       setLeakEvents(leakEventsPage.data);
+      setCities(citiesPage.data);
 
       if (stationData.status === "active") {
         setCurrentState(await getStationCurrentState(organizationId, stationId));
@@ -72,5 +77,5 @@ export function useStationDetail(organizationId: string | null, stationId: strin
   const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
   const tankStateById = new Map((currentState?.tanks ?? []).map((s) => [s.tankId, s]));
 
-  return { loading, error, station, tanks, fuelProducts, fuelProductById, currentState, tankStateById, alerts, deliveries, leakEvents, reload: load };
+  return { loading, error, station, tanks, fuelProducts, fuelProductById, currentState, tankStateById, alerts, deliveries, leakEvents, cities, reload: load };
 }
