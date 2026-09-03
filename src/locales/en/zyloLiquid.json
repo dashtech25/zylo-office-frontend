@@ -250,15 +250,19 @@
       "sensor_offline": "Station offline"
     },
     "page": {
-      "title": "Alerts",
-      "subtitle": "{count} active alerts",
-      "filterStatus": "Filter by status",
+      "title": "Alert center",
+      "subtitle": "{count} alert(s) in scope",
+      "print": "Print",
+      "filterStatus": "All statuses",
       "status": {
         "active": "Active",
         "resolved": "Resolved",
         "all": "All"
       },
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "resolveNotePrompt": "Resolution note (optional)",
+      "triggeredValue": "Triggering value",
+      "thresholdValue": "Threshold crossed"
     },
     "columns": {
       "type": "Type",

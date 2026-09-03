@@ -250,15 +250,19 @@
       "sensor_offline": "Station hors ligne"
     },
     "page": {
-      "title": "Alertes",
-      "subtitle": "{count} alertes actives",
-      "filterStatus": "Filtrer par statut",
+      "title": "Centre d'alertes",
+      "subtitle": "{count} alerte(s) sur le périmètre",
+      "print": "Imprimer",
+      "filterStatus": "Tous statuts",
       "status": {
-        "active": "Actives",
-        "resolved": "Résolues",
+        "active": "Active",
+        "resolved": "Résolue",
         "all": "Toutes"
       },
-      "resolve": "Résoudre"
+      "resolve": "Résoudre",
+      "resolveNotePrompt": "Note de résolution (facultative)",
+      "triggeredValue": "Valeur déclenchante",
+      "thresholdValue": "Seuil franchi"
     },
     "columns": {
       "type": "Type",
