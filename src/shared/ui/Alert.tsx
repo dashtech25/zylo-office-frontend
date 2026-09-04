@@ -22,17 +22,19 @@ type AlertTone = keyof typeof icons;
 export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   tone?: AlertTone;
   title?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
-export function Alert({ className, tone = "info", title, children, ...props }: AlertProps) {
+export function Alert({ className, tone = "info", title, action, children, ...props }: AlertProps) {
   const Icon = icons[tone];
   return (
-    <div role="alert" className={cn(alertVariants({ tone }), className)} {...props}>
+    <div role="alert" className={cn(alertVariants({ tone }), "items-center", className)} {...props}>
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
-      <div className="text-text">
+      <div className="flex-1 text-text">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div className="text-text-muted">{children}</div>}
       </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }

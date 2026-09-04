@@ -7,15 +7,19 @@ import { cn } from "@/shared/lib/cn";
 
 const contentVariants = cva(
   "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-card bg-surface p-6 shadow-elevated " +
-    "max-h-[calc(100vh-6rem)] overflow-y-auto transition-[opacity,transform] duration-200 " +
+    "overflow-y-auto transition-[opacity,transform] duration-200 " +
     "data-[state=closed]:opacity-0 data-[state=closed]:scale-95",
   {
     variants: {
       size: {
-        sm: "max-w-sm",
-        md: "max-w-md",
-        lg: "max-w-2xl",
-        xl: "max-w-4xl",
+        sm: "max-w-sm max-h-[calc(100vh-6rem)]",
+        md: "max-w-md max-h-[calc(100vh-6rem)]",
+        lg: "max-w-2xl max-h-[calc(100vh-6rem)]",
+        xl: "max-w-4xl max-h-[calc(100vh-6rem)]",
+        // Formulaire long (ex. création station + cuves) qui a besoin de
+        // presque tout l'écran sur grand écran plutôt qu'une colonne étroite
+        // perdue au milieu — reste sous 100vw/100vh pour garder l'overlay visible.
+        full: "max-w-[96vw] w-[96vw] h-[94vh] max-h-[94vh]",
       },
     },
     defaultVariants: { size: "md" },

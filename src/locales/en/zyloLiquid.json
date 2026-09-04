@@ -12,7 +12,9 @@
   "breadcrumbDeliveries": "Deliveries",
   "backToOffice": "Back to Zylo Office",
   "sync": {
-    "label": "Synced {minutes} min ago"
+    "label": "Sync {minutes} min ago",
+    "never": "Never synced",
+    "failed": "Sync failed"
   },
   "configuration": {
     "pageTitle": "Configuration",
@@ -76,6 +78,52 @@
       "create": "Create fuel product",
       "saved": "Saved",
       "codeRequired": "Name and code are required."
+    }
+  },
+  "settingsPage": {
+    "pageTitle": "Settings",
+    "pageSubtitle": "Configure Zylo Liquid's global behavior",
+    "tabs": {
+      "organisation": "Organization",
+      "holykell": "Holykell",
+      "systeme": "System",
+      "notifications": "Notifications",
+      "utilisateurs": "Users"
+    },
+    "save": "Save",
+    "saved": "Settings saved successfully",
+    "organisation": {
+      "sectionTitle": "GENERAL INFORMATION",
+      "name": "Organization name",
+      "nameHint": "Name shown across the app",
+      "unavailableNote": "Logo, main phone, main email, language, timezone and default currency are not settings available in Zylo Office yet — they are not shown here rather than displaying a field that saves nothing."
+    },
+    "holykell": {
+      "sectionTitle": "HOLYKELL CONNECTION",
+      "statusLabel": "Current status",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "notConfigured": "Not configured",
+      "lastSync": "Last successful sync",
+      "lastError": "Last error",
+      "never": "Never synced",
+      "unavailableNote": "Holykell connection credentials (login, password, device group) are not editable from this interface today — only the sync status is available read-only."
+    },
+    "systeme": {
+      "leakSectionTitle": "LEAK DETECTION",
+      "leakThreshold": "Detection threshold",
+      "leakThresholdHint": "EPA standard value — a drop above this rate over a stable period triggers a leak alert.",
+      "deliverySectionTitle": "DELIVERY DETECTION",
+      "deliveryRiseThreshold": "Rise threshold",
+      "deliveryRiseThresholdHint": "A rise above this value in a single reading triggers delivery detection.",
+      "deliveryStabilization": "Confirmation delay",
+      "deliveryStabilizationHint": "Wait time after the rise to confirm the delivery has ended and compute its volume.",
+      "readOnlyNote": "These values are system-wide constants, identical for the whole network — not yet configurable per organization.",
+      "unavailableNote": "Disconnected sensor delay and delivery gap tolerance are not real settings in Zylo Liquid yet — they are not shown here rather than displaying invented values."
+    },
+    "comingSoon": {
+      "notifications": "The notification center is not available in Zylo Liquid yet.",
+      "utilisateurs": "User and role management is currently done from Zylo Office — direct integration in Zylo Liquid isn't available yet."
     }
   },
   "leaks": {
@@ -353,18 +401,19 @@
         "stockByProduct": "STOCK BY PRODUCT",
         "stockByProductSub": "Volume · Capacity · Price · Value per product",
         "totalValue": "STATION TOTAL VALUE",
-        "sync": "SYNC"
+        "sync": "SYNC",
+        "actions": "ACTIONS"
       },
       "empty": {
         "title": "No station in your network",
         "add": "+ Add a station"
       },
       "row": {
-        "tankCount": "{count} tank(s)",
+        "tankCount": "{count, plural, one {# tank} other {# tanks}}",
         "priceUndefined": "Price undefined",
         "valueNotCalculable": "Value not calculable",
         "partial": "(partial)",
-        "critical": "CRITICAL",
+        "lowStock": "LOW STOCK",
         "conversionUnavailable": "Conversion unavailable",
         "syncOffline": "offline"
       },
@@ -392,14 +441,38 @@
     "createModal": {
       "title": "Add a station",
       "name": "Station name",
+      "nameHint": "Name shown across the app (list, detail, reports)",
       "code": "Code",
       "codeHint": "Short identifier, unique in your network (e.g. STA-01)",
       "city": "City",
+      "cityHint": "Determines the station's native currency and timezone",
       "citySelectPlaceholder": "Select a city",
+      "resolvedCurrency": "This station's currency: {code} (derived from the selected city's country)",
       "address": "Address",
+      "addressHint": "Physical address of the station, optional",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "coordinatesHint": "GPS position of the station, optional (used on the network map)",
+      "timezone": "Timezone",
+      "timezoneHint": "Used to timestamp this station's readings and reports",
       "phone": "Phone",
       "email": "Email",
-      "submit": "Create station"
+      "openingTime": "Opening time",
+      "closingTime": "Closing time",
+      "is24h": "Open 24/7",
+      "is24hHint": "When checked, the opening/closing times above are ignored",
+      "notes": "Notes",
+      "notesHint": "Internal notes about this station, optional",
+      "submit": "Create station",
+      "sections": {
+        "station": "Station information",
+        "tanks": "Tanks"
+      },
+      "tanksHint": "Optional — you can also add tanks later from the station page",
+      "addTank": "+ Add a tank",
+      "removeTank": "Remove this tank",
+      "noTanks": "No tank added yet",
+      "tankTitle": "Tank {number}"
     }
   },
   "alerts": {
@@ -494,7 +567,20 @@
       "waterAlert": "High water level",
       "calibration": "Calibration",
       "detail": "Detail →",
-      "notCalculable": "Volume not calculable"
+      "notCalculable": "Volume not calculable",
+      "available": "Available volume",
+      "rawVolume": "Raw (current temp.)",
+      "volumeAt15C": "Corrected to 15°C",
+      "sellable": "Sellable volume",
+      "sellableValue": "Sellable value",
+      "notCalculableShort": "Not calculable",
+      "temperature": "Temperature",
+      "offline": "Offline",
+      "water": "Water",
+      "empty": "Empty",
+      "thresholdLegend": {
+        "title": "Levels (mm)"
+      }
     },
     "calibrationModal": {
       "title": "Calibration — {tank}",
@@ -545,7 +631,8 @@
     }
   },
   "tankDetail": {
-    "backLink": "← {station}",
+    "backLink": "{station}",
+    "breadcrumbLabel": "Breadcrumb",
     "subtitle": "Capacity {capacity} · height {height} mm",
     "kpis": {
       "volume": "Measured volume",
@@ -554,7 +641,9 @@
       "water": "Water detected",
       "coverage": "Stock coverage",
       "value": "Stock value",
-      "temperature": "Temperature"
+      "temperature": "Temperature",
+      "fuelHeight": "Fuel height",
+      "density": "Density"
     },
     "sensorStatus": {
       "online": "Sensor connected",
@@ -613,6 +702,51 @@
         "water_level": "Water level",
         "temperature": "Temperature"
       }
+    },
+    "actions": {
+      "editThresholds": "Edit thresholds",
+      "calibration": "Calibration",
+      "sensor": "Sensor"
+    },
+    "alertBanner": {
+      "since": "Since {date}",
+      "rate": "Rate: {rate} L/h",
+      "resolve": "Resolve"
+    },
+    "cards": {
+      "thresholdsTitle": "Configured thresholds",
+      "volumesTitle": "Volumes",
+      "sensorTitle": "Sensor information",
+      "calibrationTitle": "Calibration",
+      "financialTitle": "Financial value",
+      "viewCalibrationTable": "View calibration table →",
+      "viewSensorDetails": "View sensor details →"
+    },
+    "sensorCard": {
+      "status": "Status",
+      "measurementTypes": "Measurement types",
+      "lastMeasurement": "Last measurement"
+    },
+    "financialCard": {
+      "unitPrice": "Unit price",
+      "totalValue": "Total value",
+      "lastUpdate": "Last update",
+      "noPrice": "No price set"
+    },
+    "calibrationCard": {
+      "pointsLoaded": "Points loaded",
+      "maxHeight": "Max height loaded",
+      "noPoints": "No calibration"
+    },
+    "recent": {
+      "deliveriesTitle": "Recent deliveries",
+      "leaksTitle": "Recent leaks",
+      "alertsTitle": "Alerts on this tank",
+      "viewAll": "View all →",
+      "noDeliveries": "No recent delivery",
+      "noLeaks": "No recent leak",
+      "noAlerts": "No alert on this tank",
+      "leakRate": "Rate: {rate} L/h"
     }
   },
   "addTank": {

@@ -1,3 +1,10 @@
+> **Règles opposables, à lire avant toute intervention** : `/CLAUDE.md`
+> (racine du dépôt) et les `CLAUDE.md` de `src/app/`, `src/core/`,
+> `src/shared/`, `src/modules/`. Ce document-ci explique le **pourquoi**
+> historique des décisions ; `CLAUDE.md` donne les **règles actionnables**
+> à respecter maintenant (app = routing, modules = métier, réutiliser avant
+> créer, etc.).
+
 # Fondations frontend — Design System, primitives UI, i18n FR/EN
 
 > Document produit en application d'`interface-zylo-liquid-convention/instruction.md`
@@ -130,7 +137,135 @@
 - **Numérotation de phases** : voir §1 ci-dessus.
 - **Chemin du rapport AlloTech** : voir §1 ci-dessus, chemin réel utilisé.
 
-## 9. Vérification effectuée
+## 9. Migration du module `zylo-liquid` vers `src/modules/zylo-liquid/` (2026-09-04)
+
+`grande_phases.md` §5.1 prévoyait `modules/` "vide pour l'instant" — le module
+zylo-liquid a en pratique été construit entièrement sous `app/zylo-liquid/`
+(pages + `_components/` + `_lib/` locaux), sans jamais migrer vers
+`modules/`. Cet écart a été corrigé :
+
+**Déplacé vers `src/modules/zylo-liquid/`** :
+- `components/` — composants métier (connaissance réelle des cuves/stations) :
+  `TankGauge`, `TankVisual`, `TankStatusBadge`, `TrendChart`,
+  `ProductBreakdownModal`, `ZyloLiquidShell` (shell + sidebar du module),
+  `ComingSoonPage`.
+- `services/zyloLiquidApi.ts` — anciennement `core/api/zyloLiquid.ts` :
+  déplacé car `core/` ne doit jamais être spécifique à un module métier
+  (règle §6 de `grande_phases.md`) ; ne dépend que de `core/api/client`
+  (fetch wrapper générique) et `core/api/types` (types de pagination
+  génériques), qui eux restent légitimement dans `core/`.
+- `hooks/` — `useNetworkDashboard`, `useHolykellSyncStatus`.
+- `utils/` — `formatLiters`, `formatPercent`.
+- `styles/prototype.css` — feuille de style historique du module (voir
+  limitation ci-dessous).
+
+**Promu vers `src/shared/ui/`** (composants génériques trouvés dans
+`app/zylo-liquid/_components/`, sans aucune connaissance métier — donc
+mal placés dans un dossier de module) :
+- `ActivityRow` — ligne d'activité (icône + titre + méta + badge optionnel).
+- `InfoRow` — ligne label/valeur dans une carte.
+- `CardSectionHeader` — en-tête de carte (icône + titre + action optionnelle),
+  composé sur `CardHeader`/`CardTitle` déjà exportés par `Card.tsx`.
+- `Kpi` — fusion de l'ancien `shared/ui/Kpi.tsx` (label/value/trend) et de
+  l'ancien `app/zylo-liquid/_components/Kpi.tsx` (icône/tonalité/état
+  désactivé/unité) : un seul composant, un seul jeu de tokens de tonalité
+  (`primary/success/warning/error/info/neutral`, alignés sur `Badge`/`Alert`
+  plutôt que l'ancien vocabulaire `crit/major/ok/brand` propre au CSS
+  legacy). Reste agnostique de toute clé de traduction (le libellé "à venir"
+  est passé en prop `disabledLabel` par l'appelant, jamais lu en interne).
+- `Stack` — remplace le `<div className="flex flex-col gap-6">` recopié en
+  tête de page ; primitive `cva` (`direction`, `gap`), source unique du
+  rythme vertical entre sections.
+
+**`app/zylo-liquid/`** ne contient donc plus que : les fichiers de routage
+(`page.tsx`, `layout.tsx`), les composants/hooks strictement locaux à UNE
+page (`_components/`, `_lib/` à l'intérieur d'un segment de route précis,
+ex. `stations/[stationId]/_components/`), et les traductions.
+
+**Mise à jour (2026-09-04, suite) — migration complète** : les 25 pages du
+module utilisent désormais `shared/ui` + `Stack`/`PageHeader`, y compris les
+pages initialement les plus denses (`stations`, `stations/[stationId]` et
+toute leur arborescence de composants — `StationCard/*`, `TankCard` et ses
+5 colonnes). `styles/prototype.css` n'est plus utilisé que par
+`ZyloLiquidShell` (sidebar/navbar du module — explicitement hors périmètre,
+jamais touché) ; le reste de la page racine (`page.tsx`) conserve l'ancien
+dashboard **en commentaire** (non supprimé, à la demande explicite du
+propriétaire produit) plutôt que le CSS legacy actif.
+
+**Nouvelles primitives ajoutées pendant cette migration** :
+- `ProgressBar` — barre de progression générique (remplace `.bar-track`).
+- `DropdownMenu` / `DropdownMenuItem` / `DropdownMenuSeparator` — menu
+  contextuel générique (remplace les menus "⋮" recodés à la main dans
+  chaque liste) ; présentationnel, le parent contrôle l'état ouvert/fermé
+  (pas de portail Radix — suffisant pour un menu ancré à un bouton de
+  ligne de tableau).
+- `Button` : variant `link` + taille `inline`, et export de `buttonVariants`
+  pour styler un `<Link>` Next.js comme un bouton sans dupliquer les classes.
+- `Kpi` (déjà en §9) étendu avec icône/tonalité/état désactivé/unité.
+
+**Choix de mapping couleur** : les anciennes couleurs codées en dur
+(`#E74C3C`, `#E67E22`, `#27AE60`, `#9CA3AF`, `#687280`...) ont été
+remplacées par les tokens sémantiques existants (`text-error`,
+`text-warning`, `text-success`, `text-text-muted`, `text-text-disabled`) —
+la teinte exacte change légèrement (ex. vert vif → teal du token
+`--color-success`), c'est volontaire : une seule palette sémantique pour
+toute l'app plutôt que des couleurs "maison" par composant.
+
+## 11. `app/` → `modules/zylo-liquid/screens/` (2026-09-04, suite)
+
+Écart trouvé par rapport à `grande_phases.md` §5.1/§6-8 : toute la logique
+des pages vivait directement dans `src/app/zylo-liquid/**/page.tsx` (+
+`_components/`, `_lib/` locaux), alors que `app/` doit rester un simple
+routeur qui délègue à `modules/<domaine>/screens/`.
+
+**Corrigé pour les 10 pages non triviales du module** — chaque
+`app/zylo-liquid/.../page.tsx` est désormais réduit à une ligne :
+
+```ts
+export { default } from "@/modules/zylo-liquid/screens/<name>/<Name>Screen";
+```
+
+Le contenu complet (JSX + hooks + sous-composants privés à cet écran) a été
+déplacé vers `src/modules/zylo-liquid/screens/<name>/`. Les 15 pages
+"à venir" restent inchangées (`<ComingSoonPage title=… subtitle=… />`) :
+elles étaient déjà minces, rien à migrer.
+
+**Composants promus vers `modules/zylo-liquid/components/`** (utilisés par
+≥ 2 écrans, donc pas privés à un seul écran) : `CreateStationModal`,
+`TankFieldsSection`, `CalibrationModal`. Le reste (`AddTankModal`,
+`EditThresholdsModal`, `TankCard` + ses 5 colonnes, `StationCard/*`,
+tous les hooks `use*List`/`use*Detail`) reste privé à son écran, sous
+`screens/<name>/` — ce sont des détails de composition d'un seul écran, pas
+des briques réutilisables ailleurs (cf. §7-8 de la directive : ne pas
+sur-abstraire une chose qui n'a qu'un seul consommateur).
+
+**Règle pour la suite** : avant de mettre du code dans un composant/hook
+privé à un écran, vérifier s'il est déjà utilisé (ou susceptible d'être
+utilisé) par un second écran — si oui, il va dans
+`modules/zylo-liquid/components/` (ou `services/`, `hooks/`, `utils/`),
+jamais dupliqué dans deux dossiers `screens/`.
+
+Vérifié par `tsc` + `next build` après chaque écran migré (10/10 verts,
+tailles de bundle identiques à avant migration — aucune régression).
+
+### Cookbook — où créer quoi
+
+- **Nouveau composant sans AUCUNE connaissance métier** (utilisable par
+  n'importe quel futur module CRM/Stock/RH/POS) → `src/shared/ui/`, exporté
+  depuis `index.ts`.
+- **Nouveau composant qui connaît les cuves/stations/alertes/capteurs**
+  (même simple) → `src/modules/zylo-liquid/components/`.
+- **Nouvel appel API zylo-liquid** → ajouter la fonction dans
+  `src/modules/zylo-liquid/services/zyloLiquidApi.ts` (pas dans `core/api/`).
+- **Nouveau hook de données zylo-liquid** → `src/modules/zylo-liquid/hooks/`.
+- **Nouvelle page** → `src/app/zylo-liquid/<route>/page.tsx` ; composer avec
+  `Stack` + `PageHeader` (`shared/ui`) + composants métier du module — ne pas
+  réinventer l'espacement, l'en-tête ou les cartes.
+- **Avant de créer quoi que ce soit** : chercher dans `shared/ui/index.ts`
+  et dans `modules/zylo-liquid/components/` si ça existe déjà ou si une
+  variante d'un composant existant suffit.
+
+## 10. Vérification effectuée
 
 - `npm run build` et `npm run lint` verts.
 - Parcours navigateur réel : `/login` et l'`AppShell` affichent du texte

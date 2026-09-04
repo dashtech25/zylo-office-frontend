@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import { ComingSoonPage } from "../_components/ComingSoonPage";
+import { ComingSoonPage } from "@/modules/zylo-liquid/components/ComingSoonPage";
 
 export default function UtilisateursPage() {
   const t = useTranslations("zyloLiquid");

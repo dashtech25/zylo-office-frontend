@@ -12,7 +12,9 @@
   "breadcrumbDeliveries": "Livraisons",
   "backToOffice": "Retour Zylo Office",
   "sync": {
-    "label": "Synchronisé il y a {minutes} min"
+    "label": "Sync il y a {minutes} min",
+    "never": "Jamais synchronisé",
+    "failed": "Échec de synchro"
   },
   "configuration": {
     "pageTitle": "Configuration",
@@ -76,6 +78,52 @@
       "create": "Créer le carburant",
       "saved": "Enregistré",
       "codeRequired": "Le nom et le code sont obligatoires."
+    }
+  },
+  "settingsPage": {
+    "pageTitle": "Paramètres",
+    "pageSubtitle": "Configurez le comportement global de Zylo Liquid",
+    "tabs": {
+      "organisation": "Organisation",
+      "holykell": "Holykell",
+      "systeme": "Système",
+      "notifications": "Notifications",
+      "utilisateurs": "Utilisateurs"
+    },
+    "save": "Enregistrer",
+    "saved": "Paramètres enregistrés avec succès",
+    "organisation": {
+      "sectionTitle": "INFORMATIONS GÉNÉRALES",
+      "name": "Nom de l'organisation",
+      "nameHint": "Nom affiché dans toute l'application",
+      "unavailableNote": "Logo, téléphone, email principal, langue, fuseau horaire et devise par défaut ne sont pas encore des réglages disponibles dans Zylo Office — ils n'apparaissent pas ici pour ne pas afficher un champ qui ne sauvegarde rien."
+    },
+    "holykell": {
+      "sectionTitle": "CONNEXION HOLYKELL",
+      "statusLabel": "Statut actuel",
+      "connected": "Connecté",
+      "disconnected": "Déconnecté",
+      "notConfigured": "Non configuré",
+      "lastSync": "Dernière synchronisation réussie",
+      "lastError": "Dernière erreur",
+      "never": "Jamais synchronisé",
+      "unavailableNote": "Les identifiants de connexion Holykell (identifiant, mot de passe, groupe de périphériques) ne sont pas modifiables depuis cette interface aujourd'hui — seul le statut de synchronisation est disponible en lecture."
+    },
+    "systeme": {
+      "leakSectionTitle": "DÉTECTION DE FUITE",
+      "leakThreshold": "Seuil de détection",
+      "leakThresholdHint": "Valeur standard EPA — une baisse supérieure à ce taux sur une période stable déclenche une alerte de fuite.",
+      "deliverySectionTitle": "DÉTECTION DE LIVRAISON",
+      "deliveryRiseThreshold": "Seuil de hausse",
+      "deliveryRiseThresholdHint": "Une hausse supérieure à cette valeur en une seule mesure déclenche la détection d'une livraison.",
+      "deliveryStabilization": "Délai de confirmation",
+      "deliveryStabilizationHint": "Temps d'attente après la hausse pour confirmer la fin de la livraison et calculer le volume.",
+      "readOnlyNote": "Ces valeurs sont des constantes du système, identiques pour tout le réseau — elles ne sont pas encore configurables par organisation.",
+      "unavailableNote": "Le délai de détection de sonde déconnectée et la tolérance d'écart de livraison ne sont pas encore des réglages réels dans Zylo Liquid — ils n'apparaissent pas ici pour ne pas afficher des valeurs inventées."
+    },
+    "comingSoon": {
+      "notifications": "Le centre de notifications n'est pas encore disponible dans Zylo Liquid.",
+      "utilisateurs": "La gestion des utilisateurs et des rôles se fait aujourd'hui depuis Zylo Office — l'intégration directe dans Zylo Liquid n'est pas encore disponible."
     }
   },
   "leaks": {
@@ -353,18 +401,19 @@
         "stockByProduct": "STOCK PAR PRODUIT",
         "stockByProductSub": "Volume · Capacité · Prix · Valeur par produit",
         "totalValue": "VALEUR TOTALE STATION",
-        "sync": "SYNC"
+        "sync": "SYNC",
+        "actions": "ACTIONS"
       },
       "empty": {
         "title": "Aucune station dans votre réseau",
         "add": "+ Ajouter une station"
       },
       "row": {
-        "tankCount": "{count} cuve(s)",
+        "tankCount": "{count, plural, one {# cuve} other {# cuves}}",
         "priceUndefined": "Prix non défini",
         "valueNotCalculable": "Valeur non calculable",
         "partial": "(partiel)",
-        "critical": "CRITIQUE",
+        "lowStock": "NIVEAU BAS",
         "conversionUnavailable": "Conversion indisponible",
         "syncOffline": "hors ligne"
       },
@@ -392,14 +441,38 @@
     "createModal": {
       "title": "Ajouter une station",
       "name": "Nom de la station",
+      "nameHint": "Nom affiché dans toute l'application (liste, détail, rapports)",
       "code": "Code",
       "codeHint": "Identifiant court, unique dans votre réseau (ex. STA-01)",
       "city": "Ville",
+      "cityHint": "Détermine la devise native de la station et son fuseau horaire",
       "citySelectPlaceholder": "Sélectionner une ville",
+      "resolvedCurrency": "Devise de cette station : {code} (déduite du pays de la ville sélectionnée)",
       "address": "Adresse",
+      "addressHint": "Adresse physique de la station, facultative",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "coordinatesHint": "Position GPS de la station, facultative (utile pour la carte réseau)",
+      "timezone": "Fuseau horaire",
+      "timezoneHint": "Utilisé pour horodater les mesures et rapports de cette station",
       "phone": "Téléphone",
       "email": "Email",
-      "submit": "Créer la station"
+      "openingTime": "Heure d'ouverture",
+      "closingTime": "Heure de fermeture",
+      "is24h": "Ouverte 24h/24",
+      "is24hHint": "Si coché, les heures d'ouverture/fermeture ci-dessus sont ignorées",
+      "notes": "Notes",
+      "notesHint": "Notes internes sur cette station, facultatives",
+      "submit": "Créer la station",
+      "sections": {
+        "station": "Informations station",
+        "tanks": "Cuves"
+      },
+      "tanksHint": "Facultatif — vous pouvez aussi ajouter des cuves plus tard depuis la fiche station",
+      "addTank": "+ Ajouter une cuve",
+      "removeTank": "Retirer cette cuve",
+      "noTanks": "Aucune cuve ajoutée pour l'instant",
+      "tankTitle": "Cuve {number}"
     }
   },
   "alerts": {
@@ -494,7 +567,20 @@
       "waterAlert": "Niveau eau élevé",
       "calibration": "Calibration",
       "detail": "Détail →",
-      "notCalculable": "Volume non calculable"
+      "notCalculable": "Volume non calculable",
+      "available": "Volume disponible",
+      "rawVolume": "Brut (temp. actuelle)",
+      "volumeAt15C": "Corrigé à 15°C",
+      "sellable": "Volume vendable",
+      "sellableValue": "Valeur vendable",
+      "notCalculableShort": "Non calculable",
+      "temperature": "Température",
+      "offline": "Hors ligne",
+      "water": "Eau",
+      "empty": "Vide",
+      "thresholdLegend": {
+        "title": "Niveaux (mm)"
+      }
     },
     "calibrationModal": {
       "title": "Calibration — {tank}",
@@ -545,7 +631,8 @@
     }
   },
   "tankDetail": {
-    "backLink": "← {station}",
+    "backLink": "{station}",
+    "breadcrumbLabel": "Fil d'Ariane",
     "subtitle": "Capacité {capacity} · hauteur {height} mm",
     "kpis": {
       "volume": "Volume mesuré",
@@ -554,7 +641,9 @@
       "water": "Eau détectée",
       "coverage": "Couverture de stock",
       "value": "Valeur du stock",
-      "temperature": "Température"
+      "temperature": "Température",
+      "fuelHeight": "Hauteur carburant",
+      "density": "Densité"
     },
     "sensorStatus": {
       "online": "Sonde connectée",
@@ -613,6 +702,51 @@
         "water_level": "Niveau eau",
         "temperature": "Température"
       }
+    },
+    "actions": {
+      "editThresholds": "Modifier les seuils",
+      "calibration": "Calibration",
+      "sensor": "Capteur"
+    },
+    "alertBanner": {
+      "since": "Depuis {date}",
+      "rate": "Taux : {rate} L/h",
+      "resolve": "Résoudre"
+    },
+    "cards": {
+      "thresholdsTitle": "Seuils configurés",
+      "volumesTitle": "Volumes",
+      "sensorTitle": "Informations capteur",
+      "calibrationTitle": "Calibration",
+      "financialTitle": "Valeur financière",
+      "viewCalibrationTable": "Voir table de calibration →",
+      "viewSensorDetails": "Voir détails capteur →"
+    },
+    "sensorCard": {
+      "status": "Statut",
+      "measurementTypes": "Types de mesure",
+      "lastMeasurement": "Dernière mesure"
+    },
+    "financialCard": {
+      "unitPrice": "Prix unitaire",
+      "totalValue": "Valeur totale",
+      "lastUpdate": "Dernière maj",
+      "noPrice": "Prix non défini"
+    },
+    "calibrationCard": {
+      "pointsLoaded": "Points chargés",
+      "maxHeight": "Hauteur max chargée",
+      "noPoints": "Aucune calibration"
+    },
+    "recent": {
+      "deliveriesTitle": "Livraisons récentes",
+      "leaksTitle": "Fuites récentes",
+      "alertsTitle": "Alertes sur cette cuve",
+      "viewAll": "Voir toutes →",
+      "noDeliveries": "Aucune livraison récente",
+      "noLeaks": "Aucune fuite récente",
+      "noAlerts": "Aucune alerte sur cette cuve",
+      "leakRate": "Débit : {rate} L/h"
     }
   },
   "addTank": {
