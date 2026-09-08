@@ -55,6 +55,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const [openingTime, setOpeningTime] = useState("06:00");
   const [closingTime, setClosingTime] = useState("22:00");
   const [is24h, setIs24h] = useState(false);
+  const [closedWeekdays, setClosedWeekdays] = useState<number[]>([]);
   const [notes, setNotes] = useState("");
   const [currencyOverrideId, setCurrencyOverrideId] = useState("");
   const [cities, setCities] = useState<City[]>([]);
@@ -78,6 +79,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
       setOpeningTime(station.openingTime || "06:00");
       setClosingTime(station.closingTime || "22:00");
       setIs24h(station.is24h);
+      setClosedWeekdays(station.closedWeekdays ? station.closedWeekdays.split(",").map(Number) : []);
       setNotes(station.notes ?? "");
       setCurrencyOverrideId(station.currencyOverrideId ?? "");
     }
@@ -109,6 +111,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     setOpeningTime("06:00");
     setClosingTime("22:00");
     setIs24h(false);
+    setClosedWeekdays([]);
     setNotes("");
     setCurrencyOverrideId("");
     setTanks([]);
@@ -141,6 +144,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
         openingTime: is24h ? undefined : openingTime || undefined,
         closingTime: is24h ? undefined : closingTime || undefined,
         is24h,
+        closedWeekdays: closedWeekdays.length > 0 ? [...closedWeekdays].sort((a, b) => a - b).join(",") : null,
         notes: notes || undefined,
         currencyOverrideId: currencyOverrideId || null,
       };
@@ -292,6 +296,32 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
                 </FormField>
               </div>
             )}
+
+            <FormField label={t("createModal.closedWeekdays")} hint={t("createModal.closedWeekdaysHint")}>
+              {() => (
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                    <label
+                      key={day}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm",
+                        closedWeekdays.includes(day) ? "border-primary bg-primary/10 text-primary" : "border-border-subtle text-text-muted"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={closedWeekdays.includes(day)}
+                        onChange={(e) =>
+                          setClosedWeekdays((days) => (e.target.checked ? [...days, day] : days.filter((d) => d !== day)))
+                        }
+                      />
+                      {t(`createModal.weekdayShort.${day}`)}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </FormField>
 
             <FormField label={t("createModal.notes")} hint={t("createModal.notesHint")}>
               {(field) => <Input {...field} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />}

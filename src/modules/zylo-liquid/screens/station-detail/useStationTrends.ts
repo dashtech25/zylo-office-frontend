@@ -22,6 +22,25 @@ export interface SalesDayBar {
   totalVolumeSoldLiters: number;
 }
 
+const COVERAGE_WINDOW_DAYS = 7;
+
+/** Volume vendu total sur les 7 derniers jours, par produit — sous-ensemble
+ * des 30 jours déjà chargés par `salesByDay` (aucun nouvel appel réseau).
+ * Sert au tri « produit le plus vendu » et au calcul de couverture estimée
+ * (mission « amélioration zylo liquid », page de station.docx : « couverture
+ * ... déterminée en fonction des 7 derniers jours »). */
+export function last7DaysVolumeByProduct(salesByDay: SalesDayBar[]): Map<string, number> {
+  const cutoff = dayKey(new Date(Date.now() - COVERAGE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString());
+  const totals = new Map<string, number>();
+  for (const day of salesByDay) {
+    if (day.date < cutoff) continue;
+    for (const p of day.byProduct) {
+      totals.set(p.fuelProductId, (totals.get(p.fuelProductId) ?? 0) + p.volumeSoldLiters);
+    }
+  }
+  return totals;
+}
+
 function dayKey(iso: string): string {
   return iso.slice(0, 10);
 }

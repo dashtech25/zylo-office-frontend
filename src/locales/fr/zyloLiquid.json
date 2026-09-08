@@ -1291,6 +1291,9 @@
       "closingTime": "Heure de fermeture",
       "is24h": "Ouverte 24h/24",
       "is24hHint": "Si coché, les heures d'ouverture/fermeture ci-dessus sont ignorées",
+      "closedWeekdays": "Jours de fermeture hebdomadaire",
+      "closedWeekdaysHint": "Cocher les jours où la station est fermée toute la journée. Aucune case cochée = ouvert tous les jours.",
+      "weekdayShort": { "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam", "7": "Dim" },
       "notes": "Notes",
       "notesHint": "Notes internes sur cette station, facultatives",
       "submit": "Créer la station",
@@ -1377,6 +1380,7 @@
       "deliveries": "Livraisons",
       "leaks": "Fuites",
       "edit": "Modifier",
+      "configuration": "Configuration",
       "deactivate": "Désactiver",
       "reactivate": "Réactiver"
     },
@@ -1385,6 +1389,11 @@
       "offline": "Hors ligne",
       "alert": "Alerte",
       "critical": "Critique"
+    },
+    "operationalStatus": {
+      "active": "Ouverte",
+      "maintenance": "En maintenance",
+      "inactive": "Fermée"
     },
     "alertsBanner": {
       "count": "{count} alertes actives",
@@ -1403,23 +1412,26 @@
     "kpis": {
       "stock": "Stock station",
       "stockSub": "sur {capacity} de capacité",
-      "coverage": "Couverture minimale",
-      "activeAlerts": "Alarmes actives",
-      "pumps": "Pompes disponibles"
+      "activeAlerts": "Alarmes actives"
     },
     "stockSynthesis": {
       "title": "Synthèse stock station",
       "ofCapacity": "sur {capacity} de capacité",
       "stockValue": "Valeur du stock",
       "valueUnavailable": "Valeur non calculable",
-      "totalStation": "Total station"
+      "totalStation": "Total station",
+      "rank": "#{rank}",
+      "coverageDays": "{days} j avant rupture",
+      "coverageUnavailable": "Couverture non calculable",
+      "criticalityTitle": "Produits les plus critiques"
     },
     "tabs": {
       "overview": "Vue d'ensemble",
       "pumps": "Pompes",
       "staff": "Personnel",
       "compliance": "Conformité",
-      "atg": "ATG"
+      "atg": "ATG",
+      "administration": "Administration"
     },
     "tanksSection": {
       "title": "Cuves de la station",
@@ -1532,6 +1544,147 @@
         "lastSeen": "Dernière visibilité",
         "status": "Statut"
       }
+    },
+    "administrationTab": {
+      "infoTitle": "Informations station",
+      "mapTitle": "Position",
+      "mapNoPosition": "Aucune position GPS enregistrée pour cette station.",
+      "fields": {
+        "name": "Nom",
+        "code": "Code",
+        "location": "Localisation",
+        "noCity": "Aucune ville renseignée",
+        "address": "Adresse",
+        "phone": "Téléphone",
+        "email": "Email",
+        "hours": "Heures d'ouverture",
+        "hours24h": "24h/24",
+        "closedWeekdays": "Jours de fermeture",
+        "closedWeekdaysNone": "Ouvert tous les jours",
+        "notes": "Notes",
+        "notSet": "Non renseigné",
+        "operationalStatus": "Statut"
+      },
+      "weekdayShort": { "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam", "7": "Dim" }
+    }
+  },
+  "stationAdmin": {
+    "back": "← Retour à la station",
+    "sections": {
+      "identity": "Identité",
+      "operations": "Exploitation",
+      "infrastructure": "Infrastructure",
+      "equipment": "Équipements & IoT",
+      "maintenance": "Maintenance",
+      "regulatory": "Réglementation",
+      "documents": "Documents",
+      "personnel": "Personnel",
+      "security": "Sécurité",
+      "suppliers": "Fournisseurs",
+      "financial": "Finances",
+      "history": "Historique",
+      "tanksLink": "Cuves & stockage →"
+    },
+    "operations": {
+      "productsTitle": "Produits vendus",
+      "productsHint": "Association explicite station ↔ produit — jamais déduite d'une cuve existante.",
+      "noProducts": "Aucun produit carburant dans le référentiel réseau.",
+      "servicesTitle": "Services",
+      "hasShop": "Boutique",
+      "shopName": "Nom de la boutique",
+      "shopSurfaceM2": "Surface boutique (m²)",
+      "hasLavage": "Lavage",
+      "hasVidange": "Vidange",
+      "hasGazDomestique": "Gaz domestique"
+    },
+    "infrastructure": {
+      "title": "Infrastructure",
+      "nbPistes": "Nombre de pistes",
+      "surfaceTotaleM2": "Surface totale (m²)",
+      "exploitationType": "Type d'exploitation",
+      "exploitationTypeHint": "Ex. propre, franchise, gérance libre"
+    },
+    "documents": {
+      "form": {
+        "title": "Ajouter un document",
+        "hint": "Le fichier est envoyé au service de stockage de Zylo Office (25 Mo maximum).",
+        "sensitivityLevel": "Niveau de sensibilité",
+        "submit": "Choisir un fichier"
+      },
+      "empty": "Aucun document pour cette station.",
+      "table": { "fileName": "Fichier", "sensitivityLevel": "Sensibilité", "download": "Télécharger", "delete": "Supprimer" },
+      "sensitivity": { "normal": "Normal", "restreint": "Restreint" }
+    },
+    "personnel": {
+      "form": {
+        "title": "Affecter un membre à cette station",
+        "member": "Membre",
+        "selectMember": "Sélectionner un membre",
+        "role": "Rôle",
+        "selectRole": "Sélectionner un rôle",
+        "submit": "Affecter",
+        "required": "Membre et rôle requis."
+      },
+      "empty": "Aucun membre affecté à cette station.",
+      "table": { "member": "Membre", "roles": "Rôle(s)", "unassign": "Retirer {role}" }
+    },
+    "security": {
+      "form": {
+        "title": "Ajouter un équipement de sécurité",
+        "category": "Catégorie",
+        "label": "Libellé",
+        "lastControlAt": "Dernier contrôle",
+        "nextControlDueAt": "Prochain contrôle",
+        "submit": "Ajouter",
+        "required": "Libellé requis."
+      },
+      "empty": "Aucun équipement de sécurité enregistré pour cette station.",
+      "table": {
+        "category": "Catégorie",
+        "label": "Libellé",
+        "lastControlAt": "Dernier contrôle",
+        "nextControlDueAt": "Prochain contrôle",
+        "conformityStatus": "Conformité"
+      },
+      "category": {
+        "extincteur": "Extincteur",
+        "systeme_incendie": "Système incendie",
+        "arret_urgence": "Arrêt d'urgence",
+        "point_evacuation": "Point d'évacuation",
+        "zone_atex": "Zone ATEX",
+        "autre": "Autre"
+      },
+      "conformityStatus": { "conforme": "Conforme", "non_conforme": "Non conforme", "a_controler": "À contrôler" }
+    },
+    "suppliers": {
+      "form": {
+        "title": "Associer un fournisseur",
+        "hint": "Référentiel réseau — déclare explicitement quels fournisseurs desservent cette station.",
+        "supplier": "Fournisseur",
+        "selectSupplier": "Sélectionner un fournisseur",
+        "submit": "Associer",
+        "required": "Fournisseur requis."
+      },
+      "empty": "Aucun fournisseur associé à cette station.",
+      "table": { "supplier": "Fournisseur", "status": "Statut" },
+      "statusActive": "Actif",
+      "statusInactive": "Retiré",
+      "deactivate": "Retirer",
+      "reactivate": "Réassocier"
+    },
+    "financial": {
+      "title": "Informations administratives et fiscales",
+      "hint": "Sous-ressource distincte, gardée par une permission dédiée — jamais mélangée aux informations d'identité générales.",
+      "taxId": "Numéro contribuable / NIU",
+      "billingAddress": "Adresse de facturation",
+      "costCenterCode": "Centre de coût",
+      "bankAccountInfo": "Coordonnées bancaires",
+      "bankAccountInfoHint": "Champ sensible — visible uniquement par les rôles autorisés."
+    },
+    "history": {
+      "title": "Historique des modifications",
+      "empty": "Aucun évènement enregistré pour cette station.",
+      "table": { "date": "Date", "action": "Action", "summary": "Détail" }
     }
   },
   "tankVisual": {
