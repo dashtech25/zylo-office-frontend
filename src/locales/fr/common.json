@@ -10,7 +10,8 @@
     "confirm": "Confirmer",
     "delete": "Supprimer",
     "edit": "Modifier",
-    "open": "Ouvrir"
+    "open": "Ouvrir",
+    "back": "Retour"
   },
   "states": {
     "loading": "Chargement…",

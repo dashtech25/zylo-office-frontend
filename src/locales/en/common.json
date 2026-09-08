@@ -10,7 +10,8 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
-    "open": "Open"
+    "open": "Open",
+    "back": "Back"
   },
   "states": {
     "loading": "Loading…",

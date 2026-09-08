@@ -20,7 +20,7 @@ export interface LeakEventRow {
   fuelProduct: FuelProduct | null;
 }
 
-export function useLeakEventsList(organizationId: string | null, stationId?: string) {
+export function useLeakEventsList(organizationId: string | null, stationId?: string, tankId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leaks, setLeaks] = useState<LeakEvent[]>([]);
@@ -37,7 +37,7 @@ export function useLeakEventsList(organizationId: string | null, stationId?: str
     setError(null);
     try {
       const [leaksPage, tanksPage, stationsPage, fuelProductsPage] = await Promise.all([
-        listLeakEvents(organizationId, { stationId, limit: 100 }),
+        listLeakEvents(organizationId, { stationId, tankId, limit: 100 }),
         listTanks(organizationId),
         listStations(organizationId),
         listFuelProducts(organizationId),
@@ -51,7 +51,7 @@ export function useLeakEventsList(organizationId: string | null, stationId?: str
     } finally {
       setLoading(false);
     }
-  }, [organizationId, stationId]);
+  }, [organizationId, stationId, tankId]);
 
   useEffect(() => {
     load();

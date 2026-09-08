@@ -71,20 +71,35 @@ export function useStationsList(organizationId: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const [stationsPage, tanksPage, fuelProductsPage, alertsPage, summary, citiesPage, currenciesPage] = await Promise.all([
-        listStations(organizationId),
-        listTanks(organizationId),
-        listFuelProducts(organizationId),
-        listAlerts(organizationId, { status: "active", limit: 100 }),
-        getNetworkSummary(organizationId),
+      // La liste des stations est le SEUL appel dont l'échec doit faire
+      // échouer toute la page (elle est la donnée principale de cet écran).
+      // Tout le reste est un COMPLÉMENT (KPI réseau, produits, alertes) qui
+      // peut légitimement être hors de portée pour un utilisateur scopé à
+      // une seule station (ex. un pompiste sans `fuelProduct.read` — un rôle
+      // par défaut plus restreint que le propriétaire) — un 403 sur l'un de
+      // ces compléments ne doit jamais masquer la station que l'utilisateur
+      // A le droit de voir (résout le point bloquant de `processus-double-
+      // sources-verite/02-modele-double-source.md` §6 : la portée existait
+      // déjà côté vérification, elle doit maintenant être VISIBLE et
+      // UTILISABLE de bout en bout, pas seulement techniquement correcte).
+      const emptyPage = { data: [], meta: { total: 0, limit: 0, offset: 0 } };
+      const stationsPage = await listStations(organizationId);
+      const [tanksPage, fuelProductsPage, alertsPage, summary, citiesPage, currenciesPage] = await Promise.all([
+        listTanks(organizationId).catch(() => ({ ...emptyPage, data: [] as Tank[] })),
+        listFuelProducts(organizationId).catch(() => ({ ...emptyPage, data: [] as FuelProduct[] })),
+        listAlerts(organizationId, { status: "active", limit: 100 }).catch(() => ({ ...emptyPage, data: [] as Alert[] })),
+        getNetworkSummary(organizationId).catch(() => null),
         listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
         listCurrencies(organizationId).catch(() => ({ data: [] as Currency[], meta: { total: 0, limit: 0, offset: 0 } })),
       ]);
       const activeStations = stationsPage.data.filter((s) => s.status === "active");
-      const states = await Promise.all(activeStations.map((s) => getStationCurrentState(organizationId, s.id)));
+      const states = await Promise.all(
+        activeStations.map((s) => getStationCurrentState(organizationId, s.id).catch(() => null))
+      );
       const byStation: Record<string, StationCurrentState> = {};
       activeStations.forEach((s, i) => {
-        byStation[s.id] = states[i];
+        const state = states[i];
+        if (state) byStation[s.id] = state;
       });
       setStations(stationsPage.data);
       setTanks(tanksPage.data);

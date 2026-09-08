@@ -10,6 +10,7 @@
     "organizations": "Organizations",
     "users": "Users",
     "roles": "Roles & permissions",
+    "audit": "Audit log",
     "settings": "Settings",
     "uiPreview": "Component preview"
   },

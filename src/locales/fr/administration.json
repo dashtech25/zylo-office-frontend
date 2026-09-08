@@ -1,0 +1,59 @@
+{
+  "users": {
+    "title": "Utilisateurs",
+    "subtitle": "Membres de cette organisation et rôles qui leur sont attribués.",
+    "columns": { "name": "Nom", "email": "Email", "status": "Statut", "roles": "Rôles" },
+    "noRoles": "Aucun rôle",
+    "assignRole": "Attribuer un rôle",
+    "grants": "Grants",
+    "removeRole": "Retirer",
+    "removeRoleConfirm": "Retirer le rôle \"{role}\" à {user} ?",
+    "assignModalTitle": "Attribuer un rôle à {user}",
+    "selectRole": "Choisir un rôle",
+    "selectScopeStation": "Restreindre à une station (optionnel)",
+    "scopeWholeOrganization": "Toute l'organisation",
+    "scopeHint": "Si une station est choisie, ce rôle ne s'applique qu'à cette station pour cet utilisateur — il ne verra ni n'accédera aux autres.",
+    "status": { "active": "Actif", "suspended": "Suspendu", "pending": "En attente" }
+  },
+  "roles": {
+    "title": "Rôles & permissions",
+    "subtitle": "Un rôle est un gabarit de permissions — l'attribution effective se fait depuis la page Utilisateurs. Un refus individuel prime toujours sur ce qu'un rôle accorde.",
+    "backToList": "← Retour aux rôles",
+    "create": "Créer un rôle",
+    "createModalTitle": "Créer un rôle personnalisé",
+    "codeLabel": "Code (identifiant technique)",
+    "nameLabel": "Nom",
+    "permissionsCount": "{count, plural, =0 {Aucune permission} one {# permission} other {# permissions}}",
+    "ownerImmutable": "Le rôle Propriétaire possède toutes les permissions par construction et ne peut pas être modifié.",
+    "save": "Enregistrer les permissions",
+    "saved": "Permissions enregistrées.",
+    "noPermissionToManage": "Vous ne pouvez pas modifier ce rôle : vous ne possédez pas vous-même certaines de ses permissions actuelles, ou vous n'avez pas le droit de gérer les rôles.",
+    "empty": "Aucun rôle défini pour cette organisation."
+  },
+  "audit": {
+    "title": "Journal d'audit",
+    "subtitle": "Qui a fait quoi, sur quel élément, quand — filtré selon votre portée d'accès.",
+    "columns": { "actor": "Utilisateur", "action": "Action", "summary": "Détail", "date": "Date" },
+    "empty": "Aucune action enregistrée sur cette période.",
+    "noAccess": "Vous n'avez pas la permission de consulter le journal d'audit.",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "grants": {
+    "title": "Grants individuels — {user}",
+    "subtitle": "Un grant individuel est indépendant du rôle affiché : un \"refus\" (deny) posé ici bloque toujours l'accès, même si un rôle l'autorise par ailleurs. Un \"octroi\" (allow) scopé peut débloquer une ressource précise sans changer le rôle de l'utilisateur.",
+    "empty": "Aucun grant individuel pour cet utilisateur.",
+    "columns": { "permission": "Permission", "effect": "Effet", "scope": "Portée", "validUntil": "Valide jusqu'au" },
+    "scopeOrgWide": "Toute l'organisation",
+    "effect": { "allow": "Octroi", "deny": "Refus" },
+    "revoke": "Révoquer",
+    "revokeConfirm": "Révoquer ce grant ? Toute délégation issue de lui sera révoquée avec.",
+    "addTitle": "Ajouter un grant",
+    "selectPermission": "Choisir une permission",
+    "resourceTypePlaceholder": "Type de portée (ex. station) — vide = toute l'organisation",
+    "resourceIdPlaceholder": "Identifiant de la ressource (UUID)",
+    "validUntilLabel": "Valide jusqu'au (optionnel)",
+    "auditNotePlaceholder": "Note d'audit (optionnelle)",
+    "add": "Ajouter le grant"
+  }
+}

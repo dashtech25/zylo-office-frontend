@@ -10,10 +10,8 @@ import {
   listDeliveries,
   listFuelProducts,
   listLeakEvents,
-  listTankCalibrationPoints,
   listTanks,
   type Alert,
-  type CalibrationPoint,
   type City,
   type Delivery,
   type FuelProduct,
@@ -34,7 +32,6 @@ export function useStationDetail(organizationId: string | null, stationId: strin
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [leakEvents, setLeakEvents] = useState<LeakEvent[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  const [calibrationByTank, setCalibrationByTank] = useState<Record<string, CalibrationPoint[]>>({});
 
   const load = useCallback(async () => {
     if (!organizationId) {
@@ -44,13 +41,21 @@ export function useStationDetail(organizationId: string | null, stationId: strin
     setLoading(true);
     setError(null);
     try {
-      const [stationData, tanksPage, fuelProductsPage, alertsPage, deliveriesPage, leakEventsPage, citiesPage] = await Promise.all([
-        getStation(organizationId, stationId),
-        listTanks(organizationId, 100, stationId),
-        listFuelProducts(organizationId),
-        listAlerts(organizationId, { status: "active", stationId, limit: 20 }),
-        listDeliveries(organizationId, { stationId, limit: 5 }),
-        listLeakEvents(organizationId, { stationId, limit: 5 }),
+      // `getStation`/`listTanks` sont le cœur de cet écran : leur échec doit
+      // faire échouer toute la page. Le reste (produits, alertes,
+      // livraisons, fuites) est un COMPLÉMENT que certains rôles scopés
+      // n'ont pas nécessairement (ex. un pompiste sans `alert.read`) — un
+      // 403 dessus ne doit jamais masquer la station/les cuves que
+      // l'utilisateur a le droit de voir (même principe que
+      // `useStationsList.ts`, résout le point bloquant de `processus-double-
+      // sources-verite/02-modele-double-source.md` §6).
+      const emptyPage = { data: [], meta: { total: 0, limit: 0, offset: 0 } };
+      const [stationData, tanksPage] = await Promise.all([getStation(organizationId, stationId), listTanks(organizationId, 100, stationId)]);
+      const [fuelProductsPage, alertsPage, deliveriesPage, leakEventsPage, citiesPage] = await Promise.all([
+        listFuelProducts(organizationId).catch(() => ({ ...emptyPage, data: [] as FuelProduct[] })),
+        listAlerts(organizationId, { status: "active", stationId, limit: 20 }).catch(() => ({ ...emptyPage, data: [] as Alert[] })),
+        listDeliveries(organizationId, { stationId, limit: 5 }).catch(() => ({ ...emptyPage, data: [] as Delivery[] })),
+        listLeakEvents(organizationId, { stationId, limit: 5 }).catch(() => ({ ...emptyPage, data: [] as LeakEvent[] })),
         listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
       ]);
       setStation(stationData);
@@ -61,16 +66,8 @@ export function useStationDetail(organizationId: string | null, stationId: strin
       setLeakEvents(leakEventsPage.data);
       setCities(citiesPage.data);
 
-      const activeTanks = tanksPage.data.filter((tk) => tk.active);
-      const calibrationLists = await Promise.all(activeTanks.map((tk) => listTankCalibrationPoints(organizationId, tk.id).catch(() => [] as CalibrationPoint[])));
-      const calibrationMap: Record<string, CalibrationPoint[]> = {};
-      activeTanks.forEach((tk, i) => {
-        calibrationMap[tk.id] = calibrationLists[i];
-      });
-      setCalibrationByTank(calibrationMap);
-
       if (stationData.status === "active") {
-        setCurrentState(await getStationCurrentState(organizationId, stationId));
+        setCurrentState(await getStationCurrentState(organizationId, stationId).catch(() => null));
       } else {
         setCurrentState(null);
       }
@@ -101,7 +98,6 @@ export function useStationDetail(organizationId: string | null, stationId: strin
     deliveries,
     leakEvents,
     cities,
-    calibrationByTank,
     reload: load,
   };
 }

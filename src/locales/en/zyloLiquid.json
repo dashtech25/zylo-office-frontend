@@ -1,4 +1,221 @@
 {
+  "rapports": {
+    "pageTitle": "Reports & KPI",
+    "pageSubtitle": "Every indicator that can be computed today from the network's real data — hover the ⓘ next to any information to see exactly what it tells you.",
+    "periods": {
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days"
+    },
+    "periodTooltips": {
+      "today": "Deliveries and leak tests since midnight today.",
+      "7d": "Deliveries and leak tests from the last 7 days.",
+      "30d": "Deliveries and leak tests from the last 30 days.",
+      "90d": "Deliveries and leak tests from the last 90 days."
+    },
+    "sections": {
+      "overview": "Network overview"
+    },
+    "kpis": {
+      "activeStations": {
+        "label": "Active stations",
+        "help": "Number of stations in your network currently in service (active status). A gap with the \"online\" count points to stations whose sensor is no longer reporting.",
+        "sub": "{online} online right now"
+      },
+      "networkStock": {
+        "label": "Total network stock",
+        "help": "Sum of the fuel physically present in every active tank, across all products, right now.",
+        "sub": "{pct}% of total capacity ({capacity})"
+      },
+      "stockValue": {
+        "label": "Stock value",
+        "help": "Market value of the current stock, computed using each product's latest known price per station. If a station has no price defined, its value is excluded — the total may therefore be partial.",
+        "partial": "Partial calculation — some stations have no price defined"
+      },
+      "activeAlerts": {
+        "label": "Active alerts",
+        "help": "Total number of alerts currently unresolved across the whole network, of every type (high level, low level, water detected, leak, sensor offline).",
+        "sub": "All types combined"
+      },
+      "atgAvailability": {
+        "label": "Telemetry availability",
+        "help": "Share of tanks whose sensor is currently reporting (\"online\" status). A value below 100% means some tanks no longer have reliable data — a hidden stock-out risk.",
+        "sub": "{online} / {total} tanks online"
+      },
+      "lowestStock": {
+        "label": "Station closest to running out",
+        "help": "Among all active stations, the one with the lowest fill rate (stock/capacity) — the first one to watch for a delivery.",
+        "empty": "No data available"
+      },
+      "deliveredVolume": {
+        "label": "Volume delivered",
+        "help": "Total volume received by the network over the selected period, automatically detected from a tank level rise (no declarative bill of lading in Zylo Liquid today).",
+        "sub": "{count} delivery(ies) detected"
+      },
+      "leakTests": {
+        "label": "Leak tests",
+        "help": "Number of static leak tests run over the period (station at rest). An anomaly means a loss rate above the standard threshold (0.38 L/h).",
+        "sub": "{anomalies} anomaly(ies) detected"
+      }
+    },
+    "alertBreakdown": {
+      "title": "Alerts by type",
+      "titleHelp": "Breakdown of currently active alerts by type — shows at a glance which kind of issue dominates the network.",
+      "empty": "No alert recorded.",
+      "totalOverPeriod": "{total} total (period)",
+      "typeHelp": {
+        "level_high": "The fuel level has exceeded this tank's configured high threshold — overflow risk.",
+        "level_high_pre_alarm": "The level is approaching the high threshold — an early warning before the full alarm.",
+        "level_low": "The level has dropped below the configured low threshold — stock-out risk, a delivery is likely needed.",
+        "water": "Water has been detected at the bottom of the tank beyond the configured threshold — fuel quality risk.",
+        "leak": "A static leak test measured a loss rate above the standard threshold (0.38 L/h).",
+        "sensor_offline": "This tank's sensor is no longer reporting — displayed data may be stale."
+      }
+    },
+    "ranking": {
+      "title": "Station ranking",
+      "titleHelp": "Every station in the network, compared on the same criteria. Click a column header to sort.",
+      "clickToSort": "Click a header to sort",
+      "empty": "No station to display.",
+      "columns": {
+        "station": "Station",
+        "status": "Status",
+        "fillRate": "Fill rate",
+        "fillRateHelp": "Current volume divided by the station's total capacity, as a percentage. A low value signals a stock-out risk.",
+        "alerts": "Active alerts",
+        "alertsHelp": "Number of unresolved alerts currently on this station, of every type.",
+        "delivered": "Delivered volume (period)",
+        "deliveredHelp": "Total volume received by this station over the selected period, automatically detected from a tank level rise.",
+        "availability": "Sensor availability",
+        "availabilityHelp": "Share of this station's tanks whose sensor is currently reporting — a low value signals a telemetry issue to fix.",
+        "value": "Stock value"
+      }
+    },
+    "leaks": {
+      "title": "Leak tests (period)",
+      "titleHelp": "Results of static leak tests run over the selected period — a test compares the level at the start and end of a window, station at rest.",
+      "empty": "No leak test recorded for this period.",
+      "columns": {
+        "station": "Station",
+        "period": "Test window",
+        "rate": "Loss rate",
+        "rateHelp": "Volume lost per hour over the test window. Above 0.38 L/h (EPA standard), the test is classified as an anomaly.",
+        "result": "Result"
+      },
+      "result": {
+        "normal": "Normal",
+        "anomaly": "Anomaly"
+      }
+    }
+  },
+  "stationPicker": {
+    "searchPlaceholder": "Search a station (name, code)…",
+    "noResults": "No station matches this search.",
+    "ungrouped": "Country not set",
+    "ungroupedCity": "City not set",
+    "selectAllInCountry": "Select all"
+  },
+  "caisse": {
+    "pageTitle": "Cash",
+    "pageSubtitle": "Sales estimated from tank level drops, valued at the sale price in effect — never an official accounting record.",
+    "banner": "Figure estimated from tank telemetry, excluding delivery windows. Click an amount to see its breakdown, down to the measurement that produced it.",
+    "incompletePricingBanner": "{count, plural, one {# station has} other {# stations have}} sales whose revenue isn't fully calculable (missing price or mixed currencies) — configure sale prices to complete the calculation.",
+    "noData": "No calibrated tank allows a cash calculation on this scope.",
+    "periods": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "custom": "Custom period"
+    },
+    "customFrom": "Period start",
+    "customTo": "Period end",
+    "operationalDayToggle": "Operating day (each station's own opening time)",
+    "currencyCardTitle": "Network cash ({currency})",
+    "currencyCardSub": "{volume} L sold — {stations} contributing station(s)",
+    "vsWeeklyAverage": "{sign}{pct}% vs last 7 days' average",
+    "stationsCoverage": "Stations with data",
+    "productsCount": "{count} product(s) involved",
+    "lastUpdate": "Last measurement received at {time}",
+    "dailySummary": {
+      "title": "Automatic summary (deterministic rules, not a human analysis)",
+      "total": "Cash today: {value} — {stations} contributing station(s).",
+      "vsYesterdayUp": "Up {pct}% compared to yesterday.",
+      "vsYesterdayDown": "Down {pct}% compared to yesterday.",
+      "vsAverageUp": "{pct}% above the last 7 days' average.",
+      "vsAverageDown": "{pct}% below the last 7 days' average.",
+      "bestStation": "Best contributor: {station}.",
+      "worstStation": "Weakest contributor: {station}.",
+      "attentionNeeded": "{count} station(s) to watch (anomaly or insufficient data)."
+    },
+    "confidence": {
+      "reliable": "Reliable calculation",
+      "partial": "Partially reliable",
+      "incomplete_data": "Incomplete data",
+      "insufficient_data": "Insufficient data",
+      "anomaly": "Anomaly detected"
+    },
+    "reasons": {
+      "no_calibration_table": "Tank not calibrated — volume not calculable.",
+      "no_applicable_price": "No sale price configured for this period.",
+      "mixed_currencies": "Different currencies mixed — not addable.",
+      "incomplete_pricing": "Incomplete pricing on at least one contributing tank.",
+      "insufficient_data": "No usable measurement for this period."
+    },
+    "networkModal": {
+      "title": "Breakdown by station — {currency}",
+      "columns": {
+        "station": "Station",
+        "volume": "Volume sold",
+        "value": "Estimated revenue",
+        "share": "Share",
+        "confidence": "Confidence"
+      },
+      "total": "Network total",
+      "exportCsv": "Export as CSV",
+      "bestContributor": "Best contributor",
+      "worstContributor": "Weakest contributor"
+    },
+    "stationModal": {
+      "title": "Cash — {station}",
+      "titleLoading": "Loading…",
+      "volumeSold": "Volume sold",
+      "monetaryValue": "Estimated revenue",
+      "columns": {
+        "productTank": "Product / Tank",
+        "volume": "Volume sold",
+        "value": "Estimated revenue",
+        "confidence": "Confidence"
+      }
+    },
+    "tankModal": {
+      "title": "{tank} — {product}",
+      "titleLoading": "Loading…",
+      "volumeSold": "Volume sold",
+      "monetaryValue": "Estimated revenue",
+      "columns": {
+        "period": "Period",
+        "type": "Nature",
+        "heightStart": "Start height",
+        "heightEnd": "End height",
+        "volume": "Volume sold",
+        "value": "Valuation"
+      },
+      "segmentTypes": {
+        "sale": "Sale",
+        "delivery": "Delivery",
+        "stable": "Stable",
+        "anomaly_unexplained_rise": "Unexplained rise",
+        "anomaly_extreme_variation": "Extreme variation",
+        "insufficient_data": "Insufficient data"
+      },
+      "anomalyTypes": {
+        "anomaly_unexplained_rise": "Unexplained rise detected",
+        "anomaly_extreme_variation": "Extreme variation detected"
+      }
+    }
+  },
   "appName": "Zylo Liquid",
   "appSub": "ATG Supervision",
   "sbFoot": "Real data — Zylo Liquid API",
@@ -18,17 +235,28 @@
   },
   "configuration": {
     "pageTitle": "Configuration",
-    "pageSubtitle": "Organization, prices, thresholds and permissions. Changes take effect immediately across the app.",
+    "pageSubtitle": "Organization, prices, thresholds, products and system. Changes take effect immediately across the app.",
     "tabs": {
       "prix": "Fuel prices",
       "carburants": "Fuel catalog",
       "seuils": "Alert thresholds",
-      "systeme": "Network configuration",
-      "orga": "Organization",
+      "organisation": "Organization",
+      "holykell": "Holykell",
+      "systeme": "System",
+      "notifications": "Notifications",
+      "utilisateurs": "Users",
       "roles": "Roles & permissions"
     },
+    "comingSoonNotifications": "The notification center is not yet available in Zylo Liquid.",
+    "comingSoonUtilisateurs": "User and role management is currently done from Zylo Office — direct integration into Zylo Liquid is not yet available.",
     "prices": {
       "banner": "Administered price regime. Fuel sale prices are usually set by the regulator — it stays configurable here to keep history and value the stock.",
+      "gridTitle": "Price grid",
+      "gridSubtitle": "Network (by currency) → currency (stations concerned) → station (effective price and history). Click a currency or a station to see detail, click a price to edit it.",
+      "showManualForm": "Show manual form",
+      "hideManualForm": "Hide manual form",
+      "showRawHistory": "Show raw history (all stations and products)",
+      "hideRawHistory": "Hide raw history",
       "addTitle": "Record a price",
       "addSubtitle": "Writes a new row to the price history — a correction never overwrites a real change.",
       "station": "Station",
@@ -41,6 +269,12 @@
       "effectiveFrom": "Effective from",
       "reason": "Change reason",
       "create": "Save",
+      "currencyAuto": "Currency resolved automatically from the station's city ({code}).",
+      "currencyUnresolved": "This station has no resolvable currency (city not linked to a country) — pick one manually.",
+      "currencyChange": "Change",
+      "networkDefaultToggle": "Network default price (no specific station)",
+      "networkDefaultHint": "Applies to any station that has no price of its own for this product — a station with an existing price keeps its own.",
+      "networkDefaultBadge": "Network (default)",
       "historyTitle": "Price history",
       "historySubtitle": "Most recent rows, across all stations and products",
       "columns": {
@@ -52,7 +286,60 @@
         "effectiveFrom": "Effective since",
         "future": "Scheduled"
       },
-      "empty": "No price recorded."
+      "empty": "No price recorded.",
+      "bulk": {
+        "openButton": "Configure multiple stations",
+        "title": "Bulk pricing",
+        "description": "Applies the same price to several stations in one action. Each station gets its own history row.",
+        "stations": "{count, plural, one {# station selected} other {# stations selected}}",
+        "mixedCurrencies": "The selected stations don't all share the same currency — a single price can't be applied. Narrow the selection.",
+        "noCurrency": "{count, plural, one {This station has} other {These stations have}} no resolvable currency: {names}.",
+        "product": "Product",
+        "selectProduct": "Select a product",
+        "currency": "Currency",
+        "effectiveFrom": "Effective from",
+        "sellPrice": "Sale price (per liter)",
+        "costPrice": "Cost price (per liter)",
+        "reason": "Change reason",
+        "preview": "Preview",
+        "previewNew": "{count, plural, one {# station will} other {# stations will}} receive this price for the first time.",
+        "previewExisting": "{count, plural, one {# station already has} other {# stations already have}} a price for this product:",
+        "skipExisting": "Leave already-recorded prices untouched",
+        "overwriteExisting": "Also record a new row for these stations",
+        "apply": "Apply"
+      },
+      "grid": {
+        "breadcrumbNetwork": "Network",
+        "productColumn": "Product",
+        "stationColumn": "Station",
+        "emptyCell": "—",
+        "amountLabel": "Amount",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "reasonPlaceholder": "Change reason (required)",
+        "noProducts": "No active product in the catalog.",
+        "noCurrencies": "No price recorded yet.",
+        "noCurrenciesHint": "Record a first price (manual form below) to make a currency column appear.",
+        "networkDefaultTitle": "Network default price ({code})",
+        "networkDefaultHint": "Applies to any station operating in this currency that has no price of its own for this product.",
+        "noStationsForCurrency": "No station operates in this currency.",
+        "badgeInherited": "Inherited",
+        "badgeOverride": "Override",
+        "noCity": "City not set",
+        "currencyUnresolvedStation": "This station has no resolvable currency (city not linked to a country) — its prices can't be edited here, use the manual form with an explicit currency.",
+        "historyTitle": "This station's history",
+        "historySubtitle": "Who, when, why — each row is an insertion, never a correction of an existing one.",
+        "noHistory": "No price recorded for this station.",
+        "historyColumns": {
+          "effectiveFrom": "Effective since",
+          "product": "Product",
+          "price": "Price",
+          "by": "By",
+          "reason": "Reason"
+        },
+        "futureBadge": "Scheduled",
+        "unknownAuthor": "—"
+      }
     },
     "fuelCatalog": {
       "banner": "The catalog is shared across the whole network. A fuel product is never deleted — it is removed from the catalog, which preserves all history.",
@@ -64,8 +351,12 @@
       "codeHint": "The code is the product's database key: it cannot be changed.",
       "density": "Density (g/cm³)",
       "color": "Display color",
+      "colorReserved": "This shade of red is reserved for system alerts — pick another color.",
       "activeTanks": "Tanks in service",
-      "currentPrice": "Current price",
+      "lastKnownPrice": "Last known price (FCFA)",
+      "lastKnownPriceHint": "Legacy field, not fed by the price history — see the Fuel prices tab for the actual current value.",
+      "stationsTitle": "Stations selling this product",
+      "stationsCount": "{active}/{total}",
       "save": "Save",
       "deactivate": "Remove from catalog",
       "reactivate": "Restore to catalog",
@@ -78,6 +369,29 @@
       "create": "Create fuel product",
       "saved": "Saved",
       "codeRequired": "Name and code are required."
+    },
+    "summary": {
+      "fix": "Fix",
+      "geoMessage": "{count, plural, one {# station has} other {# stations have}} no resolvable currency (city not linked to a country).",
+      "sellPriceMessage": "{count, plural, one {# station has} other {# stations have}} an active product with no sale price recorded.",
+      "costPriceMessage": "{count, plural, one {# station has} other {# stations have}} a sale price with no cost price — margin can't be calculated."
+    },
+    "thresholds": {
+      "banner": "Real per-tank thresholds (in millimeters), identical to the ones configurable from the Tank page — consolidated, sortable and filterable view across the whole network.",
+      "empty": "No active tank to configure.",
+      "searchPlaceholder": "Search a station or tank",
+      "filterProduct": "Filter by product",
+      "filterProductAll": "All products",
+      "columns": {
+        "station": "Station",
+        "tank": "Tank",
+        "product": "Product",
+        "high": "High threshold",
+        "preAlarm": "Pre-alarm",
+        "low": "Low threshold",
+        "water": "Max water"
+      },
+      "edit": "Edit"
     }
   },
   "settingsPage": {
@@ -136,6 +450,10 @@
       "rate": "Leak rate",
       "result": "Result"
     },
+    "detail": {
+      "startTime": "Test start",
+      "endTime": "Test end"
+    },
     "result": {
       "normal": "Normal",
       "anomaly": "Anomaly"
@@ -145,29 +463,480 @@
   },
   "deliveries": {
     "pageTitle": "Deliveries",
-    "pageSubtitle": "{count} reception(s) automatically detected — bill-of-lading comparison unavailable at Level 1",
-    "kpis": {
-      "volumeReceived": { "label": "Volume received", "sub": "{count} delivery(ies) detected" },
-      "gapCumulative": { "label": "Cumulative bill / measurement gap" },
-      "complianceRate": { "label": "Compliance rate" },
-      "financialImpact": { "label": "Financial impact of discrepancies" }
+    "pageSubtitle": "{count} delivery(ies) automatically detected by a tank level jump",
+    "filters": {
+      "station": "Station",
+      "stationAll": "All stations",
+      "fromDate": "From",
+      "toDate": "To",
+      "export": "Export"
     },
-    "suppliers": { "title": "Supplier reliability" },
-    "chart": { "title": "At what pace is the network resupplied?", "subtitle": "Volume detected per day (liters)" },
+    "views": {
+      "all": "All",
+      "byStation": "By station"
+    },
+    "summary": {
+      "count": "{count, plural, one {# delivery} other {# deliveries}}",
+      "volume": "Volume received",
+      "value": "Value",
+      "valueNotCalculable": "Not calculable"
+    },
+    "stationGroup": {
+      "count": "{count, plural, one {# delivery} other {# deliveries}}",
+      "volume": "{volume} received"
+    },
     "table": {
-      "title": "Detected receptions log",
-      "subtitle": "Delivery identified automatically by a level jump — no manual entry at Level 1",
       "date": "Date",
       "station": "Station",
       "tank": "Tank / product",
+      "heightBefore": "Level before",
+      "heightAfter": "Level after",
+      "received": "Volume received",
+      "value": "Value"
+    },
+    "detail": {
+      "title": "Delivery — {station}",
+      "period": "From {start} to {end}",
+      "heightBefore": "Level before",
+      "heightAfter": "Level after",
+      "duration": "Duration",
+      "volume": "Volume received",
+      "value": "Estimated value",
+      "valueHint": "Computed at the currently effective sale price — not the price on the day of the delivery (not kept in history).",
+      "measurementsTitle": "Measurements during this delivery",
+      "measurementsSubtitle": "Every sensor reading between the start and end of the detected delivery",
+      "measurementsEmpty": "No measurement found in this period.",
+      "measurementsColumns": {
+        "date": "Date and time",
+        "height": "Height",
+        "volume": "Volume at this instant"
+      }
+    },
+    "empty": "No delivery detected in this period.",
+    "noStation": "No station received a delivery in this period.",
+    "inProgress": {
+      "badge": "In progress",
+      "title": "{count, plural, one {# delivery in progress} other {# deliveries in progress}}",
+      "subtitle": "Level rise detected live, not yet stabilized — recomputed every 10 seconds, nothing is saved until the delivery is confirmed.",
+      "heightBefore": "Level before rise",
+      "heightNow": "Current level",
+      "volumeSoFar": "Already in",
+      "since": "Since",
+      "detailPeriod": "Since {start} — still in progress"
+    }
+  },
+  "approvisionnementScreen": {
+    "pageTitle": "Supply",
+    "pageSubtitle": "Deliveries declared by a human — distinct from automatically detected deliveries (see Deliveries).",
+    "banner": "Each declaration can be reconciled on demand with a delivery detected by telemetry.",
+    "empty": "No delivery declared.",
+    "form": {
+      "title": "Declare a delivery",
+      "station": "Station",
+      "selectStation": "Select a station",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "eventAt": "Delivery date",
+      "volume": "Declared volume (liters)",
       "supplier": "Supplier",
+      "reference": "Delivery note reference",
+      "submit": "Declare",
+      "required": "Station, product and volume are required."
+    },
+    "table": {
+      "station": "Station",
+      "product": "Product",
+      "volume": "Volume",
+      "date": "Date",
+      "status": "Status",
+      "reconcile": "Reconcile"
+    },
+    "status": {
       "declared": "Declared",
-      "received": "Received (measured)",
-      "gap": "Gap",
-      "impact": "Impact",
+      "locked": "Locked"
+    }
+  },
+  "shiftsScreen": {
+    "pageTitle": "Shifts",
+    "pageSubtitle": "Shift start/end and cash declared, per tank.",
+    "banner": "Reconciled with the already-computed telemetric cash aggregate (see Daily cash) — never a new calculation.",
+    "empty": "No shift declared.",
+    "form": {
+      "title": "Declare a shift",
+      "tank": "Tank",
+      "selectTank": "Select a tank",
+      "shiftStart": "Shift start",
+      "shiftEnd": "Shift end",
+      "cashAmount": "Declared cash amount",
+      "currency": "Currency",
+      "submit": "Declare",
+      "required": "Tank, amount and currency are required."
+    },
+    "table": {
+      "tank": "Tank",
+      "period": "Period",
+      "cashAmount": "Declared cash",
       "status": "Status"
     },
-    "empty": "No delivery detected in this period."
+    "status": {
+      "declared": "Declared",
+      "locked": "Locked"
+    }
+  },
+  "pompisteDashboard": {
+    "pageTitle": "My shift",
+    "banner": "This role has no piloting view (stations, tanks, network finance) — only your shift and your own declarations are visible, matching the validated pump attendant scope.",
+    "noShift": "No shift declared yet.",
+    "status": {
+      "declared": "Ongoing",
+      "locked": "Closed"
+    },
+    "shiftStart": "Start",
+    "shiftEnd": "Planned end",
+    "declaredCash": "Declared cash",
+    "openingReading": "Opening reading",
+    "closingReading": "Closing reading",
+    "closeShift": "Close my shift",
+    "closed": "This shift is closed.",
+    "recentShifts": "My recent shifts",
+    "alertsTitle": "Active alerts for my station",
+    "noAlerts": "No active alert.",
+    "table": {
+      "start": "Start",
+      "end": "End",
+      "cash": "Declared cash",
+      "status": "Status"
+    }
+  },
+  "ventesScreen": {
+    "pageTitle": "Sales journal",
+    "pageSubtitle": "Commercial qualification of an already-observed distribution — never a new independent fact.",
+    "banner": "A credit sale automatically opens a receivable on the selected commercial account (see Credit customers).",
+    "empty": "No sale recorded.",
+    "form": {
+      "title": "Record a sale",
+      "station": "Station",
+      "selectStation": "Select a station",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "eventAt": "Date",
+      "quantity": "Quantity (liters)",
+      "price": "Unit price",
+      "currency": "Currency",
+      "paymentMethod": "Payment method",
+      "commercialAccount": "Commercial account",
+      "selectAccount": "Select an account",
+      "submit": "Record",
+      "required": "All fields are required (commercial account required for credit)."
+    },
+    "table": {
+      "station": "Station",
+      "product": "Product",
+      "quantity": "Quantity",
+      "amount": "Amount",
+      "paymentMethod": "Payment",
+      "date": "Date"
+    },
+    "paymentMethod": {
+      "cash": "Cash",
+      "card": "Card",
+      "fleet": "Fleet card",
+      "credit": "Credit",
+      "orange_money": "Orange Money",
+      "mtn_momo": "MTN MoMo",
+      "bank_transfer": "Bank transfer",
+      "cheque": "Cheque",
+      "other": "Other"
+    }
+  },
+  "maintenanceScreen": {
+    "pageTitle": "Maintenance",
+    "pageSubtitle": "Station equipment and interventions — planning, assignment, closure.",
+    "tabs": {
+      "equipment": "Equipment",
+      "interventions": "Interventions"
+    },
+    "equipment": {
+      "empty": "No equipment recorded.",
+      "form": {
+        "title": "Add equipment",
+        "station": "Station",
+        "selectStation": "Select a station",
+        "type": "Type",
+        "name": "Name / tag",
+        "manufacturer": "Manufacturer",
+        "model": "Model",
+        "serialNumber": "Serial number",
+        "submit": "Add",
+        "required": "Station, type and name are required."
+      },
+      "table": {
+        "type": "Type",
+        "name": "Name",
+        "station": "Station",
+        "status": "Status",
+        "lastMaintenance": "Last maintenance",
+        "actions": ""
+      },
+      "status": {
+        "in_service": "In service",
+        "out_of_order": "Out of order",
+        "out_of_service": "Out of service"
+      },
+      "createIntervention": "Report an intervention"
+    },
+    "interventions": {
+      "empty": "No intervention recorded.",
+      "form": {
+        "title": "Report an intervention",
+        "equipment": "Equipment",
+        "selectEquipment": "Select equipment",
+        "priority": "Priority",
+        "type": "Type",
+        "description": "Problem description",
+        "submit": "Create",
+        "required": "Equipment, priority, type and description are required."
+      },
+      "priority": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "type": {
+        "preventive": "Preventive",
+        "corrective": "Corrective"
+      },
+      "status": {
+        "planned": "Planned",
+        "in_progress": "In progress",
+        "closed": "Closed"
+      },
+      "table": {
+        "priority": "Priority",
+        "equipment": "Equipment",
+        "station": "Station",
+        "type": "Type",
+        "description": "Description",
+        "status": "Status",
+        "technician": "Technician",
+        "actions": ""
+      },
+      "assign": "Assign",
+      "close": "Close",
+      "selectTechnician": "Select a technician",
+      "closeForm": {
+        "title": "Close intervention",
+        "diagnosis": "Diagnosis",
+        "actionTaken": "Action taken",
+        "cost": "Cost",
+        "submit": "Close"
+      }
+    }
+  },
+  "produitsScreen": {
+    "pageTitle": "Products & shop",
+    "pageSubtitle": "Non-fuel product catalog and counter sale — entity kept separate from fuel sales (which qualify an already-observed distribution).",
+    "tabs": {
+      "catalog": "Catalog",
+      "sale": "Counter sale",
+      "history": "History"
+    },
+    "catalog": {
+      "empty": "No product in the catalog.",
+      "form": {
+        "title": "Add a product",
+        "station": "Station (empty = network catalog)",
+        "selectStation": "Entire network",
+        "name": "Name",
+        "sku": "SKU",
+        "barcode": "Barcode",
+        "category": "Category",
+        "price": "Unit price",
+        "currency": "Currency",
+        "submit": "Add",
+        "required": "Name, price and currency are required."
+      },
+      "table": {
+        "name": "Name",
+        "category": "Category",
+        "price": "Price",
+        "scope": "Scope",
+        "barcode": "Barcode"
+      },
+      "scopeNetwork": "Network"
+    },
+    "sale": {
+      "empty": "Cart is empty.",
+      "station": "Station",
+      "selectStation": "Select a station",
+      "searchPlaceholder": "Search a product or scan a barcode…",
+      "quantity": "Qty",
+      "addToCart": "Add",
+      "cart": "Cart",
+      "total": "Total",
+      "paymentMethod": "Payment method",
+      "commercialAccount": "Commercial account",
+      "selectAccount": "Select an account",
+      "submit": "Record sale",
+      "removeLine": "Remove",
+      "error": "The cart cannot be empty.",
+      "creditAccountRequired": "A commercial account is required for a credit sale.",
+      "success": "Sale recorded."
+    },
+    "history": {
+      "empty": "No sale recorded.",
+      "table": {
+        "date": "Date",
+        "station": "Station",
+        "amount": "Amount",
+        "paymentMethod": "Payment",
+        "status": "Status",
+        "actions": ""
+      },
+      "status": {
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "cancel": "Cancel"
+    }
+  },
+  "reglementaireScreen": {
+    "pageTitle": "Regulatory",
+    "pageSubtitle": "Regulatory documents and declarations by station — a certainty level is shown for each obligation, never presented as equally certain.",
+    "banner": "The precise detail of some Cameroonian regulatory obligations still needs confirmation (see the mission's business research). The principle of each obligation is retained; its exact detail may require professional verification.",
+    "tabs": {
+      "documents": "Documents",
+      "declarations": "Declarations"
+    },
+    "filterNeedsAction": "Documents needing action",
+    "filterAll": "All documents",
+    "documents": {
+      "empty": "No regulatory document.",
+      "form": {
+        "title": "Add a document",
+        "station": "Station",
+        "selectStation": "Select a station",
+        "type": "Document type",
+        "authority": "Authority",
+        "expiresAt": "Expiry date",
+        "certaintyLevel": "Certainty level",
+        "submit": "Add",
+        "required": "Station and document type are required."
+      },
+      "table": {
+        "station": "Station",
+        "type": "Type",
+        "authority": "Authority",
+        "expiresAt": "Expiry",
+        "status": "Status",
+        "certainty": "Certainty",
+        "actions": ""
+      },
+      "status": {
+        "valid": "Valid",
+        "renew_soon": "Renew soon",
+        "expired": "Expired",
+        "unknown": "Unknown expiry"
+      },
+      "certainty": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "renew": "Renew"
+    },
+    "declarations": {
+      "empty": "No regulatory declaration.",
+      "form": {
+        "title": "Create a declaration",
+        "station": "Station",
+        "selectStation": "Select a station",
+        "type": "Type",
+        "authority": "Authority",
+        "reserve": "Reserve / uncertainty",
+        "submit": "Create",
+        "required": "Station and type are required."
+      },
+      "table": {
+        "station": "Station",
+        "type": "Type",
+        "authority": "Authority",
+        "status": "Status"
+      },
+      "status": {
+        "to_produce": "To produce",
+        "produced": "Produced"
+      }
+    }
+  },
+  "creditScreen": {
+    "pageTitle": "Credit customers",
+    "pageSubtitle": "Customer accounts, credit limit and open receivables.",
+    "banner": "Exceeding the credit limit is blocked at the sale, never allowed silently.",
+    "empty": "No customer account.",
+    "form": {
+      "title": "Create a customer account",
+      "name": "Name",
+      "currency": "Currency",
+      "creditLimit": "Credit limit",
+      "submit": "Create",
+      "required": "Name, currency and limit are required."
+    },
+    "account": {
+      "outstanding": "Outstanding",
+      "active": "Active",
+      "inactive": "Inactive",
+      "noReceivable": "No receivable for this account."
+    },
+    "table": {
+      "amount": "Amount",
+      "status": "Status",
+      "pay": "Pay"
+    },
+    "receivableStatus": {
+      "open": "Open",
+      "partially_settled": "Partially settled",
+      "settled": "Settled"
+    }
+  },
+  "reconciliationScreen": {
+    "pageTitle": "Stock reconciliation",
+    "pageSubtitle": "Declared sales compared to telemetric stock, tank by tank and day by day.",
+    "banner": "Directly reuses the already-computed cash aggregate (see Daily cash) — no new telemetric calculation.",
+    "empty": "No reconciliation computed yet.",
+    "form": {
+      "title": "Compute a reconciliation",
+      "tank": "Tank",
+      "selectTank": "Select a tank",
+      "day": "Day",
+      "submit": "Reconcile",
+      "required": "Tank and day are required."
+    },
+    "table": {
+      "tank": "Tank",
+      "day": "Day",
+      "status": "Status",
+      "discrepancy": "Discrepancy"
+    },
+    "status": {
+      "matched": "Matched",
+      "discrepancy": "Discrepancy found",
+      "pending": "Awaiting data",
+      "insufficient_data": "Insufficient data"
+    }
+  },
+  "caisseEcartsScreen": {
+    "pageTitle": "Cash discrepancies",
+    "pageSubtitle": "Discrepancies detected by reconciliation, across all types.",
+    "banner": "Read-only view — each row comes from a reconciliation already triggered elsewhere (Supply, Stock reconciliation, Tanks).",
+    "empty": "No discrepancy detected yet.",
+    "table": {
+      "type": "Type",
+      "discrepancy": "Discrepancy found",
+      "tolerance": "Tolerance applied",
+      "evaluatedAt": "Computed on"
+    }
   },
   "tanksNetwork": {
     "pageTitle": "Tanks & ATG",
@@ -183,7 +952,8 @@
       "tank": "Tank",
       "product": "Product",
       "level": "Level",
-      "volume": "Volume",
+      "volume": "Real volume",
+      "correctedAt15C": "Corrected 15°C",
       "capacity": "Capacity",
       "sellable": "Sellable",
       "water": "Water",
@@ -214,18 +984,45 @@
         "subOk": "All stations are nominal",
         "subAlert": "At least one active alert, or measurement data unavailable"
       },
-      "stockCoverage": { "label": "Lowest stock coverage" },
-      "activeAlerts": { "label": "Active alerts", "sub": "Across all stations" },
-      "atgAvailability": { "label": "ATG data availability", "sub": "Share of stations whose measurements are up to date right now" },
-      "lossRate": { "label": "Network loss rate" },
-      "lossValue": { "label": "Loss value over 30 days" },
-      "lossProjection": { "label": "Annualized loss projection" },
-      "deliveryCompliance": { "label": "Delivery compliance" },
-      "stockValue": { "label": "Stock value (sale price)", "sub": "{volume} on hand · {pct} of capacity" },
-      "sellableValue": { "label": "Of which actually sellable" },
-      "fuelRevenue": { "label": "Fuel revenue, 30 d" },
-      "grossMargin": { "label": "Fuel gross margin, 30 d" },
-      "nonFuelRevenue": { "label": "Non-fuel revenue, 30 d" }
+      "stockCoverage": {
+        "label": "Lowest stock coverage"
+      },
+      "activeAlerts": {
+        "label": "Active alerts",
+        "sub": "Across all stations"
+      },
+      "atgAvailability": {
+        "label": "ATG data availability",
+        "sub": "Share of stations whose measurements are up to date right now"
+      },
+      "lossRate": {
+        "label": "Network loss rate"
+      },
+      "lossValue": {
+        "label": "Loss value over 30 days"
+      },
+      "lossProjection": {
+        "label": "Annualized loss projection"
+      },
+      "deliveryCompliance": {
+        "label": "Delivery compliance"
+      },
+      "stockValue": {
+        "label": "Stock value (sale price)",
+        "sub": "{volume} on hand · {pct} of capacity"
+      },
+      "sellableValue": {
+        "label": "Of which actually sellable"
+      },
+      "fuelRevenue": {
+        "label": "Fuel revenue, 30 d"
+      },
+      "grossMargin": {
+        "label": "Fuel gross margin, 30 d"
+      },
+      "nonFuelRevenue": {
+        "label": "Non-fuel revenue, 30 d"
+      }
     },
     "mapCard": {
       "title": "Where are my stations, and which one needs my attention?",
@@ -246,7 +1043,9 @@
       "title": "Recent deliveries",
       "empty": "No delivery detected recently"
     },
-    "cashCard": { "title": "Payment breakdown" }
+    "cashCard": {
+      "title": "Payment breakdown"
+    }
   },
   "nav": {
     "sections": {
@@ -266,6 +1065,7 @@
       "approvisionnement": "Supply",
       "reconciliation": "Stock reconciliation",
       "ventes": "Sales journal",
+      "produits": "Products & shop",
       "shifts": "Shifts",
       "caisse": "Daily till",
       "caisseEcarts": "Till discrepancies",
@@ -380,6 +1180,21 @@
       "totalNetwork": "TOTAL NETWORK",
       "viewDetail": "View detail",
       "currency": "Currency",
+      "reliabilityBanner": {
+        "offline": "Measurement data unavailable for {count} station(s) ({names}). Volumes and valuation for these stations cannot be considered reliable until transmission is restored."
+      },
+      "map": {
+        "title": "Network footprint",
+        "subtitle": "Click a marker to open the station"
+      },
+      "synthesis": {
+        "title": "Summary",
+        "stock": "Total stock",
+        "fillRate": "Average fill rate",
+        "value": "Stock value",
+        "stationsInAlert": "Stations in alert",
+        "activeAlerts": "Active alarms"
+      },
       "badges": {
         "active": "{count} active",
         "offline": "{count} offline",
@@ -387,13 +1202,25 @@
       },
       "filters": {
         "status": "Status",
-        "statusOptions": { "all": "All", "online": "Online", "offline": "Offline", "alert": "Alert", "critical": "Critical" },
+        "statusOptions": {
+          "all": "All",
+          "online": "Online",
+          "offline": "Offline",
+          "alert": "Alert",
+          "critical": "Critical"
+        },
         "city": "City",
         "cityAll": "All cities",
         "product": "Product",
         "productAll": "All products",
         "sortBy": "Sort by",
-        "sortOptions": { "name": "Name A→Z", "lowestLevel": "Lowest level", "highestValue": "Highest stock value", "oldestSync": "Oldest sync" }
+        "sortOptions": {
+          "criticality": "Criticality (default)",
+          "name": "Name A→Z",
+          "lowestLevel": "Lowest level",
+          "highestValue": "Highest stock value",
+          "oldestSync": "Oldest sync"
+        }
       },
       "columns": {
         "station": "STATION",
@@ -448,6 +1275,9 @@
       "cityHint": "Determines the station's native currency and timezone",
       "citySelectPlaceholder": "Select a city",
       "resolvedCurrency": "This station's currency: {code} (derived from the selected city's country)",
+      "currencyOverride": "Currency override",
+      "currencyOverrideHint": "Fill in only if this station bills in a different currency than its country (e.g. a border station). Leave empty to inherit automatically from the city.",
+      "currencyOverrideNone": "None — inherit from city",
       "address": "Address",
       "addressHint": "Physical address of the station, optional",
       "latitude": "Latitude",
@@ -500,7 +1330,17 @@
       "resolve": "Resolve",
       "resolveNotePrompt": "Resolution note (optional)",
       "triggeredValue": "Triggering value",
-      "thresholdValue": "Threshold crossed"
+      "thresholdValue": "Threshold crossed",
+      "views": {
+        "all": "All",
+        "byStation": "By station"
+      },
+      "stationGroup": {
+        "count": "{count, plural, one {# alert} other {# alerts}}",
+        "active": "{count, plural, one {# active} other {# active}}"
+      },
+      "filterType": "All types",
+      "clearTypeFilter": "Clear type filter"
     },
     "columns": {
       "type": "Type",
@@ -550,37 +1390,64 @@
       "count": "{count} active alerts",
       "viewAll": "View all →"
     },
+    "reliabilityBanner": {
+      "old": {
+        "title": "Potentially unreliable data",
+        "description": "At least one tank at this station has not sent a measurement in over 45 minutes. The displayed stock values may not reflect the real state — do not rely on them until verified."
+      },
+      "late": {
+        "title": "Delayed data",
+        "description": "At least one tank at this station has not sent a measurement in over 15 minutes. The displayed values remain indicative."
+      }
+    },
+    "kpis": {
+      "stock": "Station stock",
+      "stockSub": "out of {capacity} capacity",
+      "coverage": "Minimum coverage",
+      "activeAlerts": "Active alarms",
+      "pumps": "Available pumps"
+    },
+    "stockSynthesis": {
+      "title": "Station stock summary",
+      "ofCapacity": "out of {capacity} capacity",
+      "stockValue": "Stock value",
+      "valueUnavailable": "Value not calculable",
+      "totalStation": "Station total"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "pumps": "Pumps",
+      "staff": "Staff",
+      "compliance": "Compliance",
+      "atg": "ATG"
+    },
     "tanksSection": {
       "title": "Station tanks",
       "activeCount": "({count} active tanks)",
       "addTank": "+ Add a tank",
-      "empty": "No tank registered for this station"
+      "empty": "No tank registered for this station",
+      "hint": "Volume, water, available space and measurement freshness for each tank"
+    },
+    "charts": {
+      "sales": {
+        "title": "What is this station's sales rhythm?",
+        "subtitle": "Volume per day and per product — 30 days",
+        "empty": "Not enough calculable sales data over the last 30 days."
+      },
+      "stock": {
+        "title": "Is the station's stock being replenished?",
+        "subtitle": "Vertical rises are deliveries; gaps are missing measurements",
+        "empty": "Not enough real measurements over the last 30 days to plot a curve."
+      }
     },
     "tankCard": {
-      "capacity": "Capacity",
-      "product": "Product",
-      "sync": "sync {minutes} min",
-      "syncOffline": "offline",
+      "sync": "Data up to date · {minutes} min",
+      "syncOffline": "No recent measurement",
       "sensorConnected": "Sensor connected",
       "sensorDisconnected": "Sensor disconnected",
-      "sensorNotConfigured": "Sensor not configured",
-      "waterAlert": "High water level",
       "calibration": "Calibration",
       "detail": "Detail →",
-      "notCalculable": "Volume not calculable",
-      "available": "Available volume",
-      "rawVolume": "Raw (current temp.)",
-      "volumeAt15C": "Corrected to 15°C",
-      "sellable": "Sellable volume",
-      "sellableValue": "Sellable value",
-      "notCalculableShort": "Not calculable",
-      "temperature": "Temperature",
-      "offline": "Offline",
-      "water": "Water",
-      "empty": "Empty",
-      "thresholdLegend": {
-        "title": "Levels (mm)"
-      }
+      "notCalculable": "Volume not calculable"
     },
     "calibrationModal": {
       "title": "Calibration — {tank}",
@@ -594,32 +1461,109 @@
       "replace": "Replace table"
     },
     "columns": {
-      "alerts": { "title": "Alerts ({count})", "empty": "No alert for this station" },
-      "deliveries": { "title": "Recent deliveries ({count})", "empty": "No recent delivery", "volume": "{volume}" },
-      "leaks": { "title": "Active leaks ({count})", "empty": "No active leak", "rate": "Rate: {rate} L/h", "status": "Ongoing" },
+      "alerts": {
+        "title": "Alerts ({count})",
+        "empty": "No alert for this station"
+      },
+      "deliveries": {
+        "title": "Recent deliveries ({count})",
+        "empty": "No recent delivery",
+        "volume": "{volume}"
+      },
+      "leaks": {
+        "title": "Active leaks ({count})",
+        "empty": "No active leak",
+        "rate": "Rate: {rate} L/h",
+        "status": "Ongoing"
+      },
       "viewAll": "View all →"
     },
     "editModal": {
       "title": "Edit station"
     },
     "confirmDeactivate": "Deactivate this station? Its history stays available.",
-    "confirmReactivate": "Reactivate this station?"
+    "confirmReactivate": "Reactivate this station?",
+    "parts": {
+      "unavailable": {
+        "title": "Not available for your role",
+        "description": "This section is reserved for roles holding the matching permissions."
+      }
+    },
+    "pumpsTab": {
+      "title": "Equipment of type “pump”",
+      "note": "Prototype pumps show nozzles and totalizer indexes: Zylo Liquid does not model those counters (see gap matrix) — this table lists the station's actual “pump” equipment records.",
+      "columns": {
+        "serialNumber": "Serial no.",
+        "manufacturerModel": "Manufacturer · model",
+        "installedAt": "Installed on"
+      }
+    },
+    "staffTab": {
+      "title": "Station staff",
+      "note": "Network members with a role assigned to this station (RBAC station-scoped assignment) — displayed role names are the real role names in the system. Organization-scoped roles (e.g. Owner) are not station assignments and do not appear here.",
+      "empty": "No member assigned to this station.",
+      "columns": {
+        "member": "Member",
+        "roles": "Role(s)"
+      }
+    },
+    "complianceTab": {
+      "documentsTitle": "Regulatory documents",
+      "declarationsTitle": "Regulatory declarations",
+      "note": "Station regulatory documents and declarations — statuses computed by the backend from the actual expiry date; types shown as raw text. Management (add, renew, produce) stays on the network Regulatory screen."
+    },
+    "atgTab": {
+      "consoleTitle": "Holykell transmission console",
+      "sensorsTitle": "Probes mapped on active tanks",
+      "note": "Holykell probes mapped on the station's active tanks. Value, unit and status = last reported state from the telemetry registry (measured truth); the mapping (tank/measurement, validity dates) is the declared truth.",
+      "noTanks": "No active tank on this station.",
+      "empty": "No probe mapped on the active tanks.",
+      "sensorStatus": {
+        "ok": "Online",
+        "ko": "Offline",
+        "unknown": "Unknown status",
+        "never": "Never reported"
+      },
+      "columns": {
+        "tank": "Tank",
+        "measurement": "Measurement",
+        "sensor": "Probe",
+        "lastValue": "Last value",
+        "lastSeen": "Last seen",
+        "status": "Status"
+      }
+    }
   },
   "tankVisual": {
     "modes": {
       "switcherLabel": "Tank representation mode",
-      "vertical": { "label": "Vertical gauge", "desc": "Column proportional to the measured volume." },
-      "horizontal": { "label": "Horizontal tank", "desc": "Measured physical level; volume computed from the calibration table." },
-      "anneau": { "label": "Composition", "desc": "Volumetric breakdown: fuel / water / available space." },
-      "compact": { "label": "Compact bar", "desc": "Quick comparison across several tanks." }
+      "vertical": {
+        "label": "Vertical gauge",
+        "desc": "Column proportional to the measured volume."
+      },
+      "horizontal": {
+        "label": "Horizontal tank",
+        "desc": "Measured physical level; volume computed from the calibration table."
+      },
+      "anneau": {
+        "label": "Composition",
+        "desc": "Volumetric breakdown: fuel / water / available space."
+      },
+      "compact": {
+        "label": "Compact bar",
+        "desc": "Quick comparison across several tanks."
+      }
     },
     "figures": {
       "volume": "Measured volume",
       "capacity": "Total capacity",
       "fillRate": "Fill rate",
+      "sellable": "Sellable volume",
       "water": "Water detected",
       "available": "Available space",
       "temperature": "Temperature",
+      "coverage": "Estimated coverage",
+      "notCalculable": "Not calculable",
       "value": "Stock value"
     },
     "legend": {
@@ -659,6 +1603,9 @@
     },
     "composition": {
       "title": "Volume composition",
+      "real": "Real volume",
+      "sellable": "Sellable volume",
+      "correctedAt15C": "Corrected to 15°C",
       "fuel": "Fuel",
       "water": "Water",
       "available": "Available space"
@@ -670,8 +1617,18 @@
     "history": {
       "title": "Measured volume over time",
       "subtitle": "{count} measurements shown",
-      "empty": "Not enough measurements to draw a history"
+      "empty": "Not enough measurements to draw a history",
+      "rangeLabel": "Displayed range",
+      "ranges": {
+        "0": "Whole window",
+        "14": "14 days",
+        "7": "7 days",
+        "3": "3 days",
+        "1": "24 hours"
+      },
+      "waterTempNote": "Water and temperature history over time is not yet available in Zylo Liquid: only the instant value is shown today (Gauge & composition tab)."
     },
+    "gaugingNote": "Manual control gauging is not yet available in Zylo Liquid.",
     "alerts": {
       "empty": "No alert on this tank",
       "status": {

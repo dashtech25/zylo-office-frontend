@@ -1,4 +1,221 @@
 {
+  "rapports": {
+    "pageTitle": "Rapports & KPI",
+    "pageSubtitle": "Tous les indicateurs calculables aujourd'hui à partir des données réelles du réseau — survolez le ⓘ à côté de chaque information pour savoir précisément ce qu'elle vous permet de connaître.",
+    "periods": {
+      "today": "Aujourd'hui",
+      "7d": "7 jours",
+      "30d": "30 jours",
+      "90d": "90 jours"
+    },
+    "periodTooltips": {
+      "today": "Livraisons et tests de fuite depuis minuit aujourd'hui.",
+      "7d": "Livraisons et tests de fuite des 7 derniers jours.",
+      "30d": "Livraisons et tests de fuite des 30 derniers jours.",
+      "90d": "Livraisons et tests de fuite des 90 derniers jours."
+    },
+    "sections": {
+      "overview": "Vue d'ensemble du réseau"
+    },
+    "kpis": {
+      "activeStations": {
+        "label": "Stations actives",
+        "help": "Nombre de stations de votre réseau actuellement en service (statut actif). Un écart avec le nombre \"en ligne\" indique des stations dont la sonde ne communique plus.",
+        "sub": "{online} en ligne actuellement"
+      },
+      "networkStock": {
+        "label": "Stock total du réseau",
+        "help": "Somme du carburant physiquement présent dans toutes les cuves actives, tous produits confondus, à l'instant présent.",
+        "sub": "{pct}% de la capacité totale ({capacity})"
+      },
+      "stockValue": {
+        "label": "Valeur du stock",
+        "help": "Valeur marchande du stock actuel, calculée avec le dernier prix connu de chaque produit par station. Si une station n'a aucun prix défini, sa valeur n'est pas incluse — le total peut donc être partiel.",
+        "partial": "Calcul partiel — certaines stations n'ont pas de prix défini"
+      },
+      "activeAlerts": {
+        "label": "Alertes actives",
+        "help": "Nombre total d'alertes actuellement non résolues sur tout le réseau, tous types confondus (niveau haut, niveau bas, eau détectée, fuite, sonde déconnectée).",
+        "sub": "Tous types confondus"
+      },
+      "atgAvailability": {
+        "label": "Disponibilité de la télémétrie",
+        "help": "Part des cuves dont la sonde communique actuellement (statut \"en ligne\"). Une valeur inférieure à 100% signifie que certaines cuves n'ont plus de données fiables — risque de rupture invisible.",
+        "sub": "{online} / {total} cuves en ligne"
+      },
+      "lowestStock": {
+        "label": "Station la plus proche de la rupture",
+        "help": "Parmi toutes les stations actives, celle dont le taux de remplissage (stock/capacité) est le plus faible — la première à surveiller pour une livraison.",
+        "empty": "Aucune donnée disponible"
+      },
+      "deliveredVolume": {
+        "label": "Volume livré",
+        "help": "Volume total reçu par le réseau sur la période sélectionnée, détecté automatiquement par variation de niveau en cuve (pas de bon de livraison déclaratif dans Zylo Liquid aujourd'hui).",
+        "sub": "{count} livraison(s) détectée(s)"
+      },
+      "leakTests": {
+        "label": "Tests de fuite",
+        "help": "Nombre de tests de fuite statique effectués sur la période (station à l'arrêt). Une anomalie signifie un taux de perte supérieur au seuil standard (0,38 L/h).",
+        "sub": "{anomalies} anomalie(s) détectée(s)"
+      }
+    },
+    "alertBreakdown": {
+      "title": "Alertes par type",
+      "titleHelp": "Répartition des alertes actuellement actives selon leur type — permet de voir d'un coup d'œil quel type de problème domine sur le réseau.",
+      "empty": "Aucune alerte enregistrée.",
+      "totalOverPeriod": "{total} au total (période)",
+      "typeHelp": {
+        "level_high": "Le niveau de carburant a dépassé le seuil haut configuré pour cette cuve — risque de débordement.",
+        "level_high_pre_alarm": "Le niveau approche le seuil haut — avertissement avant l'alarme pleine.",
+        "level_low": "Le niveau est descendu sous le seuil bas configuré — risque de rupture, une livraison est probablement nécessaire.",
+        "water": "De l'eau a été détectée au fond de la cuve au-delà du seuil configuré — risque de qualité du carburant.",
+        "leak": "Un test de fuite statique a mesuré un taux de perte supérieur au seuil standard (0,38 L/h).",
+        "sensor_offline": "La sonde de cette cuve ne communique plus — les données affichées peuvent être obsolètes."
+      }
+    },
+    "ranking": {
+      "title": "Classement des stations",
+      "titleHelp": "Toutes les stations du réseau, comparables sur les mêmes critères. Cliquez sur un en-tête de colonne pour trier.",
+      "clickToSort": "Cliquez un en-tête pour trier",
+      "empty": "Aucune station à afficher.",
+      "columns": {
+        "station": "Station",
+        "status": "Statut",
+        "fillRate": "Taux de remplissage",
+        "fillRateHelp": "Volume actuel divisé par la capacité totale de la station, en pourcentage. Une valeur basse signale un risque de rupture.",
+        "alerts": "Alertes actives",
+        "alertsHelp": "Nombre d'alertes non résolues actuellement sur cette station, tous types confondus.",
+        "delivered": "Volume livré (période)",
+        "deliveredHelp": "Volume total reçu par cette station sur la période sélectionnée, détecté automatiquement par hausse de niveau en cuve.",
+        "availability": "Disponibilité capteurs",
+        "availabilityHelp": "Part des cuves de cette station dont la sonde communique actuellement — une valeur basse signale un problème de télémétrie à corriger.",
+        "value": "Valeur du stock"
+      }
+    },
+    "leaks": {
+      "title": "Tests de fuite (période)",
+      "titleHelp": "Résultats des tests de fuite statique effectués sur la période sélectionnée — un test compare le niveau en début et fin de fenêtre, station à l'arrêt.",
+      "empty": "Aucun test de fuite enregistré sur cette période.",
+      "columns": {
+        "station": "Station",
+        "period": "Fenêtre de test",
+        "rate": "Taux de perte",
+        "rateHelp": "Volume perdu par heure sur la fenêtre de test. Au-delà de 0,38 L/h (standard EPA), le test est classé anomalie.",
+        "result": "Résultat"
+      },
+      "result": {
+        "normal": "Normal",
+        "anomaly": "Anomalie"
+      }
+    }
+  },
+  "stationPicker": {
+    "searchPlaceholder": "Rechercher une station (nom, code)…",
+    "noResults": "Aucune station ne correspond à cette recherche.",
+    "ungrouped": "Pays non renseigné",
+    "ungroupedCity": "Ville non renseignée",
+    "selectAllInCountry": "Tout sélectionner"
+  },
+  "caisse": {
+    "pageTitle": "Caisse",
+    "pageSubtitle": "Ventes estimées à partir des baisses de niveau mesurées en cuve, valorisées au prix de vente en vigueur — jamais une comptabilité officielle.",
+    "banner": "Chiffre estimé à partir de la télémétrie des cuves, hors périodes de livraison. Cliquez sur un montant pour voir sa répartition, jusqu'à la mesure ayant servi au calcul.",
+    "incompletePricingBanner": "{count, plural, one {# station a} other {# stations ont}} des ventes dont le chiffre d'affaires n'est pas entièrement calculable (prix manquant ou devises mélangées) — configurez les prix de vente pour compléter le calcul.",
+    "noData": "Aucune cuve calibrée ne permet de calculer une caisse sur ce périmètre.",
+    "periods": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "7d": "7 derniers jours",
+      "30d": "30 derniers jours",
+      "custom": "Période personnalisée"
+    },
+    "customFrom": "Début de la période",
+    "customTo": "Fin de la période",
+    "operationalDayToggle": "Journée d'exploitation (heure d'ouverture de chaque station)",
+    "currencyCardTitle": "Caisse réseau ({currency})",
+    "currencyCardSub": "{volume} L vendus — {stations} station(s) contributrices",
+    "vsWeeklyAverage": "{sign}{pct}% vs moyenne des 7 derniers jours",
+    "stationsCoverage": "Stations avec données",
+    "productsCount": "{count} produit(s) concerné(s)",
+    "lastUpdate": "Dernière mesure reçue à {time}",
+    "dailySummary": {
+      "title": "Résumé automatique (règles déterministes, pas une analyse humaine)",
+      "total": "Caisse du jour : {value} — {stations} station(s) contributrices.",
+      "vsYesterdayUp": "En hausse de {pct}% par rapport à hier.",
+      "vsYesterdayDown": "En baisse de {pct}% par rapport à hier.",
+      "vsAverageUp": "{pct}% au-dessus de la moyenne des 7 derniers jours.",
+      "vsAverageDown": "{pct}% en dessous de la moyenne des 7 derniers jours.",
+      "bestStation": "Meilleure contribution : {station}.",
+      "worstStation": "Plus faible contribution : {station}.",
+      "attentionNeeded": "{count} station(s) à surveiller (anomalie ou données insuffisantes)."
+    },
+    "confidence": {
+      "reliable": "Calcul fiable",
+      "partial": "Partiellement fiable",
+      "incomplete_data": "Données incomplètes",
+      "insufficient_data": "Données insuffisantes",
+      "anomaly": "Anomalie détectée"
+    },
+    "reasons": {
+      "no_calibration_table": "Cuve non calibrée — volume non calculable.",
+      "no_applicable_price": "Aucun prix de vente configuré sur la période.",
+      "mixed_currencies": "Devises différentes mélangées — non additionnable.",
+      "incomplete_pricing": "Prix incomplet sur au moins une cuve contributrice.",
+      "insufficient_data": "Aucune mesure exploitable sur cette période."
+    },
+    "networkModal": {
+      "title": "Répartition par station — {currency}",
+      "columns": {
+        "station": "Station",
+        "volume": "Volume vendu",
+        "value": "Chiffre estimé",
+        "share": "Part",
+        "confidence": "Confiance"
+      },
+      "total": "Total réseau",
+      "exportCsv": "Exporter en CSV",
+      "bestContributor": "Meilleure contribution",
+      "worstContributor": "Plus faible contribution"
+    },
+    "stationModal": {
+      "title": "Caisse — {station}",
+      "titleLoading": "Chargement…",
+      "volumeSold": "Volume vendu",
+      "monetaryValue": "Chiffre estimé",
+      "columns": {
+        "productTank": "Produit / Cuve",
+        "volume": "Volume vendu",
+        "value": "Chiffre estimé",
+        "confidence": "Confiance"
+      }
+    },
+    "tankModal": {
+      "title": "{tank} — {product}",
+      "titleLoading": "Chargement…",
+      "volumeSold": "Volume vendu",
+      "monetaryValue": "Chiffre estimé",
+      "columns": {
+        "period": "Période",
+        "type": "Nature",
+        "heightStart": "Hauteur début",
+        "heightEnd": "Hauteur fin",
+        "volume": "Volume vendu",
+        "value": "Valorisation"
+      },
+      "segmentTypes": {
+        "sale": "Vente",
+        "delivery": "Livraison",
+        "stable": "Stable",
+        "anomaly_unexplained_rise": "Hausse inexpliquée",
+        "anomaly_extreme_variation": "Variation extrême",
+        "insufficient_data": "Données insuffisantes"
+      },
+      "anomalyTypes": {
+        "anomaly_unexplained_rise": "Hausse inexpliquée détectée",
+        "anomaly_extreme_variation": "Variation extrême détectée"
+      }
+    }
+  },
   "appName": "Zylo Liquid",
   "appSub": "Supervision ATG",
   "sbFoot": "Données réelles — API Zylo Liquid",
@@ -18,17 +235,28 @@
   },
   "configuration": {
     "pageTitle": "Configuration",
-    "pageSubtitle": "Organisation, prix, seuils et permissions. Les modifications sont immédiatement répercutées dans toute l'application.",
+    "pageSubtitle": "Organisation, prix, seuils, produits et système. Les modifications sont immédiatement répercutées dans toute l'application.",
     "tabs": {
       "prix": "Prix carburant",
       "carburants": "Catalogue carburants",
       "seuils": "Seuils d'alerte",
-      "systeme": "Configuration réseau",
-      "orga": "Organisation",
+      "organisation": "Organisation",
+      "holykell": "Holykell",
+      "systeme": "Système",
+      "notifications": "Notifications",
+      "utilisateurs": "Utilisateurs",
       "roles": "Rôles & permissions"
     },
+    "comingSoonNotifications": "Le centre de notifications n'est pas encore disponible dans Zylo Liquid.",
+    "comingSoonUtilisateurs": "La gestion des utilisateurs et des rôles se fait aujourd'hui depuis Zylo Office — l'intégration directe dans Zylo Liquid n'est pas encore disponible.",
     "prices": {
       "banner": "Régime de prix administré. Le prix de vente des carburants est généralement fixé par l'autorité de régulation — il reste configurable ici pour tenir l'historique et valoriser le stock.",
+      "gridTitle": "Grille des prix",
+      "gridSubtitle": "Réseau (par devise) → devise (stations concernées) → station (prix effectif et historique). Cliquez une devise ou une station pour voir le détail, cliquez un prix pour le modifier.",
+      "showManualForm": "Afficher le formulaire manuel",
+      "hideManualForm": "Masquer le formulaire manuel",
+      "showRawHistory": "Afficher l'historique brut (toutes stations et produits)",
+      "hideRawHistory": "Masquer l'historique brut",
       "addTitle": "Enregistrer un prix",
       "addSubtitle": "Écrit une nouvelle ligne dans l'historique des prix — une correction n'écrase jamais un changement réel.",
       "station": "Station",
@@ -41,6 +269,12 @@
       "effectiveFrom": "En vigueur à partir de",
       "reason": "Motif du changement",
       "create": "Enregistrer",
+      "currencyAuto": "Devise résolue automatiquement depuis la ville de la station ({code}).",
+      "currencyUnresolved": "Cette station n'a pas de devise résolvable (ville non rattachée à un pays) — choisissez-la manuellement.",
+      "currencyChange": "Changer",
+      "networkDefaultToggle": "Prix par défaut réseau (aucune station précise)",
+      "networkDefaultHint": "S'applique à toute station qui n'a pas de prix propre pour ce produit — une station avec un prix déjà enregistré garde le sien.",
+      "networkDefaultBadge": "Réseau (par défaut)",
       "historyTitle": "Historique des prix",
       "historySubtitle": "Dernières lignes enregistrées, toutes stations et produits confondus",
       "columns": {
@@ -52,7 +286,60 @@
         "effectiveFrom": "En vigueur depuis",
         "future": "Planifié"
       },
-      "empty": "Aucun prix enregistré."
+      "empty": "Aucun prix enregistré.",
+      "bulk": {
+        "openButton": "Configurer plusieurs stations",
+        "title": "Prix en masse",
+        "description": "Applique le même prix à plusieurs stations en une seule action. Chaque station reçoit sa propre ligne d'historique.",
+        "stations": "{count, plural, one {# station sélectionnée} other {# stations sélectionnées}}",
+        "mixedCurrencies": "Les stations sélectionnées n'ont pas toutes la même devise — impossible d'appliquer un prix unique. Affinez la sélection.",
+        "noCurrency": "{count, plural, one {Cette station n'a} other {Ces stations n'ont}} pas de devise résolvable : {names}.",
+        "product": "Produit",
+        "selectProduct": "Sélectionner un produit",
+        "currency": "Devise",
+        "effectiveFrom": "En vigueur à partir de",
+        "sellPrice": "Prix de vente (par litre)",
+        "costPrice": "Coût d'achat (par litre)",
+        "reason": "Motif du changement",
+        "preview": "Aperçu",
+        "previewNew": "{count, plural, one {# station recevra} other {# stations recevront}} ce prix pour la première fois.",
+        "previewExisting": "{count, plural, one {# station a} other {# stations ont}} déjà un prix pour ce produit :",
+        "skipExisting": "Ne pas toucher aux prix déjà enregistrés",
+        "overwriteExisting": "Enregistrer aussi une nouvelle ligne pour ces stations",
+        "apply": "Appliquer"
+      },
+      "grid": {
+        "breadcrumbNetwork": "Réseau",
+        "productColumn": "Produit",
+        "stationColumn": "Station",
+        "emptyCell": "—",
+        "amountLabel": "Montant",
+        "confirm": "Valider",
+        "cancel": "Annuler",
+        "reasonPlaceholder": "Motif du changement (obligatoire)",
+        "noProducts": "Aucun produit actif au catalogue.",
+        "noCurrencies": "Aucun prix enregistré pour l'instant.",
+        "noCurrenciesHint": "Enregistrez un premier prix (formulaire manuel ci-dessous) pour faire apparaître une colonne de devise.",
+        "networkDefaultTitle": "Prix par défaut réseau ({code})",
+        "networkDefaultHint": "S'applique à toute station opérant dans cette devise qui n'a pas de prix propre pour ce produit.",
+        "noStationsForCurrency": "Aucune station n'opère dans cette devise.",
+        "badgeInherited": "Hérité",
+        "badgeOverride": "Dérogation",
+        "noCity": "Ville non renseignée",
+        "currencyUnresolvedStation": "Cette station n'a pas de devise résolvable (ville non rattachée à un pays) — impossible de modifier ses prix ici, utilisez le formulaire manuel avec une devise explicite.",
+        "historyTitle": "Historique de cette station",
+        "historySubtitle": "Qui, quand, pourquoi — chaque ligne est une insertion, jamais une correction de l'existante.",
+        "noHistory": "Aucun prix enregistré pour cette station.",
+        "historyColumns": {
+          "effectiveFrom": "En vigueur depuis",
+          "product": "Produit",
+          "price": "Prix",
+          "by": "Par",
+          "reason": "Motif"
+        },
+        "futureBadge": "Planifié",
+        "unknownAuthor": "—"
+      }
     },
     "fuelCatalog": {
       "banner": "Le catalogue est partagé par tout le réseau. Un carburant n'est jamais supprimé — il est retiré du catalogue, ce qui préserve tout l'historique.",
@@ -64,8 +351,12 @@
       "codeHint": "Le code est la clé du produit dans la base : il n'est pas modifiable.",
       "density": "Masse volumique (g/cm³)",
       "color": "Couleur d'affichage",
+      "colorReserved": "Cette teinte de rouge est réservée aux alertes du système — choisissez une autre couleur.",
       "activeTanks": "Cuves en service",
-      "currentPrice": "Prix courant",
+      "lastKnownPrice": "Dernier prix connu (FCFA)",
+      "lastKnownPriceHint": "Champ hérité, non alimenté par l'historique des prix — voir l'onglet Prix carburant pour la valeur réelle en vigueur.",
+      "stationsTitle": "Stations où ce produit est vendu",
+      "stationsCount": "{active}/{total}",
       "save": "Enregistrer",
       "deactivate": "Retirer du catalogue",
       "reactivate": "Remettre au catalogue",
@@ -78,6 +369,29 @@
       "create": "Créer le carburant",
       "saved": "Enregistré",
       "codeRequired": "Le nom et le code sont obligatoires."
+    },
+    "summary": {
+      "fix": "Corriger",
+      "geoMessage": "{count, plural, one {# station n'a} other {# stations n'ont}} pas de devise résolvable (ville non rattachée à un pays).",
+      "sellPriceMessage": "{count, plural, one {# station a} other {# stations ont}} un produit actif sans aucun prix de vente enregistré.",
+      "costPriceMessage": "{count, plural, one {# station a} other {# stations ont}} un prix de vente sans coût d'achat — la marge n'est pas calculable."
+    },
+    "thresholds": {
+      "banner": "Seuils réels par cuve (en millimètres), identiques à ceux configurables depuis la fiche Cuve — vue consolidée triable et filtrable sur tout le réseau.",
+      "empty": "Aucune cuve active à configurer.",
+      "searchPlaceholder": "Rechercher une station ou une cuve",
+      "filterProduct": "Filtrer par produit",
+      "filterProductAll": "Tous les produits",
+      "columns": {
+        "station": "Station",
+        "tank": "Cuve",
+        "product": "Produit",
+        "high": "Seuil haut",
+        "preAlarm": "Pré-alarme",
+        "low": "Seuil bas",
+        "water": "Eau max"
+      },
+      "edit": "Modifier"
     }
   },
   "settingsPage": {
@@ -136,6 +450,10 @@
       "rate": "Taux de fuite",
       "result": "Résultat"
     },
+    "detail": {
+      "startTime": "Début du test",
+      "endTime": "Fin du test"
+    },
     "result": {
       "normal": "Normal",
       "anomaly": "Anomalie"
@@ -145,29 +463,480 @@
   },
   "deliveries": {
     "pageTitle": "Livraisons",
-    "pageSubtitle": "{count} réception(s) détectée(s) automatiquement — comparatif bon de livraison indisponible au Niveau 1",
-    "kpis": {
-      "volumeReceived": { "label": "Volume reçu", "sub": "{count} livraison(s) détectée(s)" },
-      "gapCumulative": { "label": "Écart cumulé bon / mesure" },
-      "complianceRate": { "label": "Taux de conformité" },
-      "financialImpact": { "label": "Impact financier des écarts" }
+    "pageSubtitle": "{count} livraison(s) détectée(s) automatiquement par variation de niveau en cuve",
+    "filters": {
+      "station": "Station",
+      "stationAll": "Toutes les stations",
+      "fromDate": "Du",
+      "toDate": "Au",
+      "export": "Exporter"
     },
-    "suppliers": { "title": "Fiabilité par fournisseur" },
-    "chart": { "title": "À quel rythme le réseau est-il réapprovisionné ?", "subtitle": "Volume détecté par jour (litres)" },
+    "views": {
+      "all": "Toutes",
+      "byStation": "Par station"
+    },
+    "summary": {
+      "count": "{count, plural, one {# livraison} other {# livraisons}}",
+      "volume": "Volume reçu",
+      "value": "Valeur",
+      "valueNotCalculable": "Non calculable"
+    },
+    "stationGroup": {
+      "count": "{count, plural, one {# livraison} other {# livraisons}}",
+      "volume": "{volume} reçus"
+    },
     "table": {
-      "title": "Journal des réceptions détectées",
-      "subtitle": "Livraison identifiée automatiquement par variation de niveau — aucune saisie manuelle au Niveau 1",
       "date": "Date",
       "station": "Station",
       "tank": "Cuve / produit",
+      "heightBefore": "Niveau avant",
+      "heightAfter": "Niveau après",
+      "received": "Volume reçu",
+      "value": "Valeur"
+    },
+    "detail": {
+      "title": "Livraison — {station}",
+      "period": "Du {start} au {end}",
+      "heightBefore": "Niveau avant",
+      "heightAfter": "Niveau après",
+      "duration": "Durée",
+      "volume": "Volume reçu",
+      "value": "Valeur estimée",
+      "valueHint": "Calculée au prix de vente actuellement en vigueur — pas au prix du jour de la livraison (non conservé).",
+      "measurementsTitle": "Mesures pendant cette livraison",
+      "measurementsSubtitle": "Chaque mesure de la sonde entre le début et la fin de la livraison détectée",
+      "measurementsEmpty": "Aucune mesure trouvée sur cette période.",
+      "measurementsColumns": {
+        "date": "Date et heure",
+        "height": "Hauteur",
+        "volume": "Volume à cet instant"
+      }
+    },
+    "empty": "Aucune livraison détectée sur cette période.",
+    "noStation": "Aucune station n'a reçu de livraison sur cette période.",
+    "inProgress": {
+      "badge": "En cours",
+      "title": "{count, plural, one {# livraison en cours} other {# livraisons en cours}}",
+      "subtitle": "Hausse de niveau détectée en direct, pas encore stabilisée — recalculé toutes les 10 secondes, rien n'est encore enregistré en base tant que la livraison n'est pas confirmée.",
+      "heightBefore": "Niveau avant hausse",
+      "heightNow": "Niveau actuel",
+      "volumeSoFar": "Déjà entré",
+      "since": "Depuis",
+      "detailPeriod": "Depuis {start} — toujours en cours"
+    }
+  },
+  "approvisionnementScreen": {
+    "pageTitle": "Approvisionnement",
+    "pageSubtitle": "Livraisons déclarées par un humain — distinctes des livraisons détectées automatiquement (voir Livraisons).",
+    "banner": "Chaque déclaration peut être rapprochée à la demande avec une livraison détectée par la télémétrie.",
+    "empty": "Aucune livraison déclarée.",
+    "form": {
+      "title": "Déclarer une livraison",
+      "station": "Station",
+      "selectStation": "Sélectionner une station",
+      "product": "Produit",
+      "selectProduct": "Sélectionner un produit",
+      "eventAt": "Date de la livraison",
+      "volume": "Volume déclaré (litres)",
       "supplier": "Fournisseur",
-      "declared": "Déclaré",
-      "received": "Reçu (mesuré)",
-      "gap": "Écart",
-      "impact": "Impact",
+      "reference": "Référence du bon de livraison",
+      "submit": "Déclarer",
+      "required": "Station, produit et volume sont obligatoires."
+    },
+    "table": {
+      "station": "Station",
+      "product": "Produit",
+      "volume": "Volume",
+      "date": "Date",
+      "status": "Statut",
+      "reconcile": "Rapprocher"
+    },
+    "status": {
+      "declared": "Déclarée",
+      "locked": "Verrouillée"
+    }
+  },
+  "shiftsScreen": {
+    "pageTitle": "Shifts",
+    "pageSubtitle": "Prise/fin de poste et caisse déclarées, par cuve.",
+    "banner": "Rapproché avec l'agrégat de caisse télémétrique déjà calculé (voir Caisse du jour), jamais un nouveau calcul.",
+    "empty": "Aucun poste déclaré.",
+    "form": {
+      "title": "Déclarer un poste",
+      "tank": "Cuve",
+      "selectTank": "Sélectionner une cuve",
+      "shiftStart": "Début du poste",
+      "shiftEnd": "Fin du poste",
+      "cashAmount": "Montant en caisse déclaré",
+      "currency": "Devise",
+      "submit": "Déclarer",
+      "required": "Cuve, montant et devise sont obligatoires."
+    },
+    "table": {
+      "tank": "Cuve",
+      "period": "Période",
+      "cashAmount": "Caisse déclarée",
       "status": "Statut"
     },
-    "empty": "Aucune livraison détectée sur cette période."
+    "status": {
+      "declared": "Déclaré",
+      "locked": "Verrouillé"
+    }
+  },
+  "pompisteDashboard": {
+    "pageTitle": "Mon shift",
+    "banner": "Ce rôle ne dispose d'aucune vue de pilotage (stations, cuves, finance réseau) — seuls votre shift et vos propres déclarations sont visibles, conformément au périmètre validé pour le pompiste.",
+    "noShift": "Aucun shift déclaré pour l'instant.",
+    "status": {
+      "declared": "En cours",
+      "locked": "Clôturé"
+    },
+    "shiftStart": "Début",
+    "shiftEnd": "Fin prévue",
+    "declaredCash": "Caisse déclarée",
+    "openingReading": "Relevé d'ouverture",
+    "closingReading": "Relevé de fermeture",
+    "closeShift": "Clôturer mon shift",
+    "closed": "Ce shift est clôturé.",
+    "recentShifts": "Mes shifts récents",
+    "alertsTitle": "Alertes actives de ma station",
+    "noAlerts": "Aucune alerte active.",
+    "table": {
+      "start": "Début",
+      "end": "Fin",
+      "cash": "Caisse déclarée",
+      "status": "Statut"
+    }
+  },
+  "ventesScreen": {
+    "pageTitle": "Journal des ventes",
+    "pageSubtitle": "Qualification commerciale d'une distribution déjà constatée — jamais un fait nouveau indépendant.",
+    "banner": "Une vente à crédit ouvre automatiquement une créance sur le compte client sélectionné (voir Clients à crédit).",
+    "empty": "Aucune vente enregistrée.",
+    "form": {
+      "title": "Enregistrer une vente",
+      "station": "Station",
+      "selectStation": "Sélectionner une station",
+      "product": "Produit",
+      "selectProduct": "Sélectionner un produit",
+      "eventAt": "Date",
+      "quantity": "Quantité (litres)",
+      "price": "Prix unitaire",
+      "currency": "Devise",
+      "paymentMethod": "Mode de règlement",
+      "commercialAccount": "Compte client",
+      "selectAccount": "Sélectionner un compte",
+      "submit": "Enregistrer",
+      "required": "Tous les champs sont obligatoires (compte client requis si crédit)."
+    },
+    "table": {
+      "station": "Station",
+      "product": "Produit",
+      "quantity": "Quantité",
+      "amount": "Montant",
+      "paymentMethod": "Règlement",
+      "date": "Date"
+    },
+    "paymentMethod": {
+      "cash": "Espèces",
+      "card": "Carte",
+      "fleet": "Carte flotte",
+      "credit": "Crédit",
+      "orange_money": "Orange Money",
+      "mtn_momo": "MTN MoMo",
+      "bank_transfer": "Virement",
+      "cheque": "Chèque",
+      "other": "Autre"
+    }
+  },
+  "maintenanceScreen": {
+    "pageTitle": "Maintenance",
+    "pageSubtitle": "Équipements des stations et interventions — planification, affectation, clôture.",
+    "tabs": {
+      "equipment": "Équipements",
+      "interventions": "Interventions"
+    },
+    "equipment": {
+      "empty": "Aucun équipement enregistré.",
+      "form": {
+        "title": "Ajouter un équipement",
+        "station": "Station",
+        "selectStation": "Sélectionner une station",
+        "type": "Type",
+        "name": "Nom / repère",
+        "manufacturer": "Fabricant",
+        "model": "Modèle",
+        "serialNumber": "Numéro de série",
+        "submit": "Ajouter",
+        "required": "Station, type et nom sont obligatoires."
+      },
+      "table": {
+        "type": "Type",
+        "name": "Nom",
+        "station": "Station",
+        "status": "Statut",
+        "lastMaintenance": "Dernière maintenance",
+        "actions": ""
+      },
+      "status": {
+        "in_service": "En service",
+        "out_of_order": "En panne",
+        "out_of_service": "Hors service"
+      },
+      "createIntervention": "Signaler une intervention"
+    },
+    "interventions": {
+      "empty": "Aucune intervention enregistrée.",
+      "form": {
+        "title": "Signaler une intervention",
+        "equipment": "Équipement",
+        "selectEquipment": "Sélectionner un équipement",
+        "priority": "Priorité",
+        "type": "Type",
+        "description": "Description du problème",
+        "submit": "Créer",
+        "required": "Équipement, priorité, type et description sont obligatoires."
+      },
+      "priority": {
+        "critical": "Critique",
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Basse"
+      },
+      "type": {
+        "preventive": "Préventive",
+        "corrective": "Corrective"
+      },
+      "status": {
+        "planned": "Planifiée",
+        "in_progress": "En cours",
+        "closed": "Clôturée"
+      },
+      "table": {
+        "priority": "Priorité",
+        "equipment": "Équipement",
+        "station": "Station",
+        "type": "Type",
+        "description": "Description",
+        "status": "Statut",
+        "technician": "Technicien",
+        "actions": ""
+      },
+      "assign": "Affecter",
+      "close": "Clôturer",
+      "selectTechnician": "Sélectionner un technicien",
+      "closeForm": {
+        "title": "Clôturer l'intervention",
+        "diagnosis": "Diagnostic",
+        "actionTaken": "Action réalisée",
+        "cost": "Coût",
+        "submit": "Clôturer"
+      }
+    }
+  },
+  "produitsScreen": {
+    "pageTitle": "Produits & boutique",
+    "pageSubtitle": "Catalogue de produits non-carburant et vente comptoir — entité séparée des ventes carburant (qui qualifient une distribution déjà constatée).",
+    "tabs": {
+      "catalog": "Catalogue",
+      "sale": "Vente comptoir",
+      "history": "Historique"
+    },
+    "catalog": {
+      "empty": "Aucun produit dans le catalogue.",
+      "form": {
+        "title": "Ajouter un produit",
+        "station": "Station (vide = catalogue réseau)",
+        "selectStation": "Réseau entier",
+        "name": "Nom",
+        "sku": "Référence (SKU)",
+        "barcode": "Code-barres",
+        "category": "Catégorie",
+        "price": "Prix unitaire",
+        "currency": "Devise",
+        "submit": "Ajouter",
+        "required": "Nom, prix et devise sont obligatoires."
+      },
+      "table": {
+        "name": "Nom",
+        "category": "Catégorie",
+        "price": "Prix",
+        "scope": "Portée",
+        "barcode": "Code-barres"
+      },
+      "scopeNetwork": "Réseau"
+    },
+    "sale": {
+      "empty": "Panier vide.",
+      "station": "Station",
+      "selectStation": "Sélectionner une station",
+      "searchPlaceholder": "Rechercher un produit ou scanner un code-barres…",
+      "quantity": "Qté",
+      "addToCart": "Ajouter",
+      "cart": "Panier",
+      "total": "Total",
+      "paymentMethod": "Mode de règlement",
+      "commercialAccount": "Compte client",
+      "selectAccount": "Sélectionner un compte",
+      "submit": "Valider la vente",
+      "removeLine": "Retirer",
+      "error": "Le panier ne peut pas être vide.",
+      "creditAccountRequired": "Un compte client est requis pour une vente à crédit.",
+      "success": "Vente enregistrée."
+    },
+    "history": {
+      "empty": "Aucune vente enregistrée.",
+      "table": {
+        "date": "Date",
+        "station": "Station",
+        "amount": "Montant",
+        "paymentMethod": "Règlement",
+        "status": "Statut",
+        "actions": ""
+      },
+      "status": {
+        "completed": "Validée",
+        "cancelled": "Annulée"
+      },
+      "cancel": "Annuler"
+    }
+  },
+  "reglementaireScreen": {
+    "pageTitle": "Réglementaire",
+    "pageSubtitle": "Documents et déclarations réglementaires par station — niveau de certitude affiché pour chaque obligation, jamais présenté comme également sûr.",
+    "banner": "Le détail précis de certaines obligations réglementaires camerounaises reste à confirmer (voir recherche métier de la mission). Le principe de chaque obligation est retenu ; son détail exact peut nécessiter une vérification professionnelle.",
+    "tabs": {
+      "documents": "Documents",
+      "declarations": "Déclarations"
+    },
+    "filterNeedsAction": "Documents nécessitant une action",
+    "filterAll": "Tous les documents",
+    "documents": {
+      "empty": "Aucun document réglementaire.",
+      "form": {
+        "title": "Ajouter un document",
+        "station": "Station",
+        "selectStation": "Sélectionner une station",
+        "type": "Type de document",
+        "authority": "Autorité",
+        "expiresAt": "Date d'expiration",
+        "certaintyLevel": "Niveau de certitude",
+        "submit": "Ajouter",
+        "required": "Station et type de document sont obligatoires."
+      },
+      "table": {
+        "station": "Station",
+        "type": "Type",
+        "authority": "Autorité",
+        "expiresAt": "Échéance",
+        "status": "Statut",
+        "certainty": "Certitude",
+        "actions": ""
+      },
+      "status": {
+        "valid": "Valide",
+        "renew_soon": "À renouveler",
+        "expired": "Expiré",
+        "unknown": "Échéance inconnue"
+      },
+      "certainty": {
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Faible"
+      },
+      "renew": "Renouveler"
+    },
+    "declarations": {
+      "empty": "Aucune déclaration réglementaire.",
+      "form": {
+        "title": "Créer une déclaration",
+        "station": "Station",
+        "selectStation": "Sélectionner une station",
+        "type": "Type",
+        "authority": "Autorité",
+        "reserve": "Réserve / incertitude",
+        "submit": "Créer",
+        "required": "Station et type sont obligatoires."
+      },
+      "table": {
+        "station": "Station",
+        "type": "Type",
+        "authority": "Autorité",
+        "status": "Statut"
+      },
+      "status": {
+        "to_produce": "À produire",
+        "produced": "Produite"
+      }
+    }
+  },
+  "creditScreen": {
+    "pageTitle": "Clients à crédit",
+    "pageSubtitle": "Comptes clients, limite de crédit et créances ouvertes.",
+    "banner": "Le dépassement de la limite de crédit est bloqué à la vente, jamais autorisé silencieusement.",
+    "empty": "Aucun compte client.",
+    "form": {
+      "title": "Créer un compte client",
+      "name": "Nom",
+      "currency": "Devise",
+      "creditLimit": "Limite de crédit",
+      "submit": "Créer",
+      "required": "Nom, devise et limite sont obligatoires."
+    },
+    "account": {
+      "outstanding": "Encours",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "noReceivable": "Aucune créance pour ce compte."
+    },
+    "table": {
+      "amount": "Montant",
+      "status": "Statut",
+      "pay": "Régler"
+    },
+    "receivableStatus": {
+      "open": "Ouverte",
+      "partially_settled": "Partiellement soldée",
+      "settled": "Soldée"
+    }
+  },
+  "reconciliationScreen": {
+    "pageTitle": "Réconciliation de stock",
+    "pageSubtitle": "Ventes déclarées comparées au stock télémétrique, cuve par cuve et jour par jour.",
+    "banner": "Réutilise directement l'agrégat de caisse déjà calculé (voir Caisse du jour) — aucun nouveau calcul télémétrique.",
+    "empty": "Aucun rapprochement calculé pour l'instant.",
+    "form": {
+      "title": "Calculer un rapprochement",
+      "tank": "Cuve",
+      "selectTank": "Sélectionner une cuve",
+      "day": "Jour",
+      "submit": "Rapprocher",
+      "required": "Cuve et jour sont obligatoires."
+    },
+    "table": {
+      "tank": "Cuve",
+      "day": "Jour",
+      "status": "Statut",
+      "discrepancy": "Écart"
+    },
+    "status": {
+      "matched": "Cohérent",
+      "discrepancy": "Écart détecté",
+      "pending": "En attente de données",
+      "insufficient_data": "Données insuffisantes"
+    }
+  },
+  "caisseEcartsScreen": {
+    "pageTitle": "Écarts de caisse",
+    "pageSubtitle": "Écarts détectés par le rapprochement, tous types confondus.",
+    "banner": "Vue de lecture seule — chaque ligne vient d'un rapprochement déjà déclenché ailleurs (Approvisionnement, Réconciliation de stock, Cuves).",
+    "empty": "Aucun écart détecté pour l'instant.",
+    "table": {
+      "type": "Type",
+      "discrepancy": "Écart constaté",
+      "tolerance": "Tolérance appliquée",
+      "evaluatedAt": "Calculé le"
+    }
   },
   "tanksNetwork": {
     "pageTitle": "Cuves & ATG",
@@ -183,7 +952,8 @@
       "tank": "Cuve",
       "product": "Produit",
       "level": "Niveau",
-      "volume": "Volume",
+      "volume": "Volume réel",
+      "correctedAt15C": "Corrigé 15°C",
       "capacity": "Capacité",
       "sellable": "Vendable",
       "water": "Eau",
@@ -214,18 +984,45 @@
         "subOk": "Toutes les stations sont nominales",
         "subAlert": "Au moins une alerte active, ou données de mesure indisponibles"
       },
-      "stockCoverage": { "label": "Couverture de stock la plus faible" },
-      "activeAlerts": { "label": "Alertes actives", "sub": "Toutes stations confondues" },
-      "atgAvailability": { "label": "Disponibilité des données ATG", "sub": "Part des stations dont les mesures sont à jour à l'instant présent" },
-      "lossRate": { "label": "Taux de perte réseau" },
-      "lossValue": { "label": "Perte valorisée sur 30 jours" },
-      "lossProjection": { "label": "Projection annualisée de la perte" },
-      "deliveryCompliance": { "label": "Conformité des livraisons" },
-      "stockValue": { "label": "Valeur du stock (prix de vente)", "sub": "{volume} en cuve · {pct} de la capacité" },
-      "sellableValue": { "label": "Dont réellement vendable" },
-      "fuelRevenue": { "label": "CA carburant 30 j" },
-      "grossMargin": { "label": "Marge brute carburant 30 j" },
-      "nonFuelRevenue": { "label": "CA non pétrolier 30 j" }
+      "stockCoverage": {
+        "label": "Couverture de stock la plus faible"
+      },
+      "activeAlerts": {
+        "label": "Alertes actives",
+        "sub": "Toutes stations confondues"
+      },
+      "atgAvailability": {
+        "label": "Disponibilité des données ATG",
+        "sub": "Part des stations dont les mesures sont à jour à l'instant présent"
+      },
+      "lossRate": {
+        "label": "Taux de perte réseau"
+      },
+      "lossValue": {
+        "label": "Perte valorisée sur 30 jours"
+      },
+      "lossProjection": {
+        "label": "Projection annualisée de la perte"
+      },
+      "deliveryCompliance": {
+        "label": "Conformité des livraisons"
+      },
+      "stockValue": {
+        "label": "Valeur du stock (prix de vente)",
+        "sub": "{volume} en cuve · {pct} de la capacité"
+      },
+      "sellableValue": {
+        "label": "Dont réellement vendable"
+      },
+      "fuelRevenue": {
+        "label": "CA carburant 30 j"
+      },
+      "grossMargin": {
+        "label": "Marge brute carburant 30 j"
+      },
+      "nonFuelRevenue": {
+        "label": "CA non pétrolier 30 j"
+      }
     },
     "mapCard": {
       "title": "Où sont mes stations et laquelle demande mon attention ?",
@@ -246,7 +1043,9 @@
       "title": "Livraisons récentes",
       "empty": "Aucune livraison détectée récemment"
     },
-    "cashCard": { "title": "Répartition des encaissements" }
+    "cashCard": {
+      "title": "Répartition des encaissements"
+    }
   },
   "nav": {
     "sections": {
@@ -266,6 +1065,7 @@
       "approvisionnement": "Approvisionnement",
       "reconciliation": "Réconciliation de stock",
       "ventes": "Journal des ventes",
+      "produits": "Produits & boutique",
       "shifts": "Shifts",
       "caisse": "Caisse du jour",
       "caisseEcarts": "Écarts de caisse",
@@ -380,6 +1180,21 @@
       "totalNetwork": "TOTAL RÉSEAU",
       "viewDetail": "Voir le détail",
       "currency": "Devise",
+      "reliabilityBanner": {
+        "offline": "Données de mesure indisponibles sur {count} station(s) ({names}). Les volumes et la valorisation de ces stations ne peuvent pas être considérés comme fiables tant que la transmission n'est pas rétablie."
+      },
+      "map": {
+        "title": "Implantation du réseau",
+        "subtitle": "Cliquez sur une pastille pour ouvrir la station"
+      },
+      "synthesis": {
+        "title": "Synthèse",
+        "stock": "Stock total",
+        "fillRate": "Remplissage moyen",
+        "value": "Valeur du stock",
+        "stationsInAlert": "Stations en alerte",
+        "activeAlerts": "Alarmes actives"
+      },
       "badges": {
         "active": "{count} actives",
         "offline": "{count} hors ligne",
@@ -387,13 +1202,25 @@
       },
       "filters": {
         "status": "Statut",
-        "statusOptions": { "all": "Tous", "online": "En ligne", "offline": "Hors ligne", "alert": "Alerte", "critical": "Critique" },
+        "statusOptions": {
+          "all": "Tous",
+          "online": "En ligne",
+          "offline": "Hors ligne",
+          "alert": "Alerte",
+          "critical": "Critique"
+        },
         "city": "Ville",
         "cityAll": "Toutes les villes",
         "product": "Produit",
         "productAll": "Tous les produits",
         "sortBy": "Trier par",
-        "sortOptions": { "name": "Nom A→Z", "lowestLevel": "Niveau le plus bas", "highestValue": "Valeur stock décroissant", "oldestSync": "Dernière synchronisation" }
+        "sortOptions": {
+          "criticality": "Criticité (par défaut)",
+          "name": "Nom A→Z",
+          "lowestLevel": "Niveau le plus bas",
+          "highestValue": "Valeur stock décroissant",
+          "oldestSync": "Dernière synchronisation"
+        }
       },
       "columns": {
         "station": "STATION",
@@ -448,6 +1275,9 @@
       "cityHint": "Détermine la devise native de la station et son fuseau horaire",
       "citySelectPlaceholder": "Sélectionner une ville",
       "resolvedCurrency": "Devise de cette station : {code} (déduite du pays de la ville sélectionnée)",
+      "currencyOverride": "Dérogation de devise",
+      "currencyOverrideHint": "Ne remplir que si cette station facture dans une devise différente de celle de son pays (ex. station frontalière). Laisser vide pour hériter automatiquement de la ville.",
+      "currencyOverrideNone": "Aucune — hériter de la ville",
       "address": "Adresse",
       "addressHint": "Adresse physique de la station, facultative",
       "latitude": "Latitude",
@@ -500,7 +1330,17 @@
       "resolve": "Résoudre",
       "resolveNotePrompt": "Note de résolution (facultative)",
       "triggeredValue": "Valeur déclenchante",
-      "thresholdValue": "Seuil franchi"
+      "thresholdValue": "Seuil franchi",
+      "views": {
+        "all": "Toutes",
+        "byStation": "Par station"
+      },
+      "stationGroup": {
+        "count": "{count, plural, one {# alerte} other {# alertes}}",
+        "active": "{count, plural, one {# active} other {# actives}}"
+      },
+      "filterType": "Tous types",
+      "clearTypeFilter": "Effacer le filtre de type"
     },
     "columns": {
       "type": "Type",
@@ -550,37 +1390,64 @@
       "count": "{count} alertes actives",
       "viewAll": "Voir toutes →"
     },
+    "reliabilityBanner": {
+      "old": {
+        "title": "Données potentiellement non fiables",
+        "description": "Au moins une cuve de cette station n'a pas transmis de mesure depuis plus de 45 minutes. Les valeurs de stock affichées peuvent ne pas refléter l'état réel — ne vous y fiez pas avant vérification."
+      },
+      "late": {
+        "title": "Données en retard",
+        "description": "Au moins une cuve de cette station n'a pas transmis de mesure depuis plus de 15 minutes. Les valeurs affichées restent indicatives."
+      }
+    },
+    "kpis": {
+      "stock": "Stock station",
+      "stockSub": "sur {capacity} de capacité",
+      "coverage": "Couverture minimale",
+      "activeAlerts": "Alarmes actives",
+      "pumps": "Pompes disponibles"
+    },
+    "stockSynthesis": {
+      "title": "Synthèse stock station",
+      "ofCapacity": "sur {capacity} de capacité",
+      "stockValue": "Valeur du stock",
+      "valueUnavailable": "Valeur non calculable",
+      "totalStation": "Total station"
+    },
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "pumps": "Pompes",
+      "staff": "Personnel",
+      "compliance": "Conformité",
+      "atg": "ATG"
+    },
     "tanksSection": {
       "title": "Cuves de la station",
       "activeCount": "({count} cuves actives)",
       "addTank": "+ Ajouter une cuve",
-      "empty": "Aucune cuve enregistrée pour cette station"
+      "empty": "Aucune cuve enregistrée pour cette station",
+      "hint": "Volume, eau, espace disponible et fraîcheur de la mesure pour chaque cuve"
+    },
+    "charts": {
+      "sales": {
+        "title": "Quel est le rythme de vente de cette station ?",
+        "subtitle": "Volume par jour et par produit — 30 jours",
+        "empty": "Pas assez de données de vente calculables sur les 30 derniers jours."
+      },
+      "stock": {
+        "title": "Le stock de la station se reconstitue-t-il ?",
+        "subtitle": "Les remontées verticales sont des livraisons ; les coupures sont des absences de mesure",
+        "empty": "Pas assez de mesures réelles sur les 30 derniers jours pour tracer une courbe."
+      }
     },
     "tankCard": {
-      "capacity": "Capacité",
-      "product": "Produit",
-      "sync": "sync {minutes} min",
-      "syncOffline": "hors ligne",
+      "sync": "Donnée à jour · {minutes} min",
+      "syncOffline": "Aucune mesure récente",
       "sensorConnected": "Sonde connectée",
       "sensorDisconnected": "Sonde déconnectée",
-      "sensorNotConfigured": "Sonde non configurée",
-      "waterAlert": "Niveau eau élevé",
       "calibration": "Calibration",
       "detail": "Détail →",
-      "notCalculable": "Volume non calculable",
-      "available": "Volume disponible",
-      "rawVolume": "Brut (temp. actuelle)",
-      "volumeAt15C": "Corrigé à 15°C",
-      "sellable": "Volume vendable",
-      "sellableValue": "Valeur vendable",
-      "notCalculableShort": "Non calculable",
-      "temperature": "Température",
-      "offline": "Hors ligne",
-      "water": "Eau",
-      "empty": "Vide",
-      "thresholdLegend": {
-        "title": "Niveaux (mm)"
-      }
+      "notCalculable": "Volume non calculable"
     },
     "calibrationModal": {
       "title": "Calibration — {tank}",
@@ -594,32 +1461,109 @@
       "replace": "Remplacer la table"
     },
     "columns": {
-      "alerts": { "title": "Alertes ({count})", "empty": "Aucune alerte pour cette station" },
-      "deliveries": { "title": "Livraisons récentes ({count})", "empty": "Aucune livraison récente", "volume": "{volume}" },
-      "leaks": { "title": "Fuites actives ({count})", "empty": "Aucune fuite active", "rate": "Débit : {rate} L/h", "status": "En cours" },
+      "alerts": {
+        "title": "Alertes ({count})",
+        "empty": "Aucune alerte pour cette station"
+      },
+      "deliveries": {
+        "title": "Livraisons récentes ({count})",
+        "empty": "Aucune livraison récente",
+        "volume": "{volume}"
+      },
+      "leaks": {
+        "title": "Fuites actives ({count})",
+        "empty": "Aucune fuite active",
+        "rate": "Débit : {rate} L/h",
+        "status": "En cours"
+      },
       "viewAll": "Voir toutes →"
     },
     "editModal": {
       "title": "Modifier la station"
     },
     "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
-    "confirmReactivate": "Réactiver cette station ?"
+    "confirmReactivate": "Réactiver cette station ?",
+    "parts": {
+      "unavailable": {
+        "title": "Non visible pour votre rôle",
+        "description": "Ce volet est réservé aux rôles disposant des permissions correspondantes."
+      }
+    },
+    "pumpsTab": {
+      "title": "Équipements de type « pompe »",
+      "note": "Les pompes du prototype portent pistolets et index totalisateurs : Zylo Liquid ne modélise pas ces compteurs (voir matrice des écarts) — ce tableau liste les fiches d'équipement réelles de type « pompe » de la station.",
+      "columns": {
+        "serialNumber": "N° de série",
+        "manufacturerModel": "Fabricant · modèle",
+        "installedAt": "Installé le"
+      }
+    },
+    "staffTab": {
+      "title": "Personnel de la station",
+      "note": "Membres du réseau ayant un rôle affecté à cette station (affectation RBAC de portée station) — le nom affiché d'un rôle est son nom réel dans le système. Les rôles de portée organisation (ex. Propriétaire) ne sont pas des affectations de station et n'apparaissent pas ici.",
+      "empty": "Aucun membre affecté à cette station.",
+      "columns": {
+        "member": "Membre",
+        "roles": "Rôle(s)"
+      }
+    },
+    "complianceTab": {
+      "documentsTitle": "Documents réglementaires",
+      "declarationsTitle": "Déclarations réglementaires",
+      "note": "Documents et déclarations réglementaires de la station — statuts calculés par le backend sur l'échéance réelle ; types affichés en texte brut. La gestion (ajout, renouvellement, production) reste sur l'écran Réglementaire du réseau."
+    },
+    "atgTab": {
+      "consoleTitle": "Console de transmission Holykell",
+      "sensorsTitle": "Sondes mappées sur les cuves actives",
+      "note": "Sondes Holykell mappées sur les cuves actives de la station. Valeur, unité et statut = dernière remontée du registre de télémétrie (vérité mesurée) ; le mapping (cuve/mesure, dates de validité) est la vérité déclarée.",
+      "noTanks": "Aucune cuve active sur cette station.",
+      "empty": "Aucune sonde mappée sur les cuves actives.",
+      "sensorStatus": {
+        "ok": "En ligne",
+        "ko": "Hors ligne",
+        "unknown": "Statut inconnu",
+        "never": "Jamais remonté"
+      },
+      "columns": {
+        "tank": "Cuve",
+        "measurement": "Mesure",
+        "sensor": "Capteur",
+        "lastValue": "Dernière valeur",
+        "lastSeen": "Dernière visibilité",
+        "status": "Statut"
+      }
+    }
   },
   "tankVisual": {
     "modes": {
       "switcherLabel": "Mode de représentation de la cuve",
-      "vertical": { "label": "Jauge verticale", "desc": "Colonne proportionnelle au volume mesuré." },
-      "horizontal": { "label": "Cuve horizontale", "desc": "Niveau physique mesuré ; volume calculé par la table de calibration." },
-      "anneau": { "label": "Composition", "desc": "Répartition volumétrique carburant / eau / espace disponible." },
-      "compact": { "label": "Barre compacte", "desc": "Comparaison rapide de plusieurs cuves." }
+      "vertical": {
+        "label": "Jauge verticale",
+        "desc": "Colonne proportionnelle au volume mesuré."
+      },
+      "horizontal": {
+        "label": "Cuve horizontale",
+        "desc": "Niveau physique mesuré ; volume calculé par la table de calibration."
+      },
+      "anneau": {
+        "label": "Composition",
+        "desc": "Répartition volumétrique carburant / eau / espace disponible."
+      },
+      "compact": {
+        "label": "Barre compacte",
+        "desc": "Comparaison rapide de plusieurs cuves."
+      }
     },
     "figures": {
       "volume": "Volume mesuré",
       "capacity": "Capacité totale",
       "fillRate": "Remplissage",
+      "sellable": "Volume vendable",
       "water": "Eau détectée",
       "available": "Espace disponible",
       "temperature": "Température",
+      "coverage": "Couverture estimée",
+      "notCalculable": "Non calculable",
       "value": "Valeur du stock"
     },
     "legend": {
@@ -659,6 +1603,9 @@
     },
     "composition": {
       "title": "Composition du volume",
+      "real": "Volume réel",
+      "sellable": "Volume vendable",
+      "correctedAt15C": "Corrigé à 15°C",
       "fuel": "Carburant",
       "water": "Eau",
       "available": "Espace disponible"
@@ -670,8 +1617,18 @@
     "history": {
       "title": "Volume mesuré dans le temps",
       "subtitle": "{count} mesures affichées",
-      "empty": "Pas assez de mesures pour tracer un historique"
+      "empty": "Pas assez de mesures pour tracer un historique",
+      "rangeLabel": "Plage affichée",
+      "ranges": {
+        "0": "Toute la fenêtre",
+        "14": "14 jours",
+        "7": "7 jours",
+        "3": "3 jours",
+        "1": "24 heures"
+      },
+      "waterTempNote": "L'évolution de l'eau et de la température dans le temps n'est pas encore disponible dans Zylo Liquid : seule la valeur instantanée est affichée aujourd'hui (onglet Jauge & composition)."
     },
+    "gaugingNote": "Le jaugeage manuel de contrôle n'est pas encore disponible dans Zylo Liquid.",
     "alerts": {
       "empty": "Aucune alarme sur cette cuve",
       "status": {

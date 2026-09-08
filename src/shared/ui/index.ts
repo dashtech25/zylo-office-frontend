@@ -6,6 +6,7 @@ export * from "./Button";
 export * from "./Card";
 export * from "./CardSectionHeader";
 export * from "./Checkbox";
+export * from "./ColorPicker";
 export * from "./DropdownMenu";
 export * from "./EmptyState";
 export * from "./FormField";

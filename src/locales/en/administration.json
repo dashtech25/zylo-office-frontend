@@ -1,0 +1,59 @@
+{
+  "users": {
+    "title": "Users",
+    "subtitle": "Members of this organization and the roles assigned to them.",
+    "columns": { "name": "Name", "email": "Email", "status": "Status", "roles": "Roles" },
+    "noRoles": "No role",
+    "assignRole": "Assign a role",
+    "grants": "Grants",
+    "removeRole": "Remove",
+    "removeRoleConfirm": "Remove the role \"{role}\" from {user}?",
+    "assignModalTitle": "Assign a role to {user}",
+    "selectRole": "Choose a role",
+    "selectScopeStation": "Restrict to a station (optional)",
+    "scopeWholeOrganization": "Whole organization",
+    "scopeHint": "If a station is chosen, this role only applies to that station for this user — they won't see or access the others.",
+    "status": { "active": "Active", "suspended": "Suspended", "pending": "Pending" }
+  },
+  "roles": {
+    "title": "Roles & permissions",
+    "subtitle": "A role is a permission template — actual assignment happens on the Users page. An individual deny always overrides what a role grants.",
+    "backToList": "← Back to roles",
+    "create": "Create a role",
+    "createModalTitle": "Create a custom role",
+    "codeLabel": "Code (technical identifier)",
+    "nameLabel": "Name",
+    "permissionsCount": "{count, plural, =0 {No permission} one {# permission} other {# permissions}}",
+    "ownerImmutable": "The Owner role holds every permission by construction and cannot be edited.",
+    "save": "Save permissions",
+    "saved": "Permissions saved.",
+    "noPermissionToManage": "You cannot edit this role: you don't hold some of its current permissions yourself, or you lack the right to manage roles.",
+    "empty": "No role defined for this organization."
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Who did what, on what, and when — filtered to your access scope.",
+    "columns": { "actor": "User", "action": "Action", "summary": "Detail", "date": "Date" },
+    "empty": "No action recorded for this period.",
+    "noAccess": "You do not have permission to view the audit log.",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "grants": {
+    "title": "Individual grants — {user}",
+    "subtitle": "An individual grant is independent from the displayed role: a \"deny\" set here always blocks access, even if a role allows it elsewhere. A scoped \"allow\" can unlock a specific resource without changing the user's role.",
+    "empty": "No individual grant for this user.",
+    "columns": { "permission": "Permission", "effect": "Effect", "scope": "Scope", "validUntil": "Valid until" },
+    "scopeOrgWide": "Whole organization",
+    "effect": { "allow": "Allow", "deny": "Deny" },
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke this grant? Any delegation issued from it will be revoked with it.",
+    "addTitle": "Add a grant",
+    "selectPermission": "Choose a permission",
+    "resourceTypePlaceholder": "Scope type (e.g. station) — empty = whole organization",
+    "resourceIdPlaceholder": "Resource identifier (UUID)",
+    "validUntilLabel": "Valid until (optional)",
+    "auditNotePlaceholder": "Audit note (optional)",
+    "add": "Add the grant"
+  }
+}

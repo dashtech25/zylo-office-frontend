@@ -10,10 +10,12 @@ import {
   createTank,
   createTankSensorMapping,
   listCities,
+  listCurrencies,
   listFuelProducts,
   replaceTankCalibrationPoints,
   updateStation,
   type City,
+  type Currency,
   type FuelProduct,
   type Station,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
@@ -54,7 +56,9 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const [closingTime, setClosingTime] = useState("22:00");
   const [is24h, setIs24h] = useState(false);
   const [notes, setNotes] = useState("");
+  const [currencyOverrideId, setCurrencyOverrideId] = useState("");
   const [cities, setCities] = useState<City[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
   const [tanks, setTanks] = useState<TankFieldsState[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +79,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
       setClosingTime(station.closingTime || "22:00");
       setIs24h(station.is24h);
       setNotes(station.notes ?? "");
+      setCurrencyOverrideId(station.currencyOverrideId ?? "");
     }
   }, [open, station]);
 
@@ -86,6 +91,9 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     listFuelProducts(organizationId)
       .then((page) => setFuelProducts(page.data.filter((p) => p.active !== false)))
       .catch(() => setFuelProducts([]));
+    listCurrencies(organizationId, 100)
+      .then((page) => setCurrencies(page.data))
+      .catch(() => setCurrencies([]));
   }, [open, organizationId]);
 
   function reset() {
@@ -102,6 +110,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     setClosingTime("22:00");
     setIs24h(false);
     setNotes("");
+    setCurrencyOverrideId("");
     setTanks([]);
     setError(null);
   }
@@ -133,6 +142,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
         closingTime: is24h ? undefined : closingTime || undefined,
         is24h,
         notes: notes || undefined,
+        currencyOverrideId: currencyOverrideId || null,
       };
 
       if (isEdit && station) {
@@ -230,9 +240,20 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
                 />
               )}
             </FormField>
-            {selectedCity && (
+            {selectedCity && !currencyOverrideId && (
               <p className="text-caption text-text-muted">{t("createModal.resolvedCurrency", { code: selectedCity.currencyCode })}</p>
             )}
+
+            <FormField label={t("createModal.currencyOverride")} hint={t("createModal.currencyOverrideHint")}>
+              {(field) => (
+                <Select
+                  {...field}
+                  value={currencyOverrideId}
+                  onValueChange={setCurrencyOverrideId}
+                  options={[{ value: "", label: t("createModal.currencyOverrideNone") }, ...currencies.map((c) => ({ value: c.id, label: c.code }))]}
+                />
+              )}
+            </FormField>
 
             <FormField label={t("createModal.address")} hint={t("createModal.addressHint")}>
               {(field) => <Input {...field} value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} />}

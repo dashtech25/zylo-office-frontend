@@ -4,7 +4,9 @@ import { useFormatter } from "next-intl";
 
 import type { Tank, TankCurrentState } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
-import { TankGauge } from "@/modules/zylo-liquid/components/TankGauge";
+import { TankVisual, type TankVisualMode } from "@/modules/zylo-liquid/components/TankVisual";
+
+export type TankGaugeMode = TankVisualMode;
 
 export interface TankGaugeColumnProps {
   tank: Tank;
@@ -12,16 +14,21 @@ export interface TankGaugeColumnProps {
   offline: boolean;
   fuelColor: string;
   notCalculableLabel: string;
+  mode: TankGaugeMode;
 }
 
 /** Colonne B de la référence : le cylindre — délègue entièrement à
- * `TankGauge` (source unique, voir modules/zylo-liquid/components/TankGauge),
- * ne gère que les états de repli (hors ligne / pas de mesure) qui n'ont pas
- * de sens pour `TankGauge` lui-même. */
-export function TankGaugeColumn({ tank, state, offline, fuelColor, notCalculableLabel }: TankGaugeColumnProps) {
+ * `TankVisual` (source unique des 4 modes de représentation, voir
+ * components/TankVisual.tsx — réutilisée ici plutôt que dupliquée, cf.
+ * TanksNetworkScreen.tsx/TankDetailScreen.tsx qui l'utilisent déjà), ne
+ * gère que les états de repli (hors ligne / pas de mesure) communs aux 4
+ * modes. `big` n'est activé qu'en mode horizontal : c'est le seul mode à
+ * afficher les badges de seuil atteint (le plus riche des 4), les 3 autres
+ * gardent leur taille compacte adaptée à une vignette. */
+export function TankGaugeColumn({ tank, state, offline, fuelColor, notCalculableLabel, mode }: TankGaugeColumnProps) {
   const format = useFormatter();
   return (
-    <div className="flex min-w-[320px] flex-1 items-center px-3 py-4">
+    <div className="flex w-full items-center justify-center py-2">
       {offline ? (
         <div className="flex w-full items-center justify-center text-center">
           <div className="flex flex-col items-center gap-1">
@@ -34,7 +41,7 @@ export function TankGaugeColumn({ tank, state, offline, fuelColor, notCalculable
           </div>
         </div>
       ) : state ? (
-        <TankGauge tank={tank} state={state} fuelColor={fuelColor} size="detailed" />
+        <TankVisual tank={tank} state={state} mode={mode} big={mode === "horizontal"} fuelColor={fuelColor} />
       ) : (
         <span className="text-caption text-text-muted">{notCalculableLabel}</span>
       )}
