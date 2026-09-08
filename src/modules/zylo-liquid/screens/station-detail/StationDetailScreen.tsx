@@ -13,11 +13,11 @@ import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMen
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { AlertsBrowserModal } from "@/modules/zylo-liquid/components/AlertsBrowserModal";
-import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
 import { DeliveriesBrowserModal } from "@/modules/zylo-liquid/components/DeliveriesBrowserModal";
 import { LeaksBrowserModal } from "@/modules/zylo-liquid/components/LeaksBrowserModal";
 import { AddTankModal } from "./AddTankModal";
 import { CalibrationModal } from "@/modules/zylo-liquid/components/CalibrationModal";
+import { StationAdminCenter } from "../station-admin/StationAdminCenter";
 import { AtgTab } from "./AtgTab";
 import { ComplianceTab } from "./ComplianceTab";
 import { PumpsTab } from "./PumpsTab";
@@ -28,11 +28,19 @@ import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { TankCard } from "./TankCard";
 import type { TankGaugeMode } from "./TankGaugeColumn";
 import { useStationDetail } from "./useStationDetail";
-import { useStationTrends } from "./useStationTrends";
+import { last7DaysVolumeByProduct, useStationTrends } from "./useStationTrends";
 
 const PRODUCT_COLOR_FALLBACK = ["#1B998B", "#D4A017", "#8E44AD", "#3498DB", "#E74C3C", "#2ECC71"];
 
 const STATUS_TONE = { critical: "error", alert: "warning", offline: "neutral", online: "success" } as const;
+
+// Statut opérationnel déclaré (`Station.status`) — distinct du badge de
+// connectivité capteurs ci-dessus (`stationState`) : « ouverte/fermée/en
+// maintenance » est une décision humaine (double vérité), jamais déduite de
+// l'état des sondes. Mission « amélioration zylo liquid », page de
+// station.docx : « le statut opérationnel, où l'on doit voir si la station
+// est ouverte ou fermée ».
+const OPERATIONAL_STATUS_TONE = { active: "success", maintenance: "warning", inactive: "neutral" } as const;
 
 // Même permission que celle qui protège déjà la création/lecture de
 // l'historique des prix (`PRICE_HISTORY_READ` côté backend,
@@ -91,7 +99,7 @@ export default function StationDetailScreen() {
   // changé ce que voient déjà les utilisateurs actuels sans bénéfice — les
   // 4 modes restent tous disponibles via le sélecteur.
   const [gaugeMode, setGaugeMode] = useState<TankGaugeMode>("horizontal");
-  const [editOpen, setEditOpen] = useState(false);
+  const [adminCenterOpen, setAdminCenterOpen] = useState(false);
   const [addTankOpen, setAddTankOpen] = useState(false);
   const [calibrationTank, setCalibrationTank] = useState<Tank | null>(null);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
@@ -144,7 +152,7 @@ export default function StationDetailScreen() {
 
   const { station } = data;
   const activeTanks = data.tanks.filter((tank) => tank.active);
-  const city = station.cityId ? data.cities.find((c) => c.id === station.cityId) : null;
+  const city = (station.cityId ? data.cities.find((c) => c.id === station.cityId) : null) ?? null;
 
   const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
   const stationOnline = tankStates.some((s) => s.sensorStatus === "online");
@@ -179,7 +187,15 @@ export default function StationDetailScreen() {
     capacityLiters: number;
     monetaryValue: number | null;
     currencyCode: string | null;
+    /** Volume vendu sur les 7 derniers jours (calcul réel backend via
+     * `getStationCashDetail`, jamais une donnée simulée). */
+    soldLast7DaysLiters: number;
+    /** Jours avant rupture au rythme moyen des 7 derniers jours = stock
+     * actuel / (volume vendu 7j / 7). `null` si aucune vente sur la fenêtre
+     * (couverture non calculable — jamais approximée à l'infini ou à 0). */
+    coverageDays: number | null;
   }
+  const salesLast7DaysByProduct = last7DaysVolumeByProduct(trends.salesByDay);
   const stationProductsMap = new Map<string, StationProductAggregate>();
   for (const tank of activeTanks) {
     const product = data.fuelProductById.get(tank.fuelProductId);
@@ -193,6 +209,8 @@ export default function StationDetailScreen() {
       capacityLiters: 0,
       monetaryValue: 0,
       currencyCode: null,
+      soldLast7DaysLiters: salesLast7DaysByProduct.get(product.id) ?? 0,
+      coverageDays: null,
     };
     entry.capacityLiters += tank.calibratedCapacityLiters ?? tank.capacityLiters;
     entry.volumeLiters += state?.volumeLiters ?? 0;
@@ -206,7 +224,22 @@ export default function StationDetailScreen() {
     }
     stationProductsMap.set(product.id, entry);
   }
-  const stationProducts = [...stationProductsMap.values()];
+  for (const entry of stationProductsMap.values()) {
+    entry.coverageDays = entry.soldLast7DaysLiters > 0 ? entry.volumeLiters / (entry.soldLast7DaysLiters / 7) : null;
+  }
+  // Tri « plus vendu → moins vendu » (mission « amélioration zylo liquid »,
+  // page de station.docx) — fiche du produit le plus vendu affichée en
+  // premier, jamais un ordre arbitraire de cuve.
+  const stationProducts = [...stationProductsMap.values()].sort((a, b) => b.soldLast7DaysLiters - a.soldLast7DaysLiters);
+  // Produits les plus critiques d'abord (couverture la plus faible) ; les
+  // produits sans vente calculable (coverageDays null) restent en fin de
+  // liste — pas de fausse urgence sans donnée réelle.
+  const criticalityRanking = [...stationProductsMap.values()].sort((a, b) => {
+    if (a.coverageDays === null && b.coverageDays === null) return 0;
+    if (a.coverageDays === null) return 1;
+    if (b.coverageDays === null) return -1;
+    return a.coverageDays - b.coverageDays;
+  });
   const stationTotalCapacityLiters = activeTanks.reduce((sum, tk) => sum + (tk.calibratedCapacityLiters ?? tk.capacityLiters), 0);
   const stationTotalVolumeLiters = tankStates.reduce((sum, s) => sum + (s.volumeLiters ?? 0), 0);
   const stationValueCurrencies = new Set(tankStates.map((s) => s.currencyCode).filter((c): c is string => c !== null));
@@ -255,13 +288,19 @@ export default function StationDetailScreen() {
         breadcrumbs={[{ label: t("backLink"), href: "/zylo-liquid/stations" }, { label: station.name }]}
         title={
           <span className="flex flex-wrap items-center gap-2">
-            {station.name}
+            <span>
+              {station.name}
+              {city && <span className="font-normal text-text-muted"> ({city.name})</span>}
+            </span>
+            <Badge tone={OPERATIONAL_STATUS_TONE[station.status]} dot>
+              {t(`operationalStatus.${station.status}`)}
+            </Badge>
             <Badge tone={STATUS_TONE[stationState]} dot>
               {t(`status.${stationState}`)}
             </Badge>
           </span>
         }
-        description={`${city ? city.name : "—"} · ${lastStationSync ? t("sync", { minutes: minutesAgo(lastStationSync) }) : t("syncNever")}`}
+        description={lastStationSync ? t("sync", { minutes: minutesAgo(lastStationSync) }) : t("syncNever")}
         actions={
           <div className="flex flex-wrap items-center gap-2 no-print">
             <Button variant="outline" size="sm" onClick={() => setDeliveriesModal({ open: true, initialDeliveryId: null })}>
@@ -272,8 +311,8 @@ export default function StationDetailScreen() {
               <Droplet className="size-4" aria-hidden />
               {t("actions.leaks")}
             </Button>
-            <Button size="sm" onClick={() => setEditOpen(true)}>
-              {t("actions.edit")}
+            <Button size="sm" onClick={() => setAdminCenterOpen(true)}>
+              {t("actions.configuration")}
             </Button>
             <div className="relative">
               <Button variant="outline" size="sm" onClick={() => setMenuOpen((v) => !v)} aria-haspopup="menu" aria-expanded={menuOpen}>
@@ -295,29 +334,38 @@ export default function StationDetailScreen() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Les tuiles « Couverture minimale »/« Pompes disponibles » (placeholder
+          "—"/"À venir") ont été retirées — sans valeur affichée, aucune
+          fonction (mission « amélioration zylo liquid », page de
+          station.docx : « il faut retirer cette partie, elle ne sert plus à
+          rien »). La couverture réelle, calculée par produit, vit désormais
+          dans le bloc Synthèse stock station ci-dessous. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Kpi icon={Droplet} label={t("kpis.stock")} value={formatVolume(stationTotalVolumeLiters)} sub={t("kpis.stockSub", { capacity: formatVolume(stationTotalCapacityLiters) })} />
-        <Kpi icon={Clock} label={t("kpis.coverage")} disabled disabledLabel={tCommon("states.comingSoon")} />
         <Kpi
           icon={AlertTriangle}
           label={t("kpis.activeAlerts")}
           value={data.alerts.length}
           tone={criticalAlert ? "error" : data.alerts.length > 0 ? "warning" : "neutral"}
         />
-        <Kpi icon={Fuel} label={t("kpis.pumps")} disabled disabledLabel={tCommon("states.comingSoon")} />
       </div>
 
       {can(PRICE_HISTORY_READ) && stationProducts.length > 0 && (
         <Card>
           <CardSectionHeader title={t("stockSynthesis.title")} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stationProducts.map((product) => {
+            {stationProducts.map((product, index) => {
               const rate = product.capacityLiters > 0 ? (product.volumeLiters / product.capacityLiters) * 100 : 0;
               return (
                 <div key={product.fuelProductId} className="rounded-card border border-border-subtle p-4">
-                  <div className="flex items-center gap-2 text-body-sm font-semibold text-text-muted">
-                    <Circle className="size-2.5" style={{ fill: product.displayColor ?? "var(--color-text-muted)", color: product.displayColor ?? undefined }} aria-hidden />
-                    {product.name.toUpperCase()}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-body-sm font-semibold text-text-muted">
+                      <Circle className="size-2.5" style={{ fill: product.displayColor ?? "var(--color-text-muted)", color: product.displayColor ?? undefined }} aria-hidden />
+                      {product.name.toUpperCase()}
+                    </div>
+                    {/* Rang de vente (fiche 1 = le plus vendu) — mission
+                        « amélioration zylo liquid », page de station.docx. */}
+                    <Badge tone="neutral">{t("stockSynthesis.rank", { rank: index + 1 })}</Badge>
                   </div>
                   <p className="mt-2 text-h2 font-bold tabular-nums text-text">{formatVolume(product.volumeLiters)}</p>
                   <p className="text-body-sm text-text-muted">{t("stockSynthesis.ofCapacity", { capacity: formatVolume(product.capacityLiters) })}</p>
@@ -326,6 +374,12 @@ export default function StationDetailScreen() {
                       <div className="h-full rounded-pill" style={{ width: `${Math.min(100, rate)}%`, background: product.displayColor ?? "var(--color-primary)" }} />
                     </div>
                     <span className="tabular-nums text-body-sm text-text-muted">{format.number(rate, { maximumFractionDigits: 1 })}%</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5 text-body-sm text-text-muted">
+                    <Clock className="size-3.5" aria-hidden />
+                    {product.coverageDays !== null
+                      ? t("stockSynthesis.coverageDays", { days: format.number(product.coverageDays, { maximumFractionDigits: 1 }) })
+                      : t("stockSynthesis.coverageUnavailable")}
                   </div>
                   <div className="mt-3 border-t border-border-subtle pt-3">
                     <p className="text-caption text-text-muted">{t("stockSynthesis.stockValue")}</p>
@@ -348,6 +402,32 @@ export default function StationDetailScreen() {
               </div>
             </div>
           </div>
+
+          {/* Liste « produit le plus critique → moins critique » (couverture
+              croissante) — mission « amélioration zylo liquid », page de
+              station.docx : « je sais que actuellement les alertes présentent
+              déjà tout mais c'est une information très importante ». */}
+          <div className="mt-4 border-t border-border-subtle pt-4">
+            <div className="mb-2 flex items-center gap-1.5 text-body-sm font-semibold text-text-muted">
+              <Fuel className="size-4" aria-hidden />
+              {t("stockSynthesis.criticalityTitle")}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {criticalityRanking.map((product) => (
+                <div key={product.fuelProductId} className="flex items-center justify-between gap-2 text-body-sm">
+                  <span className="flex items-center gap-2">
+                    <Circle className="size-2.5" style={{ fill: product.displayColor ?? "var(--color-text-muted)", color: product.displayColor ?? undefined }} aria-hidden />
+                    {product.name}
+                  </span>
+                  <span className="tabular-nums text-text-muted">
+                    {product.coverageDays !== null
+                      ? t("stockSynthesis.coverageDays", { days: format.number(product.coverageDays, { maximumFractionDigits: 1 }) })
+                      : t("stockSynthesis.coverageUnavailable")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
       )}
 
@@ -366,93 +446,26 @@ export default function StationDetailScreen() {
         </Alert>
       )}
 
+      {adminCenterOpen && currentOrganization ? (
+        <StationAdminCenter
+          organizationId={currentOrganization.id}
+          station={station}
+          city={city}
+          fuelProducts={data.fuelProducts}
+          stationId={stationId}
+          onReload={data.reload}
+          onClose={() => setAdminCenterOpen(false)}
+        />
+      ) : (
       <Tabs
         variant="underline"
         items={[
           { value: "apercu", label: t("tabs.overview"), content: (
             <Stack>
-      <Card>
-        <CardSectionHeader
-          title={t("tanksSection.title")}
-          action={
-            <Button variant="outline" size="sm" onClick={() => setAddTankOpen(true)}>
-              {t("tanksSection.addTank")}
-            </Button>
-          }
-        />
-        <p className="-mt-3 mb-1 text-body-sm text-text-muted">{t("tanksSection.activeCount", { count: activeTanks.length })}</p>
-        <p className="mb-3 text-caption text-text-muted">{t("tanksSection.hint")}</p>
-
-        <div className="mb-4">
-          <ModeSwitcher mode={gaugeMode} onChange={setGaugeMode} />
-        </div>
-
-        {activeTanks.length === 0 ? (
-          <EmptyState title={t("tanksSection.empty")} />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {activeTanks.map((tank) => (
-                <TankCard
-                  key={tank.id}
-                  tank={tank}
-                  state={data.tankStateById.get(tank.id) ?? null}
-                  fuelProduct={data.fuelProductById.get(tank.fuelProductId) ?? null}
-                  stationAlerts={data.alerts}
-                  stationId={stationId}
-                  onOpenCalibration={() => setCalibrationTank(tank)}
-                  gaugeMode={gaugeMode}
-                />
-              ))}
-            </div>
-
-            <div className="mt-4 border-t border-border-subtle pt-3">
-              <TankLegend />
-            </div>
-          </>
-        )}
-      </Card>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardSectionHeader title={t("charts.sales.title")} />
-          <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.sales.subtitle")}</p>
-          {trends.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
-          ) : salesSeries.length === 0 || salesPoints.every((p) => Object.values(p.values).every((v) => v === 0)) ? (
-            <p className="text-body-sm text-text-muted">{t("charts.sales.empty")}</p>
-          ) : (
-            <>
-              <StackedBarChart points={salesPoints} series={salesSeries} formatValue={formatVolume} formatDate={formatDateShort} />
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-muted">
-                {salesSeries.map((s) => (
-                  <span key={s.key} className="flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-full" style={{ background: s.color }} /> {s.label}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-
-        <Card>
-          <CardSectionHeader title={t("charts.stock.title")} />
-          <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.stock.subtitle")}</p>
-          {trends.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
-          ) : trends.stockPoints.length < 2 ? (
-            <p className="text-body-sm text-text-muted">{t("charts.stock.empty")}</p>
-          ) : (
-            <TrendChart
-              points={trends.stockPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
-              formatValue={formatVolume}
-              formatDate={formatDateShort}
-              seriesLabel={t("charts.stock.title")}
-            />
-          )}
-        </Card>
-      </div>
-
+      {/* Alertes / Livraisons récentes / Fuites actives remontées en
+          première position dans la vue d'ensemble (mission « amélioration
+          zylo liquid », page de station.docx : « les blocs ... doivent
+          monter en première position »), avant les cuves et les graphiques. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardSectionHeader
@@ -566,6 +579,88 @@ export default function StationDetailScreen() {
           )}
         </Card>
       </div>
+
+      <Card>
+        <CardSectionHeader
+          title={t("tanksSection.title")}
+          action={
+            <Button variant="outline" size="sm" onClick={() => setAddTankOpen(true)}>
+              {t("tanksSection.addTank")}
+            </Button>
+          }
+        />
+        <p className="-mt-3 mb-1 text-body-sm text-text-muted">{t("tanksSection.activeCount", { count: activeTanks.length })}</p>
+        <p className="mb-3 text-caption text-text-muted">{t("tanksSection.hint")}</p>
+
+        <div className="mb-4">
+          <ModeSwitcher mode={gaugeMode} onChange={setGaugeMode} />
+        </div>
+
+        {activeTanks.length === 0 ? (
+          <EmptyState title={t("tanksSection.empty")} />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {activeTanks.map((tank) => (
+                <TankCard
+                  key={tank.id}
+                  tank={tank}
+                  state={data.tankStateById.get(tank.id) ?? null}
+                  fuelProduct={data.fuelProductById.get(tank.fuelProductId) ?? null}
+                  stationAlerts={data.alerts}
+                  stationId={stationId}
+                  onOpenCalibration={() => setCalibrationTank(tank)}
+                  gaugeMode={gaugeMode}
+                />
+              ))}
+            </div>
+
+            <div className="mt-4 border-t border-border-subtle pt-3">
+              <TankLegend />
+            </div>
+          </>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardSectionHeader title={t("charts.sales.title")} />
+          <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.sales.subtitle")}</p>
+          {trends.loading ? (
+            <PageSpinner label={tCommon("states.loading")} />
+          ) : salesSeries.length === 0 || salesPoints.every((p) => Object.values(p.values).every((v) => v === 0)) ? (
+            <p className="text-body-sm text-text-muted">{t("charts.sales.empty")}</p>
+          ) : (
+            <>
+              <StackedBarChart points={salesPoints} series={salesSeries} formatValue={formatVolume} formatDate={formatDateShort} />
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-muted">
+                {salesSeries.map((s) => (
+                  <span key={s.key} className="flex items-center gap-1.5">
+                    <span className="size-2.5 rounded-full" style={{ background: s.color }} /> {s.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+
+        <Card>
+          <CardSectionHeader title={t("charts.stock.title")} />
+          <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.stock.subtitle")}</p>
+          {trends.loading ? (
+            <PageSpinner label={tCommon("states.loading")} />
+          ) : trends.stockPoints.length < 2 ? (
+            <p className="text-body-sm text-text-muted">{t("charts.stock.empty")}</p>
+          ) : (
+            <TrendChart
+              points={trends.stockPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
+              formatValue={formatVolume}
+              formatDate={formatDateShort}
+              seriesLabel={t("charts.stock.title")}
+            />
+          )}
+        </Card>
+      </div>
             </Stack>
           ) },
           { value: "pompes", label: t("tabs.pumps"), content: currentOrganization ? <PumpsTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
@@ -574,10 +669,10 @@ export default function StationDetailScreen() {
           { value: "atg", label: t("tabs.atg"), content: currentOrganization ? <AtgTab organizationId={currentOrganization.id} tanks={activeTanks} /> : null },
         ]}
       />
+      )}
 
       {currentOrganization && (
         <>
-          <CreateStationModal organizationId={currentOrganization.id} open={editOpen} onOpenChange={setEditOpen} onCreated={data.reload} station={station} />
           <AddTankModal
             organizationId={currentOrganization.id}
             stationId={stationId}

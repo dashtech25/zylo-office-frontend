@@ -1,6 +1,6 @@
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/core/auth/tokens";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3007";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3007";
 
 export class ApiError extends Error {
   code: string;
@@ -63,7 +63,12 @@ async function tryRefresh(): Promise<boolean> {
  * direct, pour garantir la gestion uniforme des tokens/erreurs. */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set("Content-Type", "application/json");
+  // FormData (upload de fichier) : le navigateur doit fixer lui-même
+  // Content-Type avec la boundary multipart — la forcer ici casserait
+  // l'upload.
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (!options.skipAuth) {
     const token = getAccessToken();
