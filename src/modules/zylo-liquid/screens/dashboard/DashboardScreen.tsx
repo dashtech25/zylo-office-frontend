@@ -374,6 +374,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
+import { usePermissions } from "@/core/rbac/PermissionContext";
 import { Badge, Card } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 import { cn } from "@/shared/lib/cn";
@@ -383,10 +384,26 @@ import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
+import PompisteDashboard from "./PompisteDashboard";
 
 const PERIODS: Period[] = ["now", "today", "7d", "30d", "custom"];
 
+/** `zyloLiquid.station.read` conditionne, dans le prototype validé, toute
+ * vue de pilotage station (matrice rôles × vues : Stations=null pour le
+ * pompiste) — un utilisateur qui ne l'a pas reçoit donc "Mon shift"
+ * (`PompisteDashboard`) plutôt que le tableau de bord réseau, jamais un
+ * réseau vide/en erreur. */
+const STATION_READ = "zyloLiquid.station.read";
+
 export default function DashboardScreen() {
+  const { can, loading: permissionsLoading } = usePermissions();
+  if (!permissionsLoading && !can(STATION_READ)) {
+    return <PompisteDashboard />;
+  }
+  return <NetworkDashboardScreen />;
+}
+
+function NetworkDashboardScreen() {
   const t = useTranslations("zyloLiquid");
   const tCommon = useTranslations("common");
   const format = useFormatter();

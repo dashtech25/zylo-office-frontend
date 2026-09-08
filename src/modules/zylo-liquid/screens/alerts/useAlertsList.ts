@@ -8,6 +8,7 @@ import {
   listTanks,
   resolveAlert as resolveAlertRequest,
   type Alert,
+  type AlertType,
   type Station,
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
@@ -18,9 +19,28 @@ export interface AlertRow {
   station: Station | null;
 }
 
+export interface AlertStationGroup {
+  station: Station;
+  count: number;
+  activeCount: number;
+  rows: AlertRow[];
+}
+
 export type AlertStatusFilter = "active" | "resolved" | "all";
 
-export function useAlertsList(organizationId: string | null, statusFilter: AlertStatusFilter) {
+export interface AlertScope {
+  stationId?: string;
+  tankId?: string;
+}
+
+/** Regroupe l'historique complet des alertes (pas seulement les actives) :
+ * le filtre de statut par défaut est "all" côté écran — voir AlertsScreen.
+ * `typeFilter` est optionnel et se cumule avec le filtre de statut (les
+ * deux sont envoyés tels quels à l'API, qui les supporte déjà nativement,
+ * cf. `service.list_alerts`). `scope` restreint à une station ou une cuve —
+ * utilisé par `AlertsBrowserModal` pour ne jamais recharger la liste
+ * réseau entière quand on est déjà dans le contexte d'une station/cuve. */
+export function useAlertsList(organizationId: string | null, statusFilter: AlertStatusFilter, typeFilter: AlertType | null, scope: AlertScope = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -36,7 +56,13 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
     setError(null);
     try {
       const [alertsPage, tanksPage, stationsPage] = await Promise.all([
-        listAlerts(organizationId, { status: statusFilter === "all" ? undefined : statusFilter, limit: 100 }),
+        listAlerts(organizationId, {
+          status: statusFilter === "all" ? undefined : statusFilter,
+          type: typeFilter ?? undefined,
+          stationId: scope.stationId,
+          tankId: scope.tankId,
+          limit: 100,
+        }),
         listTanks(organizationId),
         listStations(organizationId),
       ]);
@@ -48,7 +74,7 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
     } finally {
       setLoading(false);
     }
-  }, [organizationId, statusFilter]);
+  }, [organizationId, statusFilter, typeFilter, scope.stationId, scope.tankId]);
 
   useEffect(() => {
     load();
@@ -73,5 +99,18 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
 
   const activeCount = alerts.filter((a) => a.status === "active").length;
 
-  return { loading, error, rows, activeCount, resolve, reload: load };
+  const stationGroups: AlertStationGroup[] = (() => {
+    const byStation = new Map<string, AlertStationGroup>();
+    for (const row of rows) {
+      if (!row.station) continue;
+      const entry = byStation.get(row.station.id) ?? { station: row.station, count: 0, activeCount: 0, rows: [] };
+      entry.count += 1;
+      if (row.alert.status === "active") entry.activeCount += 1;
+      entry.rows.push(row);
+      byStation.set(row.station.id, entry);
+    }
+    return [...byStation.values()].sort((a, b) => b.activeCount - a.activeCount || a.station.name.localeCompare(b.station.name));
+  })();
+
+  return { loading, error, rows, activeCount, stationGroups, resolve, reload: load };
 }

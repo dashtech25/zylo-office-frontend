@@ -18,8 +18,8 @@ import {
   Package,
   Scale,
   Settings as SettingsIcon,
+  ShoppingBag,
   ShieldCheck,
-  SlidersHorizontal,
   Truck,
   Users,
   Wrench,
@@ -29,10 +29,11 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useAuth } from "@/core/auth/AuthContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
+import { usePermissions } from "@/core/rbac/PermissionContext";
 
 import { useHolykellSyncStatus } from "@/modules/zylo-liquid/hooks/useHolykellSyncStatus";
 import "../styles/prototype.css";
@@ -42,6 +43,13 @@ interface NavEntry {
   href?: string;
   icon: LucideIcon;
   comingSoon?: boolean;
+  /** Permission requise pour voir cette entrée — vérifiée côté client
+   * uniquement pour adapter l'affichage au rôle (jamais un substitut à la
+   * vérification serveur, chaque page reste protégée indépendamment).
+   * Absente = toujours visible (entrées transverses type tableau de bord).
+   * Jamais appliquée aux entrées `comingSoon` (règle absolue du
+   * commanditaire, §19 : elles restent visibles, seulement désactivées). */
+  requiredPermission?: string;
 }
 
 interface NavGroup {
@@ -58,52 +66,58 @@ interface NavGroup {
  * `docs/modules/zylo-liquid/phase-3-prototype-compatibility-matrix.md` —
  * il reste à sa place et avec son libellé exacts, seulement désactivé,
  * jamais retiré (règle absolue du commanditaire, §19 de la mission). */
+// Codes de permission repris tels quels de app/modules/zylo_liquid/permissions.py
+// (backend) — vérifiés un par un contre l'écran réel consommé par chaque
+// entrée (jamais devinés), pour adapter le menu au rôle effectif de
+// l'utilisateur connecté (découvert manquant en testant un scénario de démo
+// réel avec des gérants/pompistes scopés station, mission
+// « vente-maintenant-reglementation »).
 const NAV: NavGroup[] = [
   {
     titleKey: "nav.sections.pilotage",
     entries: [
       { labelKey: "nav.items.dashboard", href: "/zylo-liquid", icon: Home },
-      { labelKey: "nav.items.alerts", href: "/zylo-liquid/alerts", icon: Bell },
-      { labelKey: "nav.items.rapports", href: "/zylo-liquid/rapports", icon: Activity, comingSoon: true },
+      { labelKey: "nav.items.alerts", href: "/zylo-liquid/alerts", icon: Bell, requiredPermission: "zyloLiquid.alert.read" },
+      { labelKey: "nav.items.rapports", href: "/zylo-liquid/rapports", icon: Activity },
     ],
   },
   {
     titleKey: "nav.sections.exploitation",
     entries: [
-      { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Building2 },
-      { labelKey: "nav.items.cuves", href: "/zylo-liquid/cuves", icon: Gauge },
-      { labelKey: "nav.items.deliveries", href: "/zylo-liquid/livraisons", icon: Truck },
-      { labelKey: "nav.items.approvisionnement", href: "/zylo-liquid/approvisionnement", icon: Package, comingSoon: true },
-      { labelKey: "nav.items.reconciliation", href: "/zylo-liquid/reconciliation", icon: Scale, comingSoon: true },
+      { labelKey: "nav.items.stations", href: "/zylo-liquid/stations", icon: Building2, requiredPermission: "zyloLiquid.station.read" },
+      { labelKey: "nav.items.cuves", href: "/zylo-liquid/cuves", icon: Gauge, requiredPermission: "zyloLiquid.tank.read" },
+      { labelKey: "nav.items.deliveries", href: "/zylo-liquid/livraisons", icon: Truck, requiredPermission: "zyloLiquid.delivery.read" },
+      { labelKey: "nav.items.approvisionnement", href: "/zylo-liquid/approvisionnement", icon: Package, requiredPermission: "zyloLiquid.deliveryDeclaration.read" },
+      { labelKey: "nav.items.reconciliation", href: "/zylo-liquid/reconciliation", icon: Scale, requiredPermission: "zyloLiquid.reconciliation.read" },
     ],
   },
   {
     titleKey: "nav.sections.commerce",
     entries: [
-      { labelKey: "nav.items.ventes", href: "/zylo-liquid/ventes", icon: Fuel, comingSoon: true },
-      { labelKey: "nav.items.shifts", href: "/zylo-liquid/shifts", icon: Users, comingSoon: true },
-      { labelKey: "nav.items.caisse", href: "/zylo-liquid/caisse", icon: Banknote, comingSoon: true },
-      { labelKey: "nav.items.caisseEcarts", href: "/zylo-liquid/caisse-ecarts", icon: Scale, comingSoon: true },
-      { labelKey: "nav.items.credit", href: "/zylo-liquid/credit", icon: Users, comingSoon: true },
+      { labelKey: "nav.items.ventes", href: "/zylo-liquid/ventes", icon: Fuel, requiredPermission: "zyloLiquid.sale.read" },
+      { labelKey: "nav.items.produits", href: "/zylo-liquid/produits", icon: ShoppingBag, requiredPermission: "zyloLiquid.sellableProduct.read" },
+      { labelKey: "nav.items.shifts", href: "/zylo-liquid/shifts", icon: Users, requiredPermission: "zyloLiquid.shiftCashDeclaration.read" },
+      { labelKey: "nav.items.caisse", href: "/zylo-liquid/caisse", icon: Banknote, requiredPermission: "zyloLiquid.cash.read" },
+      { labelKey: "nav.items.caisseEcarts", href: "/zylo-liquid/caisse-ecarts", icon: Scale, requiredPermission: "zyloLiquid.reconciliation.read" },
+      { labelKey: "nav.items.credit", href: "/zylo-liquid/credit", icon: Users, requiredPermission: "zyloLiquid.commercialAccount.read" },
     ],
   },
   {
     titleKey: "nav.sections.technique",
     entries: [
-      { labelKey: "nav.items.maintenance", href: "/zylo-liquid/maintenance", icon: Wrench, comingSoon: true },
+      { labelKey: "nav.items.maintenance", href: "/zylo-liquid/maintenance", icon: Wrench, requiredPermission: "zyloLiquid.equipment.read" },
       { labelKey: "nav.items.securite", href: "/zylo-liquid/securite", icon: ShieldCheck, comingSoon: true },
-      { labelKey: "nav.items.reglementaire", href: "/zylo-liquid/reglementaire", icon: FileText, comingSoon: true },
+      { labelKey: "nav.items.reglementaire", href: "/zylo-liquid/reglementaire", icon: FileText, requiredPermission: "zyloLiquid.regulatoryDocument.read" },
       { labelKey: "nav.items.audit", href: "/zylo-liquid/audit", icon: ClipboardList, comingSoon: true },
     ],
   },
   {
     titleKey: "nav.sections.systeme",
     entries: [
-      { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon },
-      { labelKey: "nav.items.settings", href: "/zylo-liquid/parametres", icon: SlidersHorizontal },
-      { labelKey: "nav.items.utilisateurs", href: "/zylo-liquid/utilisateurs", icon: Users, comingSoon: true },
+      { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon, requiredPermission: "zyloLiquid.station.manage" },
+      { labelKey: "nav.items.utilisateurs", href: "/users", icon: Users, requiredPermission: "rbac.role.manage" },
       { labelKey: "nav.items.sante", href: "/zylo-liquid/sante", icon: Activity, comingSoon: true },
-      { labelKey: "nav.items.journalAudit", href: "/zylo-liquid/journal-audit", icon: ClipboardList, comingSoon: true },
+      { labelKey: "nav.items.journalAudit", href: "/audit", icon: ClipboardList, requiredPermission: "audit.log.view" },
       { labelKey: "nav.items.hypotheses", href: "/zylo-liquid/hypotheses", icon: BookOpen, comingSoon: true },
     ],
   },
@@ -132,7 +146,26 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { currentOrganization } = useOrganization();
   const { account: holykellAccount, minutesAgo: syncMinutesAgo } = useHolykellSyncStatus(currentOrganization?.id ?? null);
+  const { can, loading: permissionsLoading } = usePermissions();
   const [navOpen, setNavOpen] = useState(false);
+
+  // Adapte le menu au rôle effectif de l'utilisateur connecté — jamais un
+  // substitut à la vérification serveur (chaque page reste protégée
+  // indépendamment), seulement l'affichage. Les entrées `comingSoon` restent
+  // toujours visibles (règle absolue du commanditaire, §19 : jamais
+  // retirées, seulement désactivées) ; les entrées sans permission requise
+  // (tableau de bord, rapports) restent toujours visibles. Pendant le
+  // chargement des permissions, tout reste affiché pour éviter un
+  // clignotement (évite de masquer puis réafficher une entrée à chaque
+  // changement d'organisation).
+  const visibleNav = useMemo(
+    () =>
+      NAV.map((group) => ({
+        ...group,
+        entries: group.entries.filter((entry) => entry.comingSoon || !entry.requiredPermission || permissionsLoading || can(entry.requiredPermission)),
+      })).filter((group) => group.entries.length > 0),
+    [can, permissionsLoading]
+  );
 
   const breadcrumbPath =
     Object.keys(BREADCRUMB_BY_PATH)
@@ -158,7 +191,7 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="sb-scroll">
-          {NAV.map((group) => (
+          {visibleNav.map((group) => (
             <div key={group.titleKey}>
               <div className="sb-group">{t(group.titleKey)}</div>
               {group.entries.map((entry) => {

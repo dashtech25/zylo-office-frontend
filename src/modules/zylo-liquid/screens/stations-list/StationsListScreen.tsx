@@ -6,12 +6,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Select, Stack } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
+import { StationsMap } from "@/modules/zylo-liquid/components/StationsMap";
 
 import { NetworkSummaryBar } from "./StationCard/NetworkSummaryBar";
 import { StationCard } from "./StationCard/StationCard";
@@ -19,18 +21,14 @@ import { StationsTable } from "./StationCard/StationsTable";
 import { useStationsList, type StationRow } from "./useStationsList";
 
 type StatusFilter = "all" | "online" | "offline" | "alert" | "critical";
-type SortBy = "name" | "lowestLevel" | "highestValue" | "oldestSync";
+type SortBy = "criticality" | "name" | "lowestLevel" | "highestValue" | "oldestSync";
 
-function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(";")).join("\n");
-  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
+// Reprend l'ordre de tri par défaut du prototype validé (prototype.html,
+// pageStations() ~ligne 3878 : "Triées par criticité — les stations
+// demandant une attention apparaissent en premier") — ajouté en option
+// supplémentaire du sélecteur existant, jamais retiré, mais devient le tri
+// par défaut au premier affichage pour correspondre au prototype.
+const CRITICALITY_RANK: Record<StationRow["state"], number> = { critical: 0, alert: 1, offline: 2, online: 3 };
 
 /** Reconstruit la page "Stations du réseau" selon la spécification détaillée
  * fournie par le commanditaire (arborescence ZoneA-E). Toutes les données
@@ -52,7 +50,7 @@ export default function StationsListScreen() {
   const [badgeAlerts, setBadgeAlerts] = useState(false);
   const [cityFilter, setCityFilter] = useState("");
   const [productFilter, setProductFilter] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [sortBy, setSortBy] = useState<SortBy>("criticality");
   const [search, setSearch] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -105,6 +103,13 @@ export default function StationsListScreen() {
     });
 
     rows = [...rows].sort((a, b) => {
+      if (sortBy === "criticality") {
+        const rankDiff = CRITICALITY_RANK[a.state] - CRITICALITY_RANK[b.state];
+        if (rankDiff !== 0) return rankDiff;
+        const pa = a.totalCapacityLiters > 0 ? a.totalVolumeLiters / a.totalCapacityLiters : 1;
+        const pb = b.totalCapacityLiters > 0 ? b.totalVolumeLiters / b.totalCapacityLiters : 1;
+        return pa - pb;
+      }
       if (sortBy === "name") return a.station.name.localeCompare(b.station.name);
       if (sortBy === "lowestLevel") {
         const pa = a.totalCapacityLiters > 0 ? a.totalVolumeLiters / a.totalCapacityLiters : 1;
@@ -177,6 +182,12 @@ export default function StationsListScreen() {
     return [...byProduct.values()];
   }, [filteredRows]);
 
+  // Bandeau de fiabilité (« double vérité » du prototype, prototype.html
+  // bandeauFiabilite() ~ligne 3001) : une station entière est jugée "hors
+  // ligne" par useStationsList dès qu'aucune de ses cuves n'a de mesure en
+  // ligne — c'est exactement le signal déjà calculé, jamais un second calcul.
+  const offlineStations = filteredRows.filter((r) => !r.online);
+
   const networkCurrencies = new Set(filteredRows.map((r) => r.totalCurrencyCode).filter((c): c is string => c !== null));
   const networkTotalValue =
     filteredRows.every((r) => r.totalValue !== null || r.totalVolumeLiters === 0) && networkCurrencies.size <= 1 ? filteredRows.reduce((sum, r) => sum + (r.totalValue ?? 0), 0) : null;
@@ -212,6 +223,36 @@ export default function StationsListScreen() {
         <PageSpinner label={tCommon("states.loading")} />
       ) : (
         <>
+          {offlineStations.length > 0 && (
+            <Alert tone="error">
+              {t("list.reliabilityBanner.offline", { count: offlineStations.length, names: offlineStations.map((r) => r.station.name).join(", ") })}
+            </Alert>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <h2 className="text-h4 font-semibold text-text">{t("list.map.title")}</h2>
+              <p className="text-body-sm text-text-muted">{t("list.map.subtitle")}</p>
+              <div className="mt-3">
+                <StationsMap
+                  stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+                    id: r.station.id, name: r.station.name, latitude: r.station.latitude as number, longitude: r.station.longitude as number, status: r.state,
+                  }))}
+                />
+              </div>
+            </Card>
+            <Card>
+              <h2 className="text-h4 font-semibold text-text">{t("list.synthesis.title")}</h2>
+              <dl className="mt-2 flex flex-col gap-2 text-body-sm">
+                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.stock")}</dt><dd className="font-mono">{formatLiters(filteredRows.reduce((s, r) => s + r.totalVolumeLiters, 0))} / {formatLiters(filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0))} L</dd></div>
+                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.fillRate")}</dt><dd className="font-mono">{formatPercent(filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0) > 0 ? (filteredRows.reduce((s, r) => s + r.totalVolumeLiters, 0) / filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0)) * 100 : 0)}</dd></div>
+                {networkTotalValue !== null && <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.value")}</dt><dd className="font-mono">{format.number(networkTotalValue, { maximumFractionDigits: 0 })}</dd></div>}
+                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.stationsInAlert")}</dt><dd className="font-mono">{filteredRows.filter((r) => r.state === "alert" || r.state === "critical").length} / {filteredRows.length}</dd></div>
+                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.activeAlerts")}</dt><dd className="font-mono">{data.activeAlertsCount}</dd></div>
+              </dl>
+            </Card>
+          </div>
+
           <Card>
             <div className="mb-3 flex flex-wrap gap-2">
               <Badge tone={badgeActive ? "success" : "neutral"} dot className="cursor-pointer" onClick={() => setBadgeActive((v) => !v)}>
@@ -256,7 +297,7 @@ export default function StationsListScreen() {
                   aria-label={t("list.filters.sortBy")}
                   value={sortBy}
                   onValueChange={(v) => setSortBy(v as SortBy)}
-                  options={(["name", "lowestLevel", "highestValue", "oldestSync"] as SortBy[]).map((v) => ({ value: v, label: t(`list.filters.sortOptions.${v}`) }))}
+                  options={(["criticality", "name", "lowestLevel", "highestValue", "oldestSync"] as SortBy[]).map((v) => ({ value: v, label: t(`list.filters.sortOptions.${v}`) }))}
                 />
               </div>
               <div className="min-w-[200px] flex-1">

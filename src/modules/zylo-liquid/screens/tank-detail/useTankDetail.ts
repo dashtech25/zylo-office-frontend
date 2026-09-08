@@ -25,6 +25,13 @@ import {
   type TankSensorMapping,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
+const MEASUREMENTS_WINDOW_DAYS = 30;
+const MEASUREMENTS_PAGE_SIZE = 100;
+// Borne de sécurité — même principe que useDeliveryMeasurements.ts /
+// useStationTrends.ts : évite une boucle non bornée si la fenêtre contient
+// un volume de mesures anormalement élevé.
+const MEASUREMENTS_MAX_PAGES = 30;
+
 export function useTankDetail(organizationId: string | null, stationId: string, tankId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,23 +54,44 @@ export function useTankDetail(organizationId: string | null, stationId: string, 
     setLoading(true);
     setError(null);
     try {
-      const [stationData, tankData, stateData, fuelProductsPage, measurementsPage, alertsPage, calibrationData, mappingsPage, deliveriesPage, leakEventsPage] = await Promise.all([
+      // Cœur de l'écran (doit faire échouer toute la page en cas d'erreur) :
+      // station, cuve, état courant, historique de mesures. Le reste
+      // (produits, alertes, calibration, capteurs, livraisons, fuites) est
+      // un COMPLÉMENT que certains rôles scopés n'ont pas nécessairement —
+      // même principe que `useStationDetail.ts`/`useStationsList.ts`.
+      const emptyPage = { data: [], meta: { total: 0, limit: 0, offset: 0 } };
+      async function loadMeasurementWindow(): Promise<TankMeasurement[]> {
+        const to = new Date();
+        const from = new Date(to.getTime() - MEASUREMENTS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+        const all: TankMeasurement[] = [];
+        let offset = 0;
+        for (let page = 0; page < MEASUREMENTS_MAX_PAGES; page++) {
+          const result = await listTankMeasurements(organizationId!, tankId, { fromDate: from.toISOString(), toDate: to.toISOString(), limit: MEASUREMENTS_PAGE_SIZE, offset });
+          all.push(...result.data);
+          offset += result.data.length;
+          if (offset >= result.meta.total || result.data.length === 0) break;
+        }
+        return all;
+      }
+      const [stationData, tankData, stateData, measurementsAll] = await Promise.all([
         getStation(organizationId, stationId),
         getTank(organizationId, tankId),
         getTankCurrentState(organizationId, tankId),
-        listFuelProducts(organizationId),
-        listTankMeasurements(organizationId, tankId, { limit: 100 }),
-        listAlerts(organizationId, { tankId, limit: 20 }),
-        listTankCalibrationPoints(organizationId, tankId),
-        listTankSensorMappings(organizationId, tankId),
-        listDeliveries(organizationId, { tankId, limit: 5 }),
-        listLeakEvents(organizationId, { tankId, limit: 5 }),
+        loadMeasurementWindow(),
+      ]);
+      const [fuelProductsPage, alertsPage, calibrationData, mappingsPage, deliveriesPage, leakEventsPage] = await Promise.all([
+        listFuelProducts(organizationId).catch(() => ({ ...emptyPage, data: [] as FuelProduct[] })),
+        listAlerts(organizationId, { tankId, limit: 20 }).catch(() => ({ ...emptyPage, data: [] as Alert[] })),
+        listTankCalibrationPoints(organizationId, tankId).catch(() => [] as CalibrationPoint[]),
+        listTankSensorMappings(organizationId, tankId).catch(() => ({ ...emptyPage, data: [] as TankSensorMapping[] })),
+        listDeliveries(organizationId, { tankId, limit: 5 }).catch(() => ({ ...emptyPage, data: [] as Delivery[] })),
+        listLeakEvents(organizationId, { tankId, limit: 5 }).catch(() => ({ ...emptyPage, data: [] as LeakEvent[] })),
       ]);
       setStation(stationData);
       setTank(tankData);
       setState(stateData);
       setFuelProducts(fuelProductsPage.data);
-      setMeasurements(measurementsPage.data);
+      setMeasurements(measurementsAll);
       setAlerts(alertsPage.data);
       setCalibrationPoints(calibrationData);
       setSensorMappings(mappingsPage.data);

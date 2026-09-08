@@ -1,53 +1,81 @@
 "use client";
 
-import { Check, Plus } from "lucide-react";
+import { Check, Layers, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
+import { StationPicker } from "@/modules/zylo-liquid/components/StationPicker";
+import type { PriceHistoryEntry } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { ComingSoonTabContent } from "@/modules/zylo-liquid/screens/settings/ComingSoonTabContent";
+import { HolykellTab } from "@/modules/zylo-liquid/screens/settings/HolykellTab";
+import { OrganisationTab } from "@/modules/zylo-liquid/screens/settings/OrganisationTab";
+import { SystemeTab } from "@/modules/zylo-liquid/screens/settings/SystemeTab";
+import { Alert, Badge, Button, Card, ColorPicker, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
+import { BulkPriceModal } from "./BulkPriceModal";
+import { MissingConfigBanner, type MissingConfigItem } from "./MissingConfigBanner";
+import { PriceNetworkGrid } from "./PriceNetworkGrid";
+import { ProductStationsToggle } from "./ProductStationsToggle";
+import { ThresholdsTab } from "./ThresholdsTab";
 import { useFuelCatalog } from "./useFuelCatalog";
 import { usePrices } from "./usePrices";
+import { useStationFuelProducts } from "./useStationFuelProducts";
 
-const TABS = ["prix", "carburants", "seuils", "systeme", "orga", "roles"] as const;
-const REAL_TABS: (typeof TABS)[number][] = ["prix", "carburants"];
+const TABS = ["prix", "carburants", "seuils", "organisation", "holykell", "systeme", "notifications", "utilisateurs", "roles"] as const;
 
-/** Reproduit fidèlement les onglets "Catalogue carburants" et "Prix
- * carburant" de pageConfiguration() du prototype validé (prototype.html
- * ~L6107) — les seuls dont les champs correspondent à des données réelles
- * (endpoints 1 et 15, déjà en production). Différence assumée pour "Prix" :
- * le prototype montre un prix unique par produit, appliqué au réseau
- * entier ; le modèle réel (`PriceHistory`) est par station + produit +
- * période, avec devise résolue par station — reproduire un prix "global"
- * inventerait une donnée qui n'existe pas. Le formulaire demande donc
- * explicitement la station, conforme au modèle réel.
- *
- * Les 4 autres onglets restent désactivés : "Seuils d'alerte"/
- * "Configuration réseau" du prototype sont des réglages globaux en
- * pourcentage qui n'existent pas au Niveau 1 (seuils réels en mm, par
- * cuve, saisis à la création — endpoint 3) ; "Organisation"/"Rôles &
- * permissions" relèvent du Core Zylo Office, pas de ce module. Voir
- * docs/modules/zylo-liquid/phase-3-prototype-compatibility-matrix.md. */
+/** Centre de configuration métier du réseau — fusionne désormais "Paramètres"
+ * (Bloc 5 de refonte-configuration-zylo-liquid.md, Phase 4 §5, décision du
+ * commanditaire de fusionner plutôt que simplement clarifier) : Organisation,
+ * Holykell et Système (constantes en lecture seule) sont les mêmes
+ * composants que l'ancien SettingsScreen, jamais dupliqués. L'onglet
+ * "Système" fictif qui existait ici avant la fusion (toujours vide,
+ * doublon de nom avec le "Système" réel de Paramètres — Phase 1 §2.3) a été
+ * supprimé au profit du seul vrai. "Rôles & permissions" reste "à venir" :
+ * hors périmètre de cette mission (relève de processus-double-sources-verite). */
 export default function ConfigurationScreen() {
   const t = useTranslations("zyloLiquid.configuration");
   const tCommon = useTranslations("common");
   const format = useFormatter();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization, reload: reloadOrganization } = useOrganization();
   const data = useFuelCatalog(currentOrganization?.id ?? null);
   const prices = usePrices(currentOrganization?.id ?? null);
+  const stationProducts = useStationFuelProducts(currentOrganization?.id ?? null);
   const [tab, setTab] = useState<(typeof TABS)[number]>("carburants");
 
-  const [priceStationId, setPriceStationId] = useState("");
+  const [priceStationId, setPriceStationIdRaw] = useState("");
+  const [currencyOverride, setCurrencyOverride] = useState(false);
+  function setPriceStationId(id: string) {
+    setPriceStationIdRaw(id);
+    setCurrencyOverride(false);
+    setPriceCurrencyId("");
+  }
   const [priceProductId, setPriceProductId] = useState("");
   const [priceCurrencyId, setPriceCurrencyId] = useState("");
+  const [isNetworkDefault, setIsNetworkDefault] = useState(false);
   const [priceAmount, setPriceAmount] = useState("");
   const [costAmount, setCostAmount] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState(() => new Date().toISOString().slice(0, 16));
   const [priceReason, setPriceReason] = useState("");
   const [creatingPrice, setCreatingPrice] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
+
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkPreselect, setBulkPreselect] = useState<string[] | undefined>(undefined);
+
+  const [editingPrice, setEditingPrice] = useState<PriceHistoryEntry | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editCost, setEditCost] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Divulgation progressive (Phase 3 §5) : la grille réseau est la vue par
+  // défaut, le formulaire manuel et l'historique brut restent disponibles
+  // mais repliés — utiles pour un cas non couvert par l'édition en ligne
+  // (première ligne d'un produit/devise jamais vue, prix planifié à une
+  // date future).
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [showRawHistory, setShowRawHistory] = useState(false);
 
   function formatMoney(value: number, currencyCode: string): string {
     try {
@@ -57,8 +85,17 @@ export default function ConfigurationScreen() {
     }
   }
 
+  function openBulkModal(stationIds?: string[]) {
+    setBulkPreselect(stationIds);
+    setBulkOpen(true);
+  }
+
+  const selectedStation = !isNetworkDefault ? prices.stations.find((s) => s.id === priceStationId) ?? null : null;
+  const autoCurrency = selectedStation ? prices.resolveStationCurrency(selectedStation) : null;
+  const effectiveCurrencyId = priceCurrencyId || autoCurrency?.id || "";
+
   async function handleCreatePrice() {
-    if (!priceStationId || !priceProductId || !priceAmount) {
+    if ((!isNetworkDefault && !priceStationId) || !priceProductId || !priceAmount || (isNetworkDefault && !effectiveCurrencyId)) {
       setPriceError(t("fuelCatalog.codeRequired"));
       return;
     }
@@ -66,11 +103,11 @@ export default function ConfigurationScreen() {
     setPriceError(null);
     try {
       await prices.create({
-        stationId: priceStationId,
+        stationId: isNetworkDefault ? null : priceStationId,
         fuelProductId: priceProductId,
         priceAmount: Number(priceAmount),
         costAmount: costAmount ? Number(costAmount) : undefined,
-        currencyId: priceCurrencyId || undefined,
+        currencyId: effectiveCurrencyId || undefined,
         effectiveFrom: new Date(effectiveFrom).toISOString(),
         changeReason: priceReason.trim() || undefined,
       });
@@ -83,18 +120,33 @@ export default function ConfigurationScreen() {
       setCreatingPrice(false);
     }
   }
+
+  async function handleSaveEdit() {
+    if (!editingPrice) return;
+    setEditSaving(true);
+    try {
+      await prices.update(editingPrice.id, {
+        priceAmount: editAmount ? Number(editAmount) : undefined,
+        costAmount: editCost ? Number(editCost) : undefined,
+      });
+      setEditingPrice(null);
+    } catch (err) {
+      setPriceError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   const [savingId, setSavingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [newName, setNewName] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newDensity, setNewDensity] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [newCost, setNewCost] = useState("");
-  const [newColor, setNewColor] = useState("");
+  const [newColor, setNewColor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  async function handleSave(id: string, form: HTMLFormElement) {
+  async function handleSave(id: string, form: HTMLFormElement, color: string | null) {
     setSavingId(id);
     setFormError(null);
     try {
@@ -102,7 +154,7 @@ export default function ConfigurationScreen() {
       await data.update(id, {
         name: String(fd.get("name") ?? ""),
         densityGPerCm3: fd.get("density") ? Number(fd.get("density")) : undefined,
-        displayColor: String(fd.get("color") ?? "") || undefined,
+        displayColor: color ?? undefined,
       });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : tCommon("states.error"));
@@ -135,16 +187,12 @@ export default function ConfigurationScreen() {
         name: newName.trim(),
         code: newCode.trim(),
         densityGPerCm3: newDensity ? Number(newDensity) : undefined,
-        currentPriceFcfa: newPrice ? Number(newPrice) : undefined,
-        currentCostFcfa: newCost ? Number(newCost) : undefined,
-        displayColor: newColor.trim() || undefined,
+        displayColor: newColor ?? undefined,
       });
       setNewName("");
       setNewCode("");
       setNewDensity("");
-      setNewPrice("");
-      setNewCost("");
-      setNewColor("");
+      setNewColor(null);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -152,25 +200,151 @@ export default function ConfigurationScreen() {
     }
   }
 
+  // Configuration manquante (page_configuration.md §21-22) — calculée à
+  // partir des données déjà chargées, aucun nouvel appel réseau.
+  const missingItems: MissingConfigItem[] = useMemo(() => {
+    const stationsWithoutGeo = prices.stations.filter((s) => prices.resolveStationCurrency(s) === null);
+
+    const activeProductIdsByStation = new Map<string, Set<string>>();
+    for (const tank of prices.tanks) {
+      if (!tank.active) continue;
+      const set = activeProductIdsByStation.get(tank.stationId) ?? new Set<string>();
+      set.add(tank.fuelProductId);
+      activeProductIdsByStation.set(tank.stationId, set);
+    }
+    // Un prix par défaut réseau (stationId null, audit Configuration
+    // carburant P2 §E) couvre toute station qui n'a pas son propre prix
+    // pour ce produit — indexé séparément (par produit seul) pour ne
+    // jamais le confondre avec un prix propre à une station réelle.
+    const latestNonFuture = new Map<string, PriceHistoryEntry>();
+    const latestNetworkDefault = new Map<string, PriceHistoryEntry>();
+    for (const p of prices.prices) {
+      if (p.isFuture) continue;
+      if (p.stationId === null) {
+        const current = latestNetworkDefault.get(p.fuelProductId);
+        if (!current || p.effectiveFrom > current.effectiveFrom) latestNetworkDefault.set(p.fuelProductId, p);
+        continue;
+      }
+      const key = `${p.stationId}:${p.fuelProductId}`;
+      const current = latestNonFuture.get(key);
+      if (!current || p.effectiveFrom > current.effectiveFrom) latestNonFuture.set(key, p);
+    }
+
+    const stationsWithoutSellPrice = new Set<string>();
+    const stationsWithoutCostPrice = new Set<string>();
+    for (const [stationId, productIds] of activeProductIdsByStation) {
+      for (const productId of productIds) {
+        const entry = latestNonFuture.get(`${stationId}:${productId}`) ?? latestNetworkDefault.get(productId);
+        if (!entry) stationsWithoutSellPrice.add(stationId);
+        else if (entry.costAmount === null) stationsWithoutCostPrice.add(stationId);
+      }
+    }
+
+    return [
+      { key: "geo" as const, count: stationsWithoutGeo.length, onFix: () => openBulkModal(stationsWithoutGeo.map((s) => s.id)) },
+      { key: "sellPrice" as const, count: stationsWithoutSellPrice.size, onFix: () => openBulkModal([...stationsWithoutSellPrice]) },
+      { key: "costPrice" as const, count: stationsWithoutCostPrice.size, onFix: () => openBulkModal([...stationsWithoutCostPrice]) },
+    ];
+  }, [prices]);
+
   const pricesTab = (
     <Stack>
+      <MissingConfigBanner items={missingItems} />
       <Alert tone="info">{t("prices.banner")}</Alert>
       {priceError && <Alert tone="error">{priceError}</Alert>}
       {prices.error && <Alert tone="error">{prices.error}</Alert>}
 
+      {prices.loading ? (
+        <PageSpinner label={tCommon("states.loading")} />
+      ) : (
+        <Card padding="none">
+          <div className="flex items-start justify-between gap-4 p-5 pb-0">
+            <div>
+              <h2 className="text-h4 font-semibold text-text">{t("prices.gridTitle")}</h2>
+              <p className="mt-1 text-body-sm text-text-muted">{t("prices.gridSubtitle")}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => openBulkModal()}>
+              <Layers className="size-4" aria-hidden />
+              {t("prices.bulk.openButton")}
+            </Button>
+          </div>
+          <div className="p-5">
+            <PriceNetworkGrid
+              prices={prices.prices}
+              stations={prices.stations}
+              cities={prices.cities}
+              currencies={prices.currencies}
+              fuelProducts={data.products}
+              members={prices.members}
+              resolveStationCurrency={prices.resolveStationCurrency}
+              onCreatePrice={prices.create}
+            />
+          </div>
+        </Card>
+      )}
+
+      <Button variant="link" size="sm" onClick={() => setShowManualForm((v) => !v)}>
+        {showManualForm ? t("prices.hideManualForm") : t("prices.showManualForm")}
+      </Button>
+
+      {showManualForm && (
       <Card>
-        <h2 className="text-h4 font-semibold text-text">{t("prices.addTitle")}</h2>
-        <p className="mb-4 mt-1 text-body-sm text-text-muted">{t("prices.addSubtitle")}</p>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-h4 font-semibold text-text">{t("prices.addTitle")}</h2>
+            <p className="mt-1 text-body-sm text-text-muted">{t("prices.addSubtitle")}</p>
+          </div>
+        </div>
+        <label className="mb-3 flex items-center gap-2 text-body-sm text-text">
+          <input
+            type="checkbox"
+            checked={isNetworkDefault}
+            onChange={(e) => {
+              setIsNetworkDefault(e.target.checked);
+              setPriceStationId("");
+            }}
+          />
+          {t("prices.networkDefaultToggle")}
+        </label>
+        {isNetworkDefault && <Alert tone="info">{t("prices.networkDefaultHint")}</Alert>}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <FormField label={t("prices.station")}>
-            {() => <Select aria-label={t("prices.station")} value={priceStationId || undefined} onValueChange={setPriceStationId} placeholder={t("prices.selectStation")} options={prices.stations.map((s) => ({ value: s.id, label: s.name }))} />}
-          </FormField>
+          {!isNetworkDefault && (
+            <FormField label={t("prices.station")}>
+              {() => <StationPicker mode="single" stations={prices.stations} cities={prices.cities} value={priceStationId || null} onChange={setPriceStationId} />}
+            </FormField>
+          )}
           <FormField label={t("prices.product")}>
             {() => <Select aria-label={t("prices.product")} value={priceProductId || undefined} onValueChange={setPriceProductId} placeholder={t("prices.selectProduct")} options={data.products.map((p) => ({ value: p.id, label: p.name }))} />}
           </FormField>
           <FormField label={t("prices.currency")}>
-            {() => <Select aria-label={t("prices.currency")} value={priceCurrencyId || undefined} onValueChange={setPriceCurrencyId} placeholder="—" options={prices.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
+            {() =>
+              autoCurrency && !currencyOverride ? (
+                <div className="flex items-center gap-2">
+                  <Badge tone="neutral">{autoCurrency.code}</Badge>
+                  <span className="text-caption text-text-muted">{t("prices.currencyAuto", { code: autoCurrency.code })}</span>
+                  <Button type="button" variant="link" size="sm" onClick={() => setCurrencyOverride(true)}>
+                    {t("prices.currencyChange")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Select
+                    aria-label={t("prices.currency")}
+                    value={effectiveCurrencyId || undefined}
+                    onValueChange={setPriceCurrencyId}
+                    placeholder="—"
+                    options={prices.currencies.map((c) => ({ value: c.id, label: c.code }))}
+                  />
+                  {autoCurrency && (
+                    <Button type="button" variant="link" size="sm" onClick={() => { setCurrencyOverride(false); setPriceCurrencyId(""); }}>
+                      {tCommon("actions.cancel")}
+                    </Button>
+                  )}
+                </div>
+              )
+            }
           </FormField>
+          {!autoCurrency && selectedStation && <Alert tone="warning">{t("prices.currencyUnresolved")}</Alert>}
           <FormField label={t("prices.sellPrice")}>
             {(field) => <Input {...field} type="number" step="1" value={priceAmount} onChange={(e) => setPriceAmount(e.target.value)} />}
           </FormField>
@@ -191,8 +365,13 @@ export default function ConfigurationScreen() {
           {t("prices.create")}
         </Button>
       </Card>
+      )}
 
-      {prices.loading ? (
+      <Button variant="link" size="sm" onClick={() => setShowRawHistory((v) => !v)}>
+        {showRawHistory ? t("prices.hideRawHistory") : t("prices.showRawHistory")}
+      </Button>
+
+      {showRawHistory && (prices.loading ? (
         <PageSpinner label={tCommon("states.loading")} />
       ) : (
         <Card padding="none">
@@ -215,6 +394,7 @@ export default function ConfigurationScreen() {
                     <TableHeaderCell className="text-right">{t("prices.columns.cost")}</TableHeaderCell>
                     <TableHeaderCell className="text-right">{t("prices.columns.margin")}</TableHeaderCell>
                     <TableHeaderCell>{t("prices.columns.effectiveFrom")}</TableHeaderCell>
+                    <TableHeaderCell />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -223,18 +403,53 @@ export default function ConfigurationScreen() {
                     const product = data.products.find((p) => p.id === entry.fuelProductId);
                     const currency = prices.currencies.find((c) => c.id === entry.currencyId);
                     const code = currency?.code ?? "";
+                    const isEditing = editingPrice?.id === entry.id;
                     return (
                       <TableRow key={entry.id}>
-                        <TableCell>{station?.name ?? "—"}</TableCell>
+                        <TableCell>{entry.stationId === null ? <Badge tone="info">{t("prices.networkDefaultBadge")}</Badge> : station?.name ?? "—"}</TableCell>
                         <TableCell>{product?.name ?? "—"}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">{formatMoney(entry.priceAmount, code)}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">{entry.costAmount === null ? "—" : formatMoney(entry.costAmount, code)}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">
+                          {isEditing ? <Input type="number" step="1" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-24" /> : formatMoney(entry.priceAmount, code)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">
+                          {isEditing ? (
+                            <Input type="number" step="1" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="w-24" />
+                          ) : entry.costAmount === null ? (
+                            "—"
+                          ) : (
+                            formatMoney(entry.costAmount, code)
+                          )}
+                        </TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{entry.costAmount === null ? "—" : formatMoney(entry.priceAmount - entry.costAmount, code)}</TableCell>
                         <TableCell>
                           <span className="flex items-center gap-2">
                             {format.dateTime(new Date(entry.effectiveFrom), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                             {entry.isFuture && <Badge tone="warning">{t("prices.columns.future")}</Badge>}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="primary" loading={editSaving} onClick={handleSaveEdit}>
+                                {tCommon("actions.save")}
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingPrice(null)}>
+                                {tCommon("actions.cancel")}
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="link"
+                              onClick={() => {
+                                setEditingPrice(entry);
+                                setEditAmount(String(entry.priceAmount));
+                                setEditCost(entry.costAmount === null ? "" : String(entry.costAmount));
+                              }}
+                            >
+                              {tCommon("actions.edit")}
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -244,6 +459,21 @@ export default function ConfigurationScreen() {
             </div>
           )}
         </Card>
+      ))}
+
+      {currentOrganization && (
+        <BulkPriceModal
+          organizationId={currentOrganization.id}
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          stations={prices.stations}
+          cities={prices.cities}
+          fuelProducts={data.products}
+          prices={prices.prices}
+          resolveStationCurrency={prices.resolveStationCurrency}
+          initialStationIds={bulkPreselect}
+          onDone={prices.reload}
+        />
       )}
     </Stack>
   );
@@ -258,43 +488,45 @@ export default function ConfigurationScreen() {
         <PageSpinner label={tCommon("states.loading")} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.products.map((product) => (
-            <form
-              key={product.id}
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSave(product.id, e.currentTarget);
-              }}
-            >
-              <Card>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-text">{product.name}</span>
-                  <Badge tone={product.active ? "success" : "neutral"} dot>
-                    {product.active ? t("fuelCatalog.statusActive") : t("fuelCatalog.statusInactive")}
-                  </Badge>
-                </div>
-                <div className="mt-3 flex flex-col gap-3">
-                  <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} name="name" defaultValue={product.name} />}</FormField>
-                  <FormField label={t("fuelCatalog.code")} hint={t("fuelCatalog.codeHint")}>
-                    {(field) => <Input {...field} value={product.code} disabled />}
-                  </FormField>
-                  <FormField label={t("fuelCatalog.density")}>{(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={product.densityGPerCm3 ?? ""} />}</FormField>
-                  <FormField label={t("fuelCatalog.color")}>{(field) => <Input {...field} name="color" defaultValue={product.displayColor ?? ""} maxLength={7} />}</FormField>
-                </div>
-                <div className="mt-3 flex items-center justify-between border-t border-border-subtle pt-3 text-body-sm">
-                  <span className="text-text-muted">{t("fuelCatalog.currentPrice")}</span>
-                  <span className="font-mono tabular-nums text-text">{product.currentPriceFcfa === null ? "—" : `${product.currentPriceFcfa} FCFA/L`}</span>
-                </div>
-                <Button type="submit" size="sm" className="mt-3 w-full" disabled={savingId === product.id}>
-                  <Check className="size-4" aria-hidden />
-                  {t("fuelCatalog.save")}
-                </Button>
-                <Button type="button" variant="outline" size="sm" className="mt-2 w-full" disabled={savingId === product.id} onClick={() => handleToggleActive(product.id, product.active)}>
-                  {product.active ? t("fuelCatalog.deactivate") : t("fuelCatalog.reactivate")}
-                </Button>
-              </Card>
-            </form>
-          ))}
+          {data.products.map((product) => {
+            let colorDraft: string | null = product.displayColor;
+            return (
+              <form
+                key={product.id}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSave(product.id, e.currentTarget, colorDraft);
+                }}
+              >
+                <Card>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text">{product.name}</span>
+                    <Badge tone={product.active ? "success" : "neutral"} dot>
+                      {product.active ? t("fuelCatalog.statusActive") : t("fuelCatalog.statusInactive")}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-3">
+                    <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} name="name" defaultValue={product.name} />}</FormField>
+                    <FormField label={t("fuelCatalog.code")} hint={t("fuelCatalog.codeHint")}>
+                      {(field) => <Input {...field} value={product.code} disabled />}
+                    </FormField>
+                    <FormField label={t("fuelCatalog.density")}>{(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={product.densityGPerCm3 ?? ""} />}</FormField>
+                    <FormField label={t("fuelCatalog.color")}>
+                      {() => <ColorPicker value={product.displayColor} onChange={(hex) => (colorDraft = hex)} reservedColorMessage={t("fuelCatalog.colorReserved")} aria-label={t("fuelCatalog.color")} />}
+                    </FormField>
+                  </div>
+                  <ProductStationsToggle stations={prices.stations} cities={prices.cities} isActive={(stationId) => stationProducts.isActive(product.id, stationId)} onToggle={(stationId, active) => stationProducts.toggle(product.id, stationId, active)} />
+                  <Button type="submit" size="sm" className="mt-3 w-full" disabled={savingId === product.id}>
+                    <Check className="size-4" aria-hidden />
+                    {t("fuelCatalog.save")}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="mt-2 w-full" disabled={savingId === product.id} onClick={() => handleToggleActive(product.id, product.active)}>
+                    {product.active ? t("fuelCatalog.deactivate") : t("fuelCatalog.reactivate")}
+                  </Button>
+                </Card>
+              </form>
+            );
+          })}
         </div>
       )}
 
@@ -305,9 +537,11 @@ export default function ConfigurationScreen() {
           <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("fuelCatalog.namePlaceholder")} />}</FormField>
           <FormField label={t("fuelCatalog.code")}>{(field) => <Input {...field} value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder={t("fuelCatalog.codePlaceholder")} maxLength={10} />}</FormField>
           <FormField label={t("fuelCatalog.density")}>{(field) => <Input {...field} type="number" step="0.0001" value={newDensity} onChange={(e) => setNewDensity(e.target.value)} placeholder="0.8400" />}</FormField>
-          <FormField label={t("fuelCatalog.sellPrice")}>{(field) => <Input {...field} type="number" step="1" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />}</FormField>
-          <FormField label={t("fuelCatalog.costPrice")}>{(field) => <Input {...field} type="number" step="1" value={newCost} onChange={(e) => setNewCost(e.target.value)} />}</FormField>
-          <FormField label={t("fuelCatalog.color")}>{(field) => <Input {...field} value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="#1D4ED8" maxLength={7} />}</FormField>
+        </div>
+        <div className="mt-3">
+          <FormField label={t("fuelCatalog.color")}>
+            {() => <ColorPicker value={newColor} onChange={setNewColor} reservedColorMessage={t("fuelCatalog.colorReserved")} aria-label={t("fuelCatalog.color")} />}
+          </FormField>
         </div>
         <Button className="mt-4" onClick={handleCreate} loading={creating}>
           <Plus className="size-4" aria-hidden />
@@ -328,7 +562,26 @@ export default function ConfigurationScreen() {
         items={TABS.map((value) => ({
           value,
           label: t(`tabs.${value}`),
-          content: !REAL_TABS.includes(value) ? <EmptyState title={tCommon("states.comingSoon")} /> : value === "prix" ? pricesTab : fuelCatalogTab,
+          content:
+            value === "prix" ? (
+              pricesTab
+            ) : value === "carburants" ? (
+              fuelCatalogTab
+            ) : value === "seuils" ? (
+              <ThresholdsTab organizationId={currentOrganization?.id ?? ""} stations={prices.stations} tanks={prices.tanks} fuelProducts={data.products} onUpdated={prices.reload} />
+            ) : value === "organisation" ? (
+              currentOrganization ? <OrganisationTab organization={currentOrganization} onUpdated={reloadOrganization} /> : <PageSpinner label={tCommon("states.loading")} />
+            ) : value === "holykell" ? (
+              currentOrganization ? <HolykellTab organizationId={currentOrganization.id} /> : <PageSpinner label={tCommon("states.loading")} />
+            ) : value === "systeme" ? (
+              currentOrganization ? <SystemeTab organizationId={currentOrganization.id} /> : <PageSpinner label={tCommon("states.loading")} />
+            ) : value === "notifications" ? (
+              <ComingSoonTabContent note={t("comingSoonNotifications")} />
+            ) : value === "utilisateurs" ? (
+              <ComingSoonTabContent note={t("comingSoonUtilisateurs")} />
+            ) : (
+              <EmptyState title={tCommon("states.comingSoon")} />
+            ),
         }))}
       />
     </Stack>

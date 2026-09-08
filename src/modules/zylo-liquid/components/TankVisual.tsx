@@ -210,9 +210,15 @@ export function TankFigures({ tank, state, showValue = true }: { tank: Tank; sta
     [t("volume"), data.volumeLiters === null ? "—" : fmt(data.volumeLiters)],
     [t("capacity"), fmt(data.capacityLiters)],
     [t("fillRate"), data.pct === null ? "—" : `${data.pct.toFixed(1)} %`],
+    [t("sellable"), state.sellableVolumeLiters === null ? t("notCalculable") : fmt(state.sellableVolumeLiters)],
     [t("water"), state.waterHeightMm === null ? "—" : `${Math.round(state.waterHeightMm)} mm · ${fmt(data.waterVolumeLiters)}`],
     [t("available"), fmt(data.emptyVolumeLiters)],
     [t("temperature"), state.temperatureC === null ? "—" : `${state.temperatureC.toFixed(1)} °C`],
+    // Nécessiterait un débit de vente (moyenne glissante 7j) qu'aucune
+    // donnée réelle ne fournit aujourd'hui — jamais un chiffre inventé à
+    // sa place (même principe que TanksNetworkScreen.tsx, colonne
+    // "Couverture" déjà désactivée pour cette raison).
+    [t("coverage"), t("notCalculable")],
   ];
   if (showValue && state.monetaryValue !== null && state.currencyCode) {
     rows.push([t("value"), `${Math.round(state.monetaryValue).toLocaleString()} ${state.currencyCode}`]);

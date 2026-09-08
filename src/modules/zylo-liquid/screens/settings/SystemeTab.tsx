@@ -23,15 +23,15 @@ function ReadOnlyValue({ label, value, hint }: { label: string; value: string; h
  * persistés — aucune organisation ne peut aujourd'hui les changer. Les
  * deux sections de la maquette sans équivalent réel (sonde déconnectée,
  * tolérance livraison) sont volontairement absentes. */
-export function SystemeTab() {
+export function SystemeTab({ organizationId }: { organizationId: string }) {
   const t = useTranslations("zyloLiquid.settingsPage");
   const [defaults, setDefaults] = useState<SystemDefaults | null>(null);
 
   useEffect(() => {
-    getSystemDefaults()
+    getSystemDefaults(organizationId)
       .then(setDefaults)
       .catch(() => setDefaults(null));
-  }, []);
+  }, [organizationId]);
 
   if (!defaults) return null;
 

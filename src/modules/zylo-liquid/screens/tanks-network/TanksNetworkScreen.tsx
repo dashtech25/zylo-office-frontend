@@ -135,8 +135,9 @@ export default function TanksNetworkScreen() {
                         <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
                         <TableHeaderCell>{t("table.product")}</TableHeaderCell>
                         <TableHeaderCell className="text-right">{t("table.volume")}</TableHeaderCell>
-                        <TableHeaderCell className="text-right">{t("table.capacity")}</TableHeaderCell>
                         <TableHeaderCell className="text-right">{t("table.sellable")}</TableHeaderCell>
+                        <TableHeaderCell className="text-right">{t("table.correctedAt15C")}</TableHeaderCell>
+                        <TableHeaderCell className="text-right">{t("table.capacity")}</TableHeaderCell>
                         <TableHeaderCell className="text-right">{t("table.water")}</TableHeaderCell>
                         <TableHeaderCell className="text-right">{t("table.available")}</TableHeaderCell>
                         <TableHeaderCell className="text-right">{t("table.temperature")}</TableHeaderCell>
@@ -155,8 +156,13 @@ export default function TanksNetworkScreen() {
                             <TableCell>{tank.displayName}</TableCell>
                             <TableCell>{fuelProduct?.name ?? "?"}</TableCell>
                             <TableCell className="text-right font-mono tabular-nums">{state?.volumeLiters === null || state?.volumeLiters === undefined ? "—" : formatVolume(state.volumeLiters)}</TableCell>
+                            <TableCell className="text-right font-mono tabular-nums">
+                              {state?.sellableVolumeLiters === null || state?.sellableVolumeLiters === undefined ? "—" : formatVolume(state.sellableVolumeLiters)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono tabular-nums">
+                              {state?.volumeLiters15C === null || state?.volumeLiters15C === undefined ? "—" : formatVolume(state.volumeLiters15C)}
+                            </TableCell>
                             <TableCell className="text-right font-mono tabular-nums">{formatVolume(tank.calibratedCapacityLiters ?? tank.capacityLiters)}</TableCell>
-                            <TableCell className="text-right font-mono tabular-nums text-text-muted">—</TableCell>
                             <TableCell className={`text-right font-mono tabular-nums ${waterAlert ? "text-error" : ""}`}>
                               {state?.waterHeightMm === null || state?.waterHeightMm === undefined ? "—" : `${Math.round(state.waterHeightMm)} mm`}
                             </TableCell>
