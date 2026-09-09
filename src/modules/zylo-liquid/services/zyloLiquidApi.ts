@@ -195,6 +195,11 @@ export interface NetworkSummaryProductLine {
   totalMonetaryValue: number | null;
   currencyCode: string | null;
   monetaryValueNotCalculableReason: string | null;
+  /** Volume net moins le seuil bas de chaque cuve — toujours calculable dès
+   * que `totalVolumeLiters` l'est. Sa valeur monétaire partage exactement
+   * la même devise/raison de non-calcul que `totalMonetaryValue`. */
+  totalSellableVolumeLiters: number;
+  totalSellableMonetaryValue: number | null;
 }
 
 export interface NetworkSummary {
@@ -202,6 +207,7 @@ export interface NetworkSummary {
   totalVolumeLiters: number;
   totalStationCount: number;
   totalTankCount: number;
+  totalSellableVolumeLiters: number;
 }
 
 export type AlertType = "level_high" | "level_high_pre_alarm" | "level_low" | "water" | "leak" | "sensor_offline";

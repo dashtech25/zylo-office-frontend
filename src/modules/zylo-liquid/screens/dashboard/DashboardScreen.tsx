@@ -519,6 +519,12 @@ function NetworkDashboardScreen() {
                       </div>
                       <span className="tabular-nums text-body-sm text-text-muted">{formatPercent(rate)}%</span>
                     </div>
+                    <div className="mt-3 border-t border-border-subtle pt-3">
+                      <p className="text-caption text-text-muted">{t("stockSynthesis.sellableVolume")}</p>
+                      <p className="text-body-md font-semibold tabular-nums text-text">
+                        {t("stockSynthesis.sellableOfAvailable", { sellable: formatVolume(product.sellableVolumeLiters), available: formatVolume(product.volumeLiters) })}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       className="mt-3 flex items-center gap-1 text-body-sm text-primary hover:underline"
@@ -531,10 +537,16 @@ function NetworkDashboardScreen() {
                       <ChevronRight className="size-4" aria-hidden />
                     </button>
                     <div className="mt-3 border-t border-border-subtle pt-3">
-                      <p className="text-caption text-text-muted">{t("stockSynthesis.stockValue")}</p>
+                      <p className="text-caption text-text-muted">{t("stockSynthesis.stockValueTotal")}</p>
                       <p className="text-body-lg font-semibold text-text">
                         {product.monetaryValue !== null && product.currencyCode
                           ? formatMoney(product.monetaryValue, product.currencyCode)
+                          : t("stockSynthesis.valueUnavailable")}
+                      </p>
+                      <p className="mt-2 text-caption text-text-muted">{t("stockSynthesis.stockValueSellable")}</p>
+                      <p className="text-body-lg font-semibold text-text">
+                        {product.sellableMonetaryValue !== null && product.currencyCode
+                          ? formatMoney(product.sellableMonetaryValue, product.currencyCode)
                           : t("stockSynthesis.valueUnavailable")}
                       </p>
                     </div>
@@ -561,10 +573,25 @@ function NetworkDashboardScreen() {
                   <span className="tabular-nums text-body-sm text-white/70">{formatPercent(totalRate)}%</span>
                 </div>
                 <div className="mt-3 border-t border-white/10 pt-3">
-                  <p className="text-caption text-white/60">{t("stockSynthesis.stockValue")}</p>
+                  <p className="text-caption text-white/60">{t("stockSynthesis.sellableVolume")}</p>
+                  <p className="text-body-md font-semibold tabular-nums">
+                    {t("stockSynthesis.sellableOfAvailable", {
+                      sellable: formatVolume(data.totalSellableVolumeLiters),
+                      available: formatVolume(data.networkSummary?.totalVolumeLiters ?? 0),
+                    })}
+                  </p>
+                </div>
+                <div className="mt-3 border-t border-white/10 pt-3">
+                  <p className="text-caption text-white/60">{t("stockSynthesis.stockValueTotal")}</p>
                   <p className="text-body-lg font-semibold">
                     {data.totalMonetaryValue !== null && data.totalMonetaryCurrencyCode
                       ? formatMoney(data.totalMonetaryValue, data.totalMonetaryCurrencyCode)
+                      : t("stockSynthesis.valueUnavailable")}
+                  </p>
+                  <p className="mt-2 text-caption text-white/60">{t("stockSynthesis.stockValueSellable")}</p>
+                  <p className="text-body-lg font-semibold">
+                    {data.totalSellableMonetaryValue !== null && data.totalMonetaryCurrencyCode
+                      ? formatMoney(data.totalSellableMonetaryValue, data.totalMonetaryCurrencyCode)
                       : t("stockSynthesis.valueUnavailable")}
                   </p>
                 </div>

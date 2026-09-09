@@ -187,6 +187,12 @@ export default function StationDetailScreen() {
     capacityLiters: number;
     monetaryValue: number | null;
     currencyCode: string | null;
+    /** Volume net moins le seuil bas de chaque cuve (jamais gaté par le
+     * prix) et sa valeur monétaire, qui elle partage exactement la même
+     * devise/disponibilité que `monetaryValue` — même prix résolu par
+     * cuve, jamais une deuxième résolution. */
+    sellableVolumeLiters: number;
+    sellableMonetaryValue: number | null;
     /** Volume vendu sur les 7 derniers jours (calcul réel backend via
      * `getStationCashDetail`, jamais une donnée simulée). */
     soldLast7DaysLiters: number;
@@ -209,17 +215,25 @@ export default function StationDetailScreen() {
       capacityLiters: 0,
       monetaryValue: 0,
       currencyCode: null,
+      sellableVolumeLiters: 0,
+      sellableMonetaryValue: 0,
       soldLast7DaysLiters: salesLast7DaysByProduct.get(product.id) ?? 0,
       coverageDays: null,
     };
     entry.capacityLiters += tank.calibratedCapacityLiters ?? tank.capacityLiters;
     entry.volumeLiters += state?.volumeLiters ?? 0;
+    entry.sellableVolumeLiters += state?.sellableVolumeLiters ?? 0;
     if (state?.monetaryValue != null && state.currencyCode) {
       if (entry.currencyCode === null || entry.currencyCode === state.currencyCode) {
         entry.monetaryValue = (entry.monetaryValue ?? 0) + state.monetaryValue;
         entry.currencyCode = state.currencyCode;
+        // Même prix/devise déjà résolus pour `monetaryValue` — jamais une
+        // deuxième résolution pour la valeur du volume vendable.
+        const sellableValue = state.sellableVolumeLiters != null && state.unitPriceAmount != null ? state.sellableVolumeLiters * state.unitPriceAmount : 0;
+        entry.sellableMonetaryValue = (entry.sellableMonetaryValue ?? 0) + sellableValue;
       } else {
         entry.monetaryValue = null; // devises mixtes sur une même station : non sommable, jamais approximé
+        entry.sellableMonetaryValue = null;
       }
     }
     stationProductsMap.set(product.id, entry);
@@ -242,10 +256,17 @@ export default function StationDetailScreen() {
   });
   const stationTotalCapacityLiters = activeTanks.reduce((sum, tk) => sum + (tk.calibratedCapacityLiters ?? tk.capacityLiters), 0);
   const stationTotalVolumeLiters = tankStates.reduce((sum, s) => sum + (s.volumeLiters ?? 0), 0);
+  const stationTotalSellableVolumeLiters = tankStates.reduce((sum, s) => sum + (s.sellableVolumeLiters ?? 0), 0);
   const stationValueCurrencies = new Set(tankStates.map((s) => s.currencyCode).filter((c): c is string => c !== null));
   const stationTotalValue =
     stationValueCurrencies.size === 1 && tankStates.every((s) => s.monetaryValue !== null || (s.volumeLiters ?? 0) === 0)
       ? tankStates.reduce((sum, s) => sum + (s.monetaryValue ?? 0), 0)
+      : null;
+  // Même porte que `stationTotalValue` (une seule devise, aucune cuve avec
+  // du stock et un prix inconnu) — jamais une deuxième résolution de prix.
+  const stationTotalSellableValue =
+    stationValueCurrencies.size === 1 && tankStates.every((s) => s.monetaryValue !== null || (s.volumeLiters ?? 0) === 0)
+      ? tankStates.reduce((sum, s) => sum + (s.sellableVolumeLiters != null && s.unitPriceAmount != null ? s.sellableVolumeLiters * s.unitPriceAmount : 0), 0)
       : null;
   const stationTotalCurrency = stationValueCurrencies.size === 1 ? [...stationValueCurrencies][0] : null;
 
@@ -382,9 +403,19 @@ export default function StationDetailScreen() {
                       : t("stockSynthesis.coverageUnavailable")}
                   </div>
                   <div className="mt-3 border-t border-border-subtle pt-3">
-                    <p className="text-caption text-text-muted">{t("stockSynthesis.stockValue")}</p>
+                    <p className="text-caption text-text-muted">{t("stockSynthesis.sellableVolume")}</p>
+                    <p className="text-body-md font-semibold tabular-nums text-text">
+                      {t("stockSynthesis.sellableOfAvailable", { sellable: formatVolume(product.sellableVolumeLiters), available: formatVolume(product.volumeLiters) })}
+                    </p>
+                  </div>
+                  <div className="mt-3 border-t border-border-subtle pt-3">
+                    <p className="text-caption text-text-muted">{t("stockSynthesis.stockValueTotal")}</p>
                     <p className="text-body-lg font-semibold text-text">
                       {product.monetaryValue !== null && product.currencyCode ? formatMoney(product.monetaryValue, product.currencyCode) : t("stockSynthesis.valueUnavailable")}
+                    </p>
+                    <p className="mt-2 text-caption text-text-muted">{t("stockSynthesis.stockValueSellable")}</p>
+                    <p className="text-body-lg font-semibold text-text">
+                      {product.sellableMonetaryValue !== null && product.currencyCode ? formatMoney(product.sellableMonetaryValue, product.currencyCode) : t("stockSynthesis.valueUnavailable")}
                     </p>
                   </div>
                 </div>
@@ -395,9 +426,19 @@ export default function StationDetailScreen() {
               <p className="mt-2 text-h2 font-bold tabular-nums">{formatVolume(stationTotalVolumeLiters)}</p>
               <p className="text-body-sm text-white/60">{t("stockSynthesis.ofCapacity", { capacity: formatVolume(stationTotalCapacityLiters) })}</p>
               <div className="mt-3 border-t border-white/10 pt-3">
-                <p className="text-caption text-white/60">{t("stockSynthesis.stockValue")}</p>
+                <p className="text-caption text-white/60">{t("stockSynthesis.sellableVolume")}</p>
+                <p className="text-body-md font-semibold tabular-nums">
+                  {t("stockSynthesis.sellableOfAvailable", { sellable: formatVolume(stationTotalSellableVolumeLiters), available: formatVolume(stationTotalVolumeLiters) })}
+                </p>
+              </div>
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <p className="text-caption text-white/60">{t("stockSynthesis.stockValueTotal")}</p>
                 <p className="text-body-lg font-semibold">
                   {stationTotalValue !== null && stationTotalCurrency ? formatMoney(stationTotalValue, stationTotalCurrency) : t("stockSynthesis.valueUnavailable")}
+                </p>
+                <p className="mt-2 text-caption text-white/60">{t("stockSynthesis.stockValueSellable")}</p>
+                <p className="text-body-lg font-semibold">
+                  {stationTotalSellableValue !== null && stationTotalCurrency ? formatMoney(stationTotalSellableValue, stationTotalCurrency) : t("stockSynthesis.valueUnavailable")}
                 </p>
               </div>
             </div>

@@ -31,6 +31,8 @@ export interface ProductAggregate {
   stationCount: number;
   monetaryValue: number | null;
   currencyCode: string | null;
+  sellableVolumeLiters: number;
+  sellableMonetaryValue: number | null;
 }
 
 export interface StationAggregate {
@@ -64,6 +66,8 @@ export interface NetworkDashboardData {
   totalCapacityLiters: number;
   totalMonetaryValue: number | null;
   totalMonetaryCurrencyCode: string | null;
+  totalSellableVolumeLiters: number;
+  totalSellableMonetaryValue: number | null;
   stationsActiveCount: number;
   stationsOfflineCount: number;
   activeAlertsCount: number;
@@ -216,6 +220,8 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
       stationCount: line?.stationCount ?? 0,
       monetaryValue: line?.totalMonetaryValue ?? null,
       currencyCode: line?.currencyCode ?? null,
+      sellableVolumeLiters: line?.totalSellableVolumeLiters ?? 0,
+      sellableMonetaryValue: line?.totalSellableMonetaryValue ?? null,
     };
   });
 
@@ -227,6 +233,14 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
       ? products.reduce((sum, p) => sum + (p.monetaryValue ?? 0), 0)
       : null;
   const totalMonetaryCurrencyCode = productCurrencies.size === 1 ? [...productCurrencies][0] : null;
+  // Même porte que `totalMonetaryValue` (une seule devise réseau, aucun
+  // produit avec un stock non nul et une valeur non calculable) — la valeur
+  // vendable ne doit jamais être sommée séparément avec une règle différente.
+  const totalSellableVolumeLiters = networkSummary?.totalSellableVolumeLiters ?? 0;
+  const totalSellableMonetaryValue =
+    productCurrencies.size === 1 && products.every((p) => p.monetaryValue !== null || p.volumeLiters === 0)
+      ? products.reduce((sum, p) => sum + (p.sellableMonetaryValue ?? 0), 0)
+      : null;
 
   const tankById = new Map(tanks.map((t) => [t.id, t]));
   const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
@@ -301,6 +315,8 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
     totalCapacityLiters,
     totalMonetaryValue,
     totalMonetaryCurrencyCode,
+    totalSellableVolumeLiters,
+    totalSellableMonetaryValue,
     stationsActiveCount,
     stationsOfflineCount,
     activeAlertsCount: activeAlerts.length,
