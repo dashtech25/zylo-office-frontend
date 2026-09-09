@@ -9,7 +9,7 @@ import { usePermissions } from "@/core/rbac/PermissionContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, PageHeader, Stack, Tabs } from "@/shared/ui";
+import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { AlertsBrowserModal } from "@/modules/zylo-liquid/components/AlertsBrowserModal";
@@ -487,17 +487,26 @@ export default function StationDetailScreen() {
         </Alert>
       )}
 
-      {adminCenterOpen && currentOrganization ? (
-        <StationAdminCenter
-          organizationId={currentOrganization.id}
-          station={station}
-          city={city}
-          fuelProducts={data.fuelProducts}
-          stationId={stationId}
-          onReload={data.reload}
-          onClose={() => setAdminCenterOpen(false)}
-        />
-      ) : (
+      {currentOrganization && (
+        <Modal
+          open={adminCenterOpen}
+          onOpenChange={setAdminCenterOpen}
+          title={station.name}
+          size="full"
+          closeLabel={tCommon("actions.close")}
+        >
+          <StationAdminCenter
+            organizationId={currentOrganization.id}
+            station={station}
+            city={city}
+            fuelProducts={data.fuelProducts}
+            stationId={stationId}
+            onReload={data.reload}
+            onClose={() => setAdminCenterOpen(false)}
+          />
+        </Modal>
+      )}
+
       <Tabs
         variant="underline"
         items={[
@@ -710,7 +719,6 @@ export default function StationDetailScreen() {
           { value: "atg", label: t("tabs.atg"), content: currentOrganization ? <AtgTab organizationId={currentOrganization.id} tanks={activeTanks} /> : null },
         ]}
       />
-      )}
 
       {currentOrganization && (
         <>

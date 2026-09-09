@@ -1107,6 +1107,7 @@
     "sellableVolume": "Volume vendable",
     "sellableOfAvailable": "{sellable} sur {available} disponibles",
     "valueUnavailable": "Valeur non calculable",
+    "conversionUnavailable": "Conversion indisponible",
     "totalNetwork": "Total réseau"
   },
   "productBreakdown": {
@@ -1189,7 +1190,8 @@
       },
       "map": {
         "title": "Implantation du réseau",
-        "subtitle": "Cliquez sur une pastille pour ouvrir la station"
+        "subtitle": "Cliquez sur une pastille pour ouvrir la station",
+        "open": "Voir la carte"
       },
       "synthesis": {
         "title": "Synthèse",

@@ -369,7 +369,7 @@
 
 "use client";
 
-import { AlertTriangle, ChevronRight, Circle, Truck, Wrench } from "lucide-react";
+import { AlertTriangle, Circle, Truck, Wrench } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -379,6 +379,7 @@ import { Badge, Card } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 import { cn } from "@/shared/lib/cn";
 
+import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
 import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
@@ -414,7 +415,6 @@ function NetworkDashboardScreen() {
   const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
 
   const data = useNetworkDashboard(currentOrganization?.id ?? null, period, customDate);
-  const totalRate = data.totalCapacityLiters > 0 ? ((data.networkSummary?.totalVolumeLiters ?? 0) / data.totalCapacityLiters) * 100 : 0;
 
   function formatVolume(liters: number): string {
     return `${formatLiters(liters)} L`;
@@ -496,108 +496,18 @@ function NetworkDashboardScreen() {
       ) : (
         <>
           {/* Zone B — synthèse stock réseau */}
-          <section>
-            <h2 className="mb-3 text-h2 font-semibold text-text">{t("stockSynthesis.title")}</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {data.products.map((product) => {
-                const rate = product.capacityLiters > 0 ? (product.volumeLiters / product.capacityLiters) * 100 : 0;
-                return (
-                  <Card
-                    key={product.fuelProductId}
-                    className="cursor-pointer transition-shadow hover:shadow-elevated"
-                    onClick={() => setBreakdownFilter({ fuelProductId: product.fuelProductId, name: product.name })}
-                  >
-                    <div className="flex items-center gap-2 text-body-sm font-semibold text-text-muted">
-                      <Circle className="size-2.5" style={{ fill: product.displayColor ?? "var(--color-text-muted)", color: product.displayColor ?? undefined }} aria-hidden />
-                      {product.name.toUpperCase()}
-                    </div>
-                    <p className="mt-2 text-h1 font-bold tabular-nums text-text">{formatVolume(product.volumeLiters)}</p>
-                    <p className="text-body-sm text-text-muted">{t("stockSynthesis.ofCapacity", { capacity: formatVolume(product.capacityLiters) })}</p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="h-2 flex-1 overflow-hidden rounded-pill bg-surface-muted">
-                        <div className="h-full rounded-pill" style={{ width: `${Math.min(100, rate)}%`, background: product.displayColor ?? "var(--color-primary)" }} />
-                      </div>
-                      <span className="tabular-nums text-body-sm text-text-muted">{formatPercent(rate)}%</span>
-                    </div>
-                    <div className="mt-3 border-t border-border-subtle pt-3">
-                      <p className="text-caption text-text-muted">{t("stockSynthesis.sellableVolume")}</p>
-                      <p className="text-body-md font-semibold tabular-nums text-text">
-                        {t("stockSynthesis.sellableOfAvailable", { sellable: formatVolume(product.sellableVolumeLiters), available: formatVolume(product.volumeLiters) })}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-3 flex items-center gap-1 text-body-sm text-primary hover:underline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setBreakdownFilter({ fuelProductId: product.fuelProductId, name: product.name });
-                      }}
-                    >
-                      {t("stockSynthesis.stationsConcerned", { count: product.stationCount })}
-                      <ChevronRight className="size-4" aria-hidden />
-                    </button>
-                    <div className="mt-3 border-t border-border-subtle pt-3">
-                      <p className="text-caption text-text-muted">{t("stockSynthesis.stockValueTotal")}</p>
-                      <p className="text-body-lg font-semibold text-text">
-                        {product.monetaryValue !== null && product.currencyCode
-                          ? formatMoney(product.monetaryValue, product.currencyCode)
-                          : t("stockSynthesis.valueUnavailable")}
-                      </p>
-                      <p className="mt-2 text-caption text-text-muted">{t("stockSynthesis.stockValueSellable")}</p>
-                      <p className="text-body-lg font-semibold text-text">
-                        {product.sellableMonetaryValue !== null && product.currencyCode
-                          ? formatMoney(product.sellableMonetaryValue, product.currencyCode)
-                          : t("stockSynthesis.valueUnavailable")}
-                      </p>
-                    </div>
-                  </Card>
-                );
-              })}
-
-              <Card
-                className="cursor-pointer border-secondary/20 bg-secondary text-white transition-shadow hover:shadow-elevated"
-                onClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
-              >
-                <p className="text-body-sm font-semibold text-white/70">{t("stockSynthesis.totalNetwork").toUpperCase()}</p>
-                <p className="mt-2 text-h1 font-bold tabular-nums">{formatVolume(data.networkSummary?.totalVolumeLiters ?? 0)}</p>
-                <p className="text-body-sm text-white/60">{t("stockSynthesis.ofCapacity", { capacity: formatVolume(data.totalCapacityLiters) })}</p>
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-pill bg-white/10">
-                    <div
-                      className="h-full rounded-pill bg-primary"
-                      style={{
-                        width: `${Math.min(100, totalRate)}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="tabular-nums text-body-sm text-white/70">{formatPercent(totalRate)}%</span>
-                </div>
-                <div className="mt-3 border-t border-white/10 pt-3">
-                  <p className="text-caption text-white/60">{t("stockSynthesis.sellableVolume")}</p>
-                  <p className="text-body-md font-semibold tabular-nums">
-                    {t("stockSynthesis.sellableOfAvailable", {
-                      sellable: formatVolume(data.totalSellableVolumeLiters),
-                      available: formatVolume(data.networkSummary?.totalVolumeLiters ?? 0),
-                    })}
-                  </p>
-                </div>
-                <div className="mt-3 border-t border-white/10 pt-3">
-                  <p className="text-caption text-white/60">{t("stockSynthesis.stockValueTotal")}</p>
-                  <p className="text-body-lg font-semibold">
-                    {data.totalMonetaryValue !== null && data.totalMonetaryCurrencyCode
-                      ? formatMoney(data.totalMonetaryValue, data.totalMonetaryCurrencyCode)
-                      : t("stockSynthesis.valueUnavailable")}
-                  </p>
-                  <p className="mt-2 text-caption text-white/60">{t("stockSynthesis.stockValueSellable")}</p>
-                  <p className="text-body-lg font-semibold">
-                    {data.totalSellableMonetaryValue !== null && data.totalMonetaryCurrencyCode
-                      ? formatMoney(data.totalSellableMonetaryValue, data.totalMonetaryCurrencyCode)
-                      : t("stockSynthesis.valueUnavailable")}
-                  </p>
-                </div>
-              </Card>
-            </div>
-          </section>
+          <NetworkStockSummaryCards
+            products={data.products}
+            totalVolumeLiters={data.networkSummary?.totalVolumeLiters ?? 0}
+            totalCapacityLiters={data.totalCapacityLiters}
+            totalSellableVolumeLiters={data.totalSellableVolumeLiters}
+            totalMonetaryValue={data.totalMonetaryValue}
+            totalSellableMonetaryValue={data.totalSellableMonetaryValue}
+            totalCurrencyCode={data.totalMonetaryCurrencyCode}
+            formatMoney={formatMoney}
+            onProductClick={setBreakdownFilter}
+            onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
+          />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Zone C — graphique de tendance */}

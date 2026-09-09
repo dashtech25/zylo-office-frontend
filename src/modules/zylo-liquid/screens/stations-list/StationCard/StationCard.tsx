@@ -13,7 +13,7 @@ import { StationStatusCell } from "./StationStatusCell";
 import { StationSyncBadge } from "./StationSyncBadge";
 import { StationTotalValueCell } from "./StationTotalValueCell";
 
-function freshnessTone(lastMeasurementAt: string | null): "ok" | "late" | "old" {
+export function freshnessTone(lastMeasurementAt: string | null): "ok" | "late" | "old" {
   if (!lastMeasurementAt) return "old";
   const ageMin = (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000;
   if (ageMin <= 15) return "ok";

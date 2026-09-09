@@ -1107,6 +1107,7 @@
     "sellableVolume": "Sellable volume",
     "sellableOfAvailable": "{sellable} out of {available} available",
     "valueUnavailable": "Value not calculable",
+    "conversionUnavailable": "Conversion unavailable",
     "totalNetwork": "Total network"
   },
   "productBreakdown": {
@@ -1189,7 +1190,8 @@
       },
       "map": {
         "title": "Network footprint",
-        "subtitle": "Click a marker to open the station"
+        "subtitle": "Click a marker to open the station",
+        "open": "View the map"
       },
       "synthesis": {
         "title": "Summary",
