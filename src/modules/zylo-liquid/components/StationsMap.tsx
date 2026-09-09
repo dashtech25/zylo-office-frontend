@@ -13,6 +13,11 @@ export interface StationMapPoint {
   latitude: number;
   longitude: number;
   status: StationMapStatus;
+  /** Ligne supplémentaire de la fiche au survol (ex. volume vendable),
+   * déjà formatée par l'appelant (agnostique de l'i18n/formatage) — absente
+   * pour les usages qui n'ont pas cette donnée (ex. carte d'une seule
+   * station), auquel cas le popup se limite au nom. */
+  popupSubtitle?: string;
 }
 
 const STATUS_COLOR: Record<StationMapStatus, string> = {
@@ -22,6 +27,10 @@ const STATUS_COLOR: Record<StationMapStatus, string> = {
   offline: "#6B7280",
 };
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
 /** Carte géographique du réseau (« Implantation du réseau » du prototype
  * validé, prototype.html ~ligne 3836) — reprend `Station.latitude/longitude`
  * déjà présents en base mais jamais utilisés jusqu'ici. Mapbox GL JS choisi
@@ -29,10 +38,21 @@ const STATUS_COLOR: Record<StationMapStatus, string> = {
  * à réutiliser) et le token fourni est un token Mapbox. Stations sans
  * coordonnées connues sont silencieusement omises — jamais positionnées à
  * une coordonnée inventée (0,0 ou autre). */
-export function StationsMap({ stations, height = 320 }: { stations: StationMapPoint[]; height?: number }) {
+export function StationsMap({
+  stations,
+  height = 320,
+  onStationClick,
+}: {
+  stations: StationMapPoint[];
+  height?: number;
+  /** Quand fourni, remplace la navigation par défaut vers la page de la
+   * station (ex. pour ouvrir un modal d'aperçu à la place). */
+  onStationClick?: (stationId: string) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupsRef = useRef<mapboxgl.Popup[]>([]);
   const router = useRouter();
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -62,6 +82,8 @@ export function StationsMap({ stations, height = 320 }: { stations: StationMapPo
     function placeMarkers() {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
+      popupsRef.current.forEach((p) => p.remove());
+      popupsRef.current = [];
       if (stations.length === 0) return;
 
       const bounds = new mapboxgl.LngLatBounds();
@@ -76,10 +98,24 @@ export function StationsMap({ stations, height = 320 }: { stations: StationMapPo
         el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
         el.style.background = STATUS_COLOR[s.status];
         el.style.cursor = "pointer";
-        el.onclick = () => router.push(`/zylo-liquid/stations/${s.id}`);
+        el.onclick = () => (onStationClick ? onStationClick(s.id) : router.push(`/zylo-liquid/stations/${s.id}`));
 
-        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false }).setText(s.name);
-        const marker = new mapboxgl.Marker({ element: el }).setLngLat([s.longitude, s.latitude]).setPopup(popup).addTo(map);
+        const popupHtml = s.popupSubtitle
+          ? `<div style="font-weight:600;">${escapeHtml(s.name)}</div><div style="color:#6B7280;margin-top:2px;">${escapeHtml(s.popupSubtitle)}</div>`
+          : null;
+        // `Marker.setPopup` n'affiche le popup qu'au CLIC (togglePopup interne
+        // de Mapbox GL) — jamais au survol. La fiche brève demandée au survol
+        // est donc gérée manuellement ici (mouseenter/mouseleave), sans passer
+        // par setPopup, pour ne pas entrer en conflit avec le clic qui ouvre
+        // déjà la navigation/le modal d'aperçu.
+        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false }).setLngLat([s.longitude, s.latitude]);
+        if (popupHtml) popup.setHTML(popupHtml);
+        else popup.setText(s.name);
+        el.addEventListener("mouseenter", () => popup.addTo(map));
+        el.addEventListener("mouseleave", () => popup.remove());
+        popupsRef.current.push(popup);
+
+        const marker = new mapboxgl.Marker({ element: el }).setLngLat([s.longitude, s.latitude]).addTo(map);
         markersRef.current.push(marker);
         bounds.extend([s.longitude, s.latitude]);
       });
@@ -90,7 +126,7 @@ export function StationsMap({ stations, height = 320 }: { stations: StationMapPo
 
     if (map.loaded()) placeMarkers();
     else map.once("load", placeMarkers);
-  }, [stations, token, router]);
+  }, [stations, token, router, onStationClick]);
 
   if (!token) {
     return (

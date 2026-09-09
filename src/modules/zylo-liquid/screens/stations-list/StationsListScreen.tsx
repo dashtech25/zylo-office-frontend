@@ -1,27 +1,30 @@
 "use client";
 
-import { Download, Plus, Search } from "lucide-react";
+import { Download, Map as MapIcon, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
-import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Select, Stack } from "@/shared/ui";
+import { Alert, Button, Card, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
+import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
+import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
 import { StationsMap } from "@/modules/zylo-liquid/components/StationsMap";
 
-import { NetworkSummaryBar } from "./StationCard/NetworkSummaryBar";
-import { StationCard } from "./StationCard/StationCard";
+import { ProductStockGrid } from "./StationCard/ProductStockGrid";
+import { StationCard, freshnessTone } from "./StationCard/StationCard";
+import { StationSyncBadge } from "./StationCard/StationSyncBadge";
 import { StationsTable } from "./StationCard/StationsTable";
+import { StatusBadge } from "./StationCard/StatusBadge";
+import { StatusDot } from "./StationCard/StatusDot";
+import { StationsFilterBar, type StationsSortBy as SortBy, type StationsStatusFilter as StatusFilter } from "./StationsFilterBar";
 import { useStationsList, type StationRow } from "./useStationsList";
-
-type StatusFilter = "all" | "online" | "offline" | "alert" | "critical";
-type SortBy = "criticality" | "name" | "lowestLevel" | "highestValue" | "oldestSync";
 
 // Reprend l'ordre de tri par défaut du prototype validé (prototype.html,
 // pageStations() ~ligne 3878 : "Triées par criticité — les stations
@@ -39,8 +42,10 @@ const CRITICALITY_RANK: Record<StationRow["state"], number> = { critical: 0, ale
  * Station, l'ajouter inventerait un champ mort. */
 export default function StationsListScreen() {
   const t = useTranslations("zyloLiquid.stations");
+  const tRoot = useTranslations("zyloLiquid");
   const tCommon = useTranslations("common");
   const format = useFormatter();
+  const router = useRouter();
   const { currentOrganization } = useOrganization();
   const data = useStationsList(currentOrganization?.id ?? null);
 
@@ -53,6 +58,9 @@ export default function StationsListScreen() {
   const [sortBy, setSortBy] = useState<SortBy>("criticality");
   const [search, setSearch] = useState("");
   const [currencyId, setCurrencyId] = useState("");
+  const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [previewStationId, setPreviewStationId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editStation, setEditStation] = useState<StationRow["station"] | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -73,6 +81,11 @@ export default function StationsListScreen() {
 
   const selectedCurrency = data.currencies.find((c) => c.id === currencyId) ?? null;
   const cityById = new Map(data.cities.map((c) => [c.id, c]));
+  const fuelProductNameById = new Map(data.fuelProducts.map((p) => [p.id, p.name]));
+
+  function formatMoneyOrReason(value: number, nativeCurrencyCode: string): string {
+    return formatMoney(value, nativeCurrencyCode) ?? t("list.row.conversionUnavailable");
+  }
 
   function formatVolume(liters: number): string {
     return `${formatLiters(liters)} L`;
@@ -168,18 +181,44 @@ export default function StationsListScreen() {
     }
   }
 
-  // Totaux réseau par produit, sur les seules stations visibles (filtrées)
+  // Totaux réseau par produit, sur les seules stations visibles (filtrées) —
+  // même shape que ProductAggregate (hooks/useNetworkDashboard.ts) pour
+  // pouvoir alimenter le même composant NetworkStockSummaryCards que le
+  // tableau de bord, sans le dupliquer.
   const networkProducts = useMemo(() => {
-    const byProduct = new Map<string, { name: string; color: string | null; volume: number; capacity: number }>();
+    const byProduct = new Map<
+      string,
+      { name: string; color: string | null; volume: number; capacity: number; stationIds: Set<string>; monetary: number; sellableVolume: number; sellableMonetary: number; currencies: Set<string> }
+    >();
     for (const row of filteredRows) {
       for (const p of row.products) {
-        const entry = byProduct.get(p.fuelProductId) ?? { name: p.fuelProductName, color: p.displayColor, volume: 0, capacity: 0 };
+        const entry =
+          byProduct.get(p.fuelProductId) ??
+          { name: p.fuelProductName, color: p.displayColor, volume: 0, capacity: 0, stationIds: new Set<string>(), monetary: 0, sellableVolume: 0, sellableMonetary: 0, currencies: new Set<string>() };
         entry.volume += p.volumeLiters;
         entry.capacity += p.capacityLiters;
+        entry.sellableVolume += p.sellableVolumeLiters;
+        entry.stationIds.add(row.station.id);
+        if (p.currencyCode) {
+          entry.currencies.add(p.currencyCode);
+          entry.monetary += p.monetaryValue ?? 0;
+          entry.sellableMonetary += p.sellableMonetaryValue ?? 0;
+        }
         byProduct.set(p.fuelProductId, entry);
       }
     }
-    return [...byProduct.values()];
+    return [...byProduct.entries()].map(([fuelProductId, e]) => ({
+      fuelProductId,
+      name: e.name,
+      displayColor: e.color,
+      volumeLiters: e.volume,
+      capacityLiters: e.capacity,
+      stationCount: e.stationIds.size,
+      monetaryValue: e.currencies.size === 1 ? e.monetary : null,
+      currencyCode: e.currencies.size === 1 ? [...e.currencies][0] : null,
+      sellableVolumeLiters: e.sellableVolume,
+      sellableMonetaryValue: e.currencies.size === 1 ? e.sellableMonetary : null,
+    }));
   }, [filteredRows]);
 
   // Bandeau de fiabilité (« double vérité » du prototype, prototype.html
@@ -191,6 +230,13 @@ export default function StationsListScreen() {
   const networkCurrencies = new Set(filteredRows.map((r) => r.totalCurrencyCode).filter((c): c is string => c !== null));
   const networkTotalValue =
     filteredRows.every((r) => r.totalValue !== null || r.totalVolumeLiters === 0) && networkCurrencies.size <= 1 ? filteredRows.reduce((sum, r) => sum + (r.totalValue ?? 0), 0) : null;
+  const networkTotalSellableVolumeLiters = filteredRows.reduce((sum, r) => sum + r.totalSellableVolumeLiters, 0);
+  const networkTotalSellableValue =
+    filteredRows.every((r) => r.totalSellableValue !== null || r.totalVolumeLiters === 0) && networkCurrencies.size <= 1
+      ? filteredRows.reduce((sum, r) => sum + (r.totalSellableValue ?? 0), 0)
+      : null;
+  const networkVolumeLiters = filteredRows.reduce((sum, r) => sum + r.totalVolumeLiters, 0);
+  const networkCapacityLiters = filteredRows.reduce((sum, r) => sum + r.totalCapacityLiters, 0);
 
   return (
     <Stack>
@@ -229,90 +275,58 @@ export default function StationsListScreen() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <h2 className="text-h4 font-semibold text-text">{t("list.map.title")}</h2>
-              <p className="text-body-sm text-text-muted">{t("list.map.subtitle")}</p>
-              <div className="mt-3">
-                <StationsMap
-                  stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
-                    id: r.station.id, name: r.station.name, latitude: r.station.latitude as number, longitude: r.station.longitude as number, status: r.state,
-                  }))}
-                />
-              </div>
-            </Card>
-            <Card>
-              <h2 className="text-h4 font-semibold text-text">{t("list.synthesis.title")}</h2>
-              <dl className="mt-2 flex flex-col gap-2 text-body-sm">
-                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.stock")}</dt><dd className="font-mono">{formatLiters(filteredRows.reduce((s, r) => s + r.totalVolumeLiters, 0))} / {formatLiters(filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0))} L</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.fillRate")}</dt><dd className="font-mono">{formatPercent(filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0) > 0 ? (filteredRows.reduce((s, r) => s + r.totalVolumeLiters, 0) / filteredRows.reduce((s, r) => s + r.totalCapacityLiters, 0)) * 100 : 0)}</dd></div>
-                {networkTotalValue !== null && <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.value")}</dt><dd className="font-mono">{format.number(networkTotalValue, { maximumFractionDigits: 0 })}</dd></div>}
-                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.stationsInAlert")}</dt><dd className="font-mono">{filteredRows.filter((r) => r.state === "alert" || r.state === "critical").length} / {filteredRows.length}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">{t("list.synthesis.activeAlerts")}</dt><dd className="font-mono">{data.activeAlertsCount}</dd></div>
-              </dl>
-            </Card>
-          </div>
-
-          <Card>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <Badge tone={badgeActive ? "success" : "neutral"} dot className="cursor-pointer" onClick={() => setBadgeActive((v) => !v)}>
-                {t("list.badges.active", { count: activeCount })}
-              </Badge>
-              <Badge tone={badgeOffline ? "neutral" : "neutral"} dot className="cursor-pointer border border-border" onClick={() => setBadgeOffline((v) => !v)}>
-                {t("list.badges.offline", { count: offlineCount })}
-              </Badge>
-              <Badge tone={badgeAlerts ? "warning" : "neutral"} dot className="cursor-pointer" onClick={() => setBadgeAlerts((v) => !v)}>
-                {t("list.badges.alerts", { count: data.activeAlertsCount })}
-              </Badge>
+          <Card
+            className="flex cursor-pointer items-center gap-3 transition-shadow hover:shadow-elevated"
+            onClick={() => setMapOpen(true)}
+          >
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-muted text-primary">
+              <MapIcon className="size-5" aria-hidden />
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="w-full sm:w-44">
-                <Select
-                  aria-label={t("list.filters.status")}
-                  value={statusFilter}
-                  onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                  options={(["all", "online", "offline", "alert", "critical"] as StatusFilter[]).map((v) => ({ value: v, label: t(`list.filters.statusOptions.${v}`) }))}
-                />
-              </div>
-              <div className="w-full sm:w-44">
-                <Select
-                  aria-label={t("list.filters.city")}
-                  value={cityFilter || undefined}
-                  onValueChange={(v) => setCityFilter(v === "__all__" ? "" : v)}
-                  placeholder={t("list.filters.cityAll")}
-                  options={[{ value: "__all__", label: t("list.filters.cityAll") }, ...data.cities.map((c) => ({ value: c.id, label: c.name }))]}
-                />
-              </div>
-              <div className="w-full sm:w-44">
-                <Select
-                  aria-label={t("list.filters.product")}
-                  value={productFilter || undefined}
-                  onValueChange={(v) => setProductFilter(v === "__all__" ? "" : v)}
-                  placeholder={t("list.filters.productAll")}
-                  options={[{ value: "__all__", label: t("list.filters.productAll") }, ...data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))]}
-                />
-              </div>
-              <div className="w-full sm:w-44">
-                <Select
-                  aria-label={t("list.filters.sortBy")}
-                  value={sortBy}
-                  onValueChange={(v) => setSortBy(v as SortBy)}
-                  options={(["criticality", "name", "lowestLevel", "highestValue", "oldestSync"] as SortBy[]).map((v) => ({ value: v, label: t(`list.filters.sortOptions.${v}`) }))}
-                />
-              </div>
-              <div className="min-w-[200px] flex-1">
-                <Input icon={<Search className="size-4" aria-hidden />} placeholder={t("list.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("list.searchPlaceholder")} />
-              </div>
+            <div>
+              <h2 className="text-h4 font-semibold text-text">{t("list.map.title")}</h2>
+              <p className="text-body-sm text-primary">{t("list.map.open")}</p>
             </div>
           </Card>
 
+          <Card>
+            <StationsFilterBar
+              t={t}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              badgeActive={badgeActive}
+              onBadgeActiveToggle={() => setBadgeActive((v) => !v)}
+              activeCount={activeCount}
+              badgeOffline={badgeOffline}
+              onBadgeOfflineToggle={() => setBadgeOffline((v) => !v)}
+              offlineCount={offlineCount}
+              badgeAlerts={badgeAlerts}
+              onBadgeAlertsToggle={() => setBadgeAlerts((v) => !v)}
+              activeAlertsCount={data.activeAlertsCount}
+              cityFilter={cityFilter}
+              onCityFilterChange={setCityFilter}
+              cities={data.cities}
+              productFilter={productFilter}
+              onProductFilterChange={setProductFilter}
+              fuelProducts={data.fuelProducts}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              search={search}
+              onSearchChange={setSearch}
+            />
+          </Card>
+
           {filteredRows.length > 0 && (
-            <NetworkSummaryBar
+            <NetworkStockSummaryCards
               products={networkProducts}
-              formatVolume={formatVolume}
-              formatPercent={formatPercent}
-              totalLabel={t("list.footer.networkTotal")}
-              totalDisplay={networkTotalValue !== null && [...networkCurrencies][0] ? (formatMoney(networkTotalValue, [...networkCurrencies][0]) ?? t("list.row.conversionUnavailable")) : t("list.row.valueNotCalculable")}
+              totalVolumeLiters={networkVolumeLiters}
+              totalCapacityLiters={networkCapacityLiters}
+              totalSellableVolumeLiters={networkTotalSellableVolumeLiters}
+              totalMonetaryValue={networkTotalValue}
+              totalSellableMonetaryValue={networkTotalSellableValue}
+              totalCurrencyCode={[...networkCurrencies][0] ?? null}
+              formatMoney={formatMoney}
+              onProductClick={setBreakdownFilter}
+              onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("list.footer.networkTotal") })}
             />
           )}
 
@@ -348,6 +362,115 @@ export default function StationsListScreen() {
             </StationsTable>
           )}
         </>
+      )}
+
+      <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="full" closeLabel={tCommon("actions.close")}>
+        <Stack>
+          <Card>
+            <StationsFilterBar
+              t={t}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              badgeActive={badgeActive}
+              onBadgeActiveToggle={() => setBadgeActive((v) => !v)}
+              activeCount={activeCount}
+              badgeOffline={badgeOffline}
+              onBadgeOfflineToggle={() => setBadgeOffline((v) => !v)}
+              offlineCount={offlineCount}
+              badgeAlerts={badgeAlerts}
+              onBadgeAlertsToggle={() => setBadgeAlerts((v) => !v)}
+              activeAlertsCount={data.activeAlertsCount}
+              cityFilter={cityFilter}
+              onCityFilterChange={setCityFilter}
+              cities={data.cities}
+              productFilter={productFilter}
+              onProductFilterChange={setProductFilter}
+              fuelProducts={data.fuelProducts}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              search={search}
+              onSearchChange={setSearch}
+            />
+          </Card>
+          <StationsMap
+            height={640}
+            onStationClick={setPreviewStationId}
+            stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+              id: r.station.id,
+              name: r.station.name,
+              latitude: r.station.latitude as number,
+              longitude: r.station.longitude as number,
+              status: r.state,
+              popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
+                sellable: formatVolume(r.totalSellableVolumeLiters),
+                available: formatVolume(r.totalVolumeLiters),
+              }),
+            }))}
+          />
+        </Stack>
+      </Modal>
+
+      {previewStationId &&
+        (() => {
+          const previewRow = filteredRows.find((r) => r.station.id === previewStationId) ?? data.rows.find((r) => r.station.id === previewStationId);
+          if (!previewRow) return null;
+          const moneyDisplay = previewRow.totalValue !== null && previewRow.totalCurrencyCode ? formatMoney(previewRow.totalValue, previewRow.totalCurrencyCode) : null;
+          const city = previewRow.station.cityId ? (cityById.get(previewRow.station.cityId) ?? null) : null;
+          const fresh = freshnessTone(previewRow.lastMeasurementAt);
+          return (
+            <Modal
+              open={!!previewStationId}
+              onOpenChange={(open) => !open && setPreviewStationId(null)}
+              closeLabel={tCommon("actions.close")}
+              size="lg"
+              title={
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>{previewRow.station.name}</span>
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/zylo-liquid/stations/${previewRow.station.id}`)}>
+                    {t("list.viewDetail")}
+                  </Button>
+                </div>
+              }
+            >
+              <Stack>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusDot state={previewRow.state} />
+                  <StatusBadge state={previewRow.state} label={t(`list.status.${previewRow.state}`)} />
+                  {city && <span className="text-body-sm text-text-muted">{city.name}</span>}
+                  <StationSyncBadge freshness={fresh} label={previewRow.lastMeasurementAt ? format.dateTime(new Date(previewRow.lastMeasurementAt), { hour: "2-digit", minute: "2-digit" }) : t("list.row.syncOffline")} />
+                </div>
+
+                <ProductStockGrid
+                  products={previewRow.products}
+                  emptyLabel="—"
+                  formatVolume={formatVolume}
+                  formatMoney={formatMoney}
+                  formatUnitPrice={(value) => format.number(value, { maximumFractionDigits: 1 })}
+                />
+
+                <div className="flex items-center justify-between border-t border-border-subtle pt-3">
+                  <span className="text-body-sm text-text-muted">{t("list.columns.totalValue")}</span>
+                  <span className="font-mono font-semibold text-text">
+                    {previewRow.totalValue !== null && previewRow.totalCurrencyCode ? (moneyDisplay ?? t("list.row.conversionUnavailable")) : t("list.row.valueNotCalculable")}
+                  </span>
+                </div>
+              </Stack>
+            </Modal>
+          );
+        })()}
+
+      {breakdownFilter && (
+        <ProductBreakdownModal
+          open={!!breakdownFilter}
+          onOpenChange={(open) => !open && setBreakdownFilter(null)}
+          product={breakdownFilter}
+          tanks={data.tanks}
+          stations={data.stations}
+          stationStates={data.stationStates}
+          fuelProductNameById={fuelProductNameById}
+          formatVolume={formatVolume}
+          formatMoney={formatMoneyOrReason}
+        />
       )}
 
       {currentOrganization && (

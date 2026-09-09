@@ -30,6 +30,8 @@ export interface StationProductBreakdown {
   capacityLiters: number;
   monetaryValue: number | null;
   currencyCode: string | null;
+  sellableVolumeLiters: number;
+  sellableMonetaryValue: number | null;
   /** Vrai si au moins une cuve de ce produit a atteint son seuil bas
    * (Tank.lowAlarmMm, comparé en hauteur nette comme le fait le backend
    * dans evaluate_threshold_alarms — jamais un pourcentage de capacité). */
@@ -47,6 +49,8 @@ export interface StationRow {
   totalCapacityLiters: number;
   totalValue: number | null;
   totalCurrencyCode: string | null;
+  totalSellableVolumeLiters: number;
+  totalSellableValue: number | null;
   pricingStatus: "complete" | "partial" | "none" | "mixed_currency";
 }
 
@@ -154,15 +158,21 @@ export function useStationsList(organizationId: string | null) {
           capacityLiters: 0,
           monetaryValue: 0,
           currencyCode: null,
+          sellableVolumeLiters: 0,
+          sellableMonetaryValue: 0,
           belowLowThreshold: false,
         } satisfies StationProductBreakdown);
 
       entry.tankCount += 1;
       entry.volumeLiters += tankState.volumeLiters ?? 0;
       entry.capacityLiters += tank.calibratedCapacityLiters ?? tank.capacityLiters;
+      entry.sellableVolumeLiters += tankState.sellableVolumeLiters ?? 0;
       if (tankState.monetaryValue !== null && tankState.currencyCode) {
         entry.monetaryValue = (entry.monetaryValue ?? 0) + tankState.monetaryValue;
         entry.currencyCode = tankState.currencyCode;
+        if (tankState.sellableVolumeLiters !== null && tankState.unitPriceAmount !== null) {
+          entry.sellableMonetaryValue = (entry.sellableMonetaryValue ?? 0) + tankState.sellableVolumeLiters * tankState.unitPriceAmount;
+        }
       }
       if (tankState.heightMm !== null) {
         const netHeightMm = tankState.heightMm - (tankState.waterHeightMm ?? 0);
@@ -185,6 +195,8 @@ export function useStationsList(organizationId: string | null) {
     const pricingStatus: "complete" | "partial" | "none" | "mixed_currency" =
       currencyCodes.size > 1 ? "mixed_currency" : pricedCount === 0 ? "none" : pricedCount < products.length ? "partial" : "complete";
     const totalValue = currencyCodes.size === 1 ? products.reduce((sum, p) => sum + (p.monetaryValue ?? 0), 0) : null;
+    const totalSellableVolumeLiters = products.reduce((sum, p) => sum + p.sellableVolumeLiters, 0);
+    const totalSellableValue = currencyCodes.size === 1 ? products.reduce((sum, p) => sum + (p.sellableMonetaryValue ?? 0), 0) : null;
 
     const stationAlerts = alertsByStation.get(station.id) ?? [];
     const hasCriticalAlert = stationAlerts.some((a) => a.type === "leak" || a.type === "level_high");
@@ -201,6 +213,8 @@ export function useStationsList(organizationId: string | null) {
       totalCapacityLiters,
       totalValue,
       totalCurrencyCode: currencyCodes.size === 1 ? [...currencyCodes][0] : null,
+      totalSellableVolumeLiters,
+      totalSellableValue,
       pricingStatus,
     };
   });
@@ -222,6 +236,7 @@ export function useStationsList(organizationId: string | null) {
     stationsActiveCount,
     stationsOfflineCount,
     networkSummary,
+    stationStates: statesByStation,
     reload: load,
   };
 }

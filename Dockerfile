@@ -7,6 +7,12 @@ FROM node:22-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Les variables NEXT_PUBLIC_* sont figées dans le bundle client au moment du
+# build, pas lues au runtime du conteneur — doivent donc être passées en
+# argument de build (Dokploy: section "Build Args"), pas seulement en
+# variable d'environnement runtime.
+ARG NEXT_PUBLIC_MAPBOX_TOKEN
+ENV NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # NEXT_PUBLIC_* est inliné dans le bundle au build — doit être fourni ici,
