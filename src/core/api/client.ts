@@ -1,4 +1,4 @@
-import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/core/auth/tokens";
+import { broadcastSessionExpired, clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/core/auth/tokens";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3007";
 
@@ -79,9 +79,15 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}, is
   const response = await fetch(`${API_URL}/api/v1${path}`, { ...options, headers });
 
   if (response.status === 401 && !options.skipAuth && !isRetry) {
+    const hadSession = !!getRefreshToken();
     const refreshed = await tryRefresh();
     if (refreshed) return apiFetch<T>(path, options, true);
     clearTokens();
+    // Ne signale une session perdue que si l'utilisateur en avait
+    // effectivement une : un 401 sans refresh token préalable (jamais
+    // connecté, ou déconnexion déjà volontaire) n'est pas une perte de
+    // session, juste l'état attendu.
+    if (hadSession) broadcastSessionExpired();
   }
 
   if (!response.ok) {

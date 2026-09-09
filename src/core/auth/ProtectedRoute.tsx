@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useAuth } from "@/core/auth/AuthContext";
+import { ForceChangePasswordScreen } from "@/core/auth/ForceChangePasswordScreen";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 /** Garde de route générique — toute page sous app/(app)/ doit être enveloppée
@@ -28,6 +29,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <PageSpinner label={t("states.loading")} />
       </div>
     );
+  }
+
+  if (user.mustChangePassword) {
+    return <ForceChangePasswordScreen />;
   }
 
   return <>{children}</>;

@@ -11,7 +11,9 @@
     "delete": "Supprimer",
     "edit": "Modifier",
     "open": "Ouvrir",
-    "back": "Retour"
+    "back": "Retour",
+    "copy": "Copier",
+    "copied": "Copié"
   },
   "states": {
     "loading": "Chargement…",

@@ -29,8 +29,8 @@ import { InfrastructureSection } from "./InfrastructureSection";
 import { MaintenanceSection } from "./MaintenanceSection";
 import { OperationsSection } from "./OperationsSection";
 import { PersonnelSection } from "./PersonnelSection";
-import { RegulatorySection } from "./RegulatorySection";
 import { SecuritySection } from "./SecuritySection";
+import { RegulationTab } from "../station-detail/RegulationTab";
 import { SuppliersSection } from "./SuppliersSection";
 
 type SectionKey =
@@ -59,7 +59,6 @@ export function StationAdminCenter({
   organizationId,
   station,
   city,
-  fuelProducts,
   stationId,
   onReload,
   onClose,
@@ -134,16 +133,16 @@ export function StationAdminCenter({
           <AdministrationTab organizationId={organizationId} station={station} city={city} onReload={onReload} />
         )}
         {section === "operations" && (
-          <OperationsSection organizationId={organizationId} station={station} fuelProducts={fuelProducts} onReload={onReload} />
+          <OperationsSection organizationId={organizationId} station={station} />
         )}
         {section === "infrastructure" && (
           <InfrastructureSection organizationId={organizationId} station={station} onReload={onReload} />
         )}
         {section === "equipment" && <EquipmentSection organizationId={organizationId} stationId={stationId} />}
         {section === "maintenance" && <MaintenanceSection organizationId={organizationId} stationId={stationId} />}
-        {section === "regulatory" && <RegulatorySection organizationId={organizationId} stationId={stationId} />}
+        {section === "regulatory" && <RegulationTab organizationId={organizationId} stationId={stationId} />}
         {section === "documents" && <DocumentsSection organizationId={organizationId} stationId={stationId} />}
-        {section === "personnel" && <PersonnelSection organizationId={organizationId} stationId={stationId} />}
+        {section === "personnel" && <PersonnelSection organizationId={organizationId} stationId={stationId} stationName={station.name} />}
         {section === "security" && <SecuritySection organizationId={organizationId} stationId={stationId} />}
         {section === "suppliers" && <SuppliersSection organizationId={organizationId} stationId={stationId} />}
         {section === "financial" && <FinancialSection organizationId={organizationId} stationId={stationId} />}

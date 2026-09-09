@@ -1430,6 +1430,7 @@
       "pumps": "Pompes",
       "staff": "Personnel",
       "compliance": "Conformité",
+      "regulation": "Réglementation",
       "atg": "ATG",
       "administration": "Administration"
     },
@@ -1566,6 +1567,185 @@
         "operationalStatus": "Statut"
       },
       "weekdayShort": { "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam", "7": "Dim" }
+    },
+    "regulationTab": {
+      "tableTitle": "Tableau des déclarations réglementaires",
+      "newDeclaration": "Nouvelle déclaration",
+      "empty": "Aucune déclaration réglementaire pour cette station.",
+      "table": {
+        "type": "Type",
+        "authority": "Autorité",
+        "issuedAt": "Date d'émission",
+        "expiresAt": "Date d'expiration",
+        "status": "Statut",
+        "files": "Pièces jointes"
+      },
+      "status": {
+        "valid": "Valide",
+        "renew_soon": "À renouveler",
+        "expired": "Expiré",
+        "unknown": "Échéance inconnue"
+      },
+      "certainty": {
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Faible"
+      },
+      "form": {
+        "title": "Nouvelle déclaration réglementaire",
+        "type": "Type de document",
+        "typePlaceholder": "Ex. Licence d'exploitation, Attestation de conformité…",
+        "typeRequired": "Le type de document est requis.",
+        "authority": "Autorité émettrice",
+        "issuedAt": "Date d'émission",
+        "expiresAt": "Date d'expiration",
+        "certaintyLevel": "Niveau de certitude",
+        "notes": "Notes",
+        "attachments": "Pièces jointes",
+        "dropZone": "Glisser-déposer des fichiers ou cliquer pour parcourir",
+        "submit": "Créer la déclaration"
+      },
+      "declarationsTitle": "Déclarations réglementaires",
+      "declarationsNote": "Déclarations réglementaires à produire ou déjà produites pour cette station.",
+      "declarationsTable": {
+        "type": "Type",
+        "authority": "Autorité",
+        "status": "Statut"
+      },
+      "declarationStatus": {
+        "to_produce": "À produire",
+        "produced": "Produite"
+      },
+      "modal": {
+        "title": "Détail de la déclaration",
+        "editButton": "Modifier",
+        "addFileButton": "Ajouter un fichier",
+        "infoTitle": "Informations",
+        "type": "Type",
+        "authority": "Autorité",
+        "issuedAt": "Date d'émission",
+        "expiresAt": "Date d'expiration",
+        "certainty": "Niveau de certitude",
+        "responsible": "Responsable",
+        "noResponsible": "Aucun responsable désigné",
+        "sourceReference": "Référence source",
+        "notes": "Notes",
+        "newExpiresAt": "Nouvelle date d'expiration",
+        "confirmRenew": "Confirmer le renouvellement",
+        "renewButton": "Renouveler",
+        "filesTitle": "Pièces jointes ({count})",
+        "dropZone": "Glisser-déposer des fichiers ou cliquer pour parcourir",
+        "noFiles": "Aucun fichier.",
+        "groupImages": "Images ({count})",
+        "groupPdf": "PDF ({count})",
+        "groupDocx": "Documents Word ({count})",
+        "groupOther": "Autres ({count})",
+        "preview": "Aperçu"
+      }
+    },
+    "suppliersTab": {
+      "searchPlaceholder": "Rechercher un fournisseur…",
+      "filterCategory": "Catégorie",
+      "allCategories": "Toutes catégories",
+      "filterStatus": "Statut",
+      "allStatuses": "Tous statuts",
+      "addButton": "Ajouter un fournisseur",
+      "empty": "Aucun fournisseur rattaché à cette station.",
+      "table": {
+        "name": "Fournisseur",
+        "category": "Catégorie",
+        "contact": "Contact",
+        "status": "Statut",
+        "contract": "Contrat",
+        "files": "Documents"
+      },
+      "modal": {
+        "subtitle": "Fiche fournisseur",
+        "editButton": "Modifier",
+        "tabs": {
+          "info": "Informations",
+          "contract": "Contrat",
+          "equipment": "Services & Équipements",
+          "documents": "Documents ({count})",
+          "history": "Historique"
+        },
+        "name": "Nom",
+        "categoryLabel": "Catégorie",
+        "type": "Type",
+        "status": "Statut",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "contactTitle": "Contact",
+        "contactName": "Nom du contact",
+        "contactRole": "Fonction",
+        "contactPhone": "Téléphone",
+        "contactEmail": "Email",
+        "website": "Site web",
+        "address": "Adresse",
+        "notes": "Notes",
+        "contractReference": "Référence contrat",
+        "contractType": "Type de contrat",
+        "contractStartDate": "Date de début",
+        "contractEndDate": "Date de fin",
+        "contractStatus": {
+          "valid": "Valide",
+          "renew_soon": "À renouveler",
+          "expired": "Expiré",
+          "unknown": "Inconnu"
+        },
+        "noEquipment": "Aucun équipement/service renseigné.",
+        "dropZone": "Glisser-déposer des fichiers ou cliquer pour parcourir",
+        "noFiles": "Aucun document.",
+        "preview": "Aperçu",
+        "noHistory": "Aucun évènement enregistré.",
+        "category": {
+          "carburant": "Carburant",
+          "equipement": "Équipement",
+          "maintenance": "Maintenance",
+          "securite": "Sécurité",
+          "service": "Service",
+          "autre": "Autre"
+        }
+      },
+      "form": {
+        "editTitle": "Modifier le fournisseur",
+        "createTitle": "Ajouter un fournisseur",
+        "tabs": {
+          "general": "Informations générales",
+          "contract": "Contrat",
+          "equipment": "Services & Équipements"
+        },
+        "name": "Nom",
+        "nameRequired": "Le nom est requis.",
+        "type": "Type",
+        "typePlaceholder": "Ex. Distributeur, Grossiste…",
+        "categoryLabel": "Catégorie",
+        "selectCategory": "Sélectionner une catégorie",
+        "status": "Statut",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "contactName": "Nom du contact",
+        "contactRole": "Fonction",
+        "contactPhone": "Téléphone",
+        "contactEmail": "Email",
+        "website": "Site web",
+        "address": "Adresse",
+        "contractReference": "Référence contrat",
+        "contractType": "Type de contrat",
+        "contractTypePlaceholder": "Ex. Annuel, Cadre…",
+        "contractStartDate": "Date de début",
+        "contractEndDate": "Date de fin",
+        "notes": "Notes",
+        "equipmentHint": "Sélectionner les services/équipements couverts par ce fournisseur.",
+        "category": {
+          "carburant": "Carburant",
+          "equipement": "Équipement",
+          "maintenance": "Maintenance",
+          "securite": "Sécurité",
+          "service": "Service",
+          "autre": "Autre"
+        }
+      }
     }
   },
   "stationAdmin": {
@@ -1586,10 +1766,109 @@
       "tanksLink": "Cuves & stockage →"
     },
     "operations": {
-      "productsTitle": "Produits vendus",
-      "productsHint": "Association explicite station ↔ produit — jamais déduite d'une cuve existante.",
-      "noProducts": "Aucun produit carburant dans le référentiel réseau.",
-      "servicesTitle": "Services",
+      "pageTitle": "Exploitation",
+      "pageSubtitle": "Gérez le fonctionnement de la station : carburants, services et configuration commerciale.",
+      "tabs": {
+        "carburants": "Carburants",
+        "services": "Services",
+        "configuration": "Configuration commerciale",
+        "historique": "Historique"
+      },
+      "kpis": {
+        "productsAvailable": "Produits disponibles",
+        "activeLanes": "Pistes actives",
+        "totalStock": "Stock total (toutes cuves)",
+        "products": "Produits"
+      },
+      "searchPlaceholder": "Rechercher un produit…",
+      "filterStatus": "Statut",
+      "allStatuses": "Tous statuts",
+      "status": {
+        "normal": "Normal",
+        "attention": "Attention",
+        "critique": "Critique",
+        "inconnu": "Inconnu"
+      },
+      "addProduct": "Ajouter / Modifier",
+      "empty": "Aucun produit carburant pour cette station.",
+      "table": {
+        "product": "Produit",
+        "price": "Prix",
+        "stock": "Stock actuel",
+        "capacity": "Capacité max",
+        "minThreshold": "Seuil min",
+        "criticalThreshold": "Seuil critique",
+        "status": "Statut"
+      },
+      "servicesTitle": "Services de la station",
+      "newServicePlaceholder": "Nom du service",
+      "addService": "Ajouter un service",
+      "noServices": "Aucun service pour cette station.",
+      "available": "Disponible",
+      "unavailable": "Indisponible",
+      "noProductsForPolicy": "Ajoutez d'abord un produit dans l'onglet Carburants pour configurer sa politique commerciale.",
+      "policy": {
+        "product": "Produit",
+        "type": "Type de politique",
+        "typeFixed": "Prix fixe",
+        "typeVariable": "Variable",
+        "period": "Période d'application",
+        "periodAlways": "Toujours actif",
+        "periodRange": "Plage de dates",
+        "promotionsEnabled": "Activer les promotions",
+        "specialRulesTitle": "Règles spéciales",
+        "differentPriceByPeriod": "Prix différent selon la période",
+        "volumeDiscount": "Remise pour gros volumes",
+        "corporateRate": "Tarif entreprise / carte"
+      },
+      "noHistory": "Aucune action enregistrée.",
+      "history": {
+        "date": "Date",
+        "event": "Évènement"
+      },
+      "productModal": {
+        "tabs": {
+          "info": "Informations générales",
+          "stock": "Stock & seuils",
+          "price": "Prix & tarification",
+          "history": "Historique"
+        },
+        "active": "Actif",
+        "inactive": "Inactif",
+        "status": {
+          "normal": "Normal",
+          "attention": "Attention",
+          "critique": "Critique",
+          "inconnu": "Inconnu"
+        },
+        "name": "Nom du produit",
+        "code": "Code",
+        "unit": "Unité de mesure",
+        "litre": "Litre",
+        "status_label": "Statut",
+        "capacity": "Capacité maximale",
+        "currentStock": "Stock actuel",
+        "capacityHint": "Capacité et stock calculés depuis les cuves actives de ce produit — jamais saisis manuellement.",
+        "minThreshold": "Seuil minimum",
+        "criticalThreshold": "Seuil critique",
+        "safetyStock": "Stock de sécurité",
+        "currentPrice": "Prix courant",
+        "priceHistory": {
+          "date": "Date",
+          "amount": "Montant"
+        },
+        "noHistory": "Aucune action enregistrée pour ce produit."
+      },
+      "productForm": {
+        "title": "Ajouter un produit",
+        "required": "Sélectionner un produit du référentiel réseau.",
+        "product": "Produit",
+        "selectProduct": "Sélectionner un produit",
+        "capacityHint": "La capacité maximale sera calculée automatiquement depuis les cuves rattachées à ce produit.",
+        "minThreshold": "Seuil minimum",
+        "criticalThreshold": "Seuil critique",
+        "safetyStock": "Stock de sécurité"
+      },
       "hasShop": "Boutique",
       "shopName": "Nom de la boutique",
       "shopSurfaceM2": "Surface boutique (m²)",
@@ -1616,6 +1895,9 @@
       "sensitivity": { "normal": "Normal", "restreint": "Restreint" }
     },
     "personnel": {
+      "pageTitle": "Personnel",
+      "newButton": "Nouveau",
+      "cardTitle": "Membres affectés",
       "form": {
         "title": "Affecter un membre à cette station",
         "member": "Membre",
@@ -1626,7 +1908,55 @@
         "required": "Membre et rôle requis."
       },
       "empty": "Aucun membre affecté à cette station.",
-      "table": { "member": "Membre", "roles": "Rôle(s)", "unassign": "Retirer {role}" }
+      "table": { "member": "Membre", "roles": "Rôle(s)", "unassign": "Retirer {role}" },
+      "addModal": {
+        "title": "Ajouter un membre du personnel",
+        "successTitle": "Membre créé",
+        "required": "Prénom, nom et email sont requis.",
+        "passwordWarning": "Ce mot de passe temporaire ne sera plus affiché ensuite — communiquez-le dès maintenant.",
+        "successDescription": "{name} ({email}) a été créé avec succès.",
+        "submit": "Créer",
+        "photo": "Photo",
+        "importPhoto": "Importer une photo",
+        "personalInfoTitle": "Informations personnelles",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "email": "Email",
+        "phone": "Téléphone",
+        "jobInfoTitle": "Informations poste",
+        "role": "Rôle",
+        "selectRole": "Sélectionner un rôle",
+        "employeeNumber": "Matricule"
+      },
+      "detailModal": {
+        "title": "Fiche personnel",
+        "status": {
+          "active": "Actif",
+          "inactive": "Inactif"
+        },
+        "personalInfoTitle": "Informations personnelles",
+        "jobInfoTitle": "Informations poste",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "phone": "Téléphone",
+        "assignedAt": "Affecté le",
+        "role": "Rôle",
+        "employeeNumber": "Matricule",
+        "assignedStation": "Station affectée",
+        "contractType": "Type de contrat",
+        "accessTitle": "Accès & permissions",
+        "activityTitle": "Activité récente",
+        "noActivity": "Aucune activité récente.",
+        "deactivate": "Désactiver l'accès"
+      },
+      "domains": {
+        "exploitation": "Exploitation",
+        "stocks": "Stocks",
+        "maintenance": "Maintenance",
+        "documents": "Documents",
+        "reglementation": "Réglementation",
+        "personnel": "Personnel"
+      }
     },
     "security": {
       "form": {

@@ -423,6 +423,100 @@ export function updateStationFuelProduct(organizationId: string, associationId: 
   });
 }
 
+// ================================================================
+// Page Exploitation (Centre administratif de la station) — vue
+// d'ensemble carburants (seuils + stock agrégé + prix courant), catalogue
+// de services, politique commerciale par produit (mockup
+// emalioration/page de station.docx page Exploitation).
+// ================================================================
+
+export type StockStatus = "normal" | "attention" | "critique" | "inconnu";
+
+export interface StationFuelProductOverview {
+  id: string;
+  stationId: string;
+  fuelProductId: string;
+  fuelProductName: string;
+  fuelProductCode: string;
+  displayColor: string | null;
+  active: boolean;
+  minThresholdLiters: number | null;
+  criticalThresholdLiters: number | null;
+  safetyStockLiters: number | null;
+  capacityLiters: number;
+  currentVolumeLiters: number | null;
+  status: StockStatus;
+  currentPriceAmount: number | null;
+  currencyCode: string | null;
+  priceEffectiveFrom: string | null;
+}
+
+export function listStationFuelProductsOverview(organizationId: string, stationId: string): Promise<StationFuelProductOverview[]> {
+  return apiFetch<StationFuelProductOverview[]>(`/zylo-liquid/stations/${stationId}/fuel-products-overview`, withOrg(organizationId));
+}
+
+export interface UpdateStationFuelProductThresholdsInput {
+  minThresholdLiters?: number | null;
+  criticalThresholdLiters?: number | null;
+  safetyStockLiters?: number | null;
+}
+
+export function updateStationFuelProductThresholds(organizationId: string, associationId: string, data: UpdateStationFuelProductThresholdsInput): Promise<StationFuelProduct> {
+  return apiFetch<StationFuelProduct>(`/zylo-liquid/station-fuel-products/${associationId}/thresholds`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export interface StationService {
+  id: string;
+  stationId: string;
+  type: string;
+  label: string;
+  available: boolean;
+}
+
+export function listStationServices(organizationId: string, stationId: string): Promise<StationService[]> {
+  const search = new URLSearchParams({ stationId });
+  return apiFetch<StationService[]>(`/zylo-liquid/station-services?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createStationService(organizationId: string, data: { stationId: string; type: string; label: string; available?: boolean }): Promise<StationService> {
+  return apiFetch<StationService>("/zylo-liquid/station-services", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateStationService(organizationId: string, serviceId: string, data: { label?: string; available?: boolean }): Promise<StationService> {
+  return apiFetch<StationService>(`/zylo-liquid/station-services/${serviceId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+export interface PricingPolicy {
+  id: string;
+  stationId: string;
+  fuelProductId: string;
+  policyType: string;
+  applicationPeriod: string;
+  promotionsEnabled: boolean;
+  differentPriceByPeriod: boolean;
+  volumeDiscount: boolean;
+  corporateRate: boolean;
+}
+
+export function getPricingPolicy(organizationId: string, stationId: string, fuelProductId: string): Promise<PricingPolicy | null> {
+  const search = new URLSearchParams({ stationId, fuelProductId });
+  return apiFetch<PricingPolicy | null>(`/zylo-liquid/station-product-pricing-policy?${search.toString()}`, withOrg(organizationId));
+}
+
+export function updatePricingPolicy(
+  organizationId: string,
+  stationId: string,
+  fuelProductId: string,
+  data: Partial<Omit<PricingPolicy, "id" | "stationId" | "fuelProductId">>
+): Promise<PricingPolicy> {
+  const search = new URLSearchParams({ stationId, fuelProductId });
+  return apiFetch<PricingPolicy>(`/zylo-liquid/station-product-pricing-policy?${search.toString()}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
 export function getNetworkSummary(organizationId: string): Promise<NetworkSummary> {
   return apiFetch<NetworkSummary>("/zylo-liquid/network/summary", withOrg(organizationId));
 }
@@ -1238,6 +1332,10 @@ export interface RegulatoryDocument {
   sourceReference: string | null;
   certaintyLevel: RegulatoryCertaintyLevel;
   supersededByDocumentId: string | null;
+  notes: string | null;
+  responsibleUserId: string | null;
+  responsibleUserName: string | null;
+  responsibleUserEmail: string | null;
   computedStatus: RegulatoryDocumentStatus;
 }
 
@@ -1249,6 +1347,19 @@ export interface CreateRegulatoryDocumentInput {
   expiresAt?: string;
   sourceReference?: string;
   certaintyLevel?: RegulatoryCertaintyLevel;
+  notes?: string;
+  responsibleUserId?: string;
+}
+
+export interface UpdateRegulatoryDocumentInput {
+  authority?: string;
+  sourceReference?: string;
+  notes?: string;
+  responsibleUserId?: string | null;
+}
+
+export function updateRegulatoryDocument(organizationId: string, documentId: string, data: UpdateRegulatoryDocumentInput): Promise<RegulatoryDocument> {
+  return apiFetch<RegulatoryDocument>(`/zylo-liquid/regulatory-documents/${documentId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
 }
 
 export function listRegulatoryDocuments(organizationId: string, params: { stationId?: string; needsActionOnly?: boolean; limit?: number } = {}): Promise<Page<RegulatoryDocument>> {
@@ -1303,12 +1414,33 @@ export function createRegulatoryDeclaration(organizationId: string, data: Create
 // backend « Approvisionnement » (mission précédente) existait).
 // ================================================================
 
+export type SupplierCategory = "carburant" | "equipement" | "maintenance" | "securite" | "service" | "autre";
+
 export interface Supplier {
   id: string;
   organizationId: string;
   name: string;
   type: string | null;
+  category: SupplierCategory | null;
+  contactName: string | null;
+  contactRole: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  website: string | null;
+  address: string | null;
   active: boolean;
+}
+
+export interface CreateSupplierInput {
+  name: string;
+  type?: string;
+  category?: SupplierCategory;
+  contactName?: string;
+  contactRole?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  address?: string;
 }
 
 export function listSuppliers(organizationId: string, params: { limit?: number } = {}): Promise<Page<Supplier>> {
@@ -1317,8 +1449,12 @@ export function listSuppliers(organizationId: string, params: { limit?: number }
   return apiFetch<Page<Supplier>>(`/zylo-liquid/suppliers?${search.toString()}`, withOrg(organizationId));
 }
 
-export function createSupplier(organizationId: string, data: { name: string; type?: string }): Promise<Supplier> {
+export function createSupplier(organizationId: string, data: CreateSupplierInput): Promise<Supplier> {
   return apiFetch<Supplier>("/zylo-liquid/suppliers", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateSupplier(organizationId: string, supplierId: string, data: Partial<CreateSupplierInput> & { active?: boolean }): Promise<Supplier> {
+  return apiFetch<Supplier>(`/zylo-liquid/suppliers/${supplierId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
 }
 
 export type SecurityEquipmentCategory = "extincteur" | "systeme_incendie" | "arret_urgence" | "point_evacuation" | "zone_atex" | "autre";
@@ -1360,13 +1496,34 @@ export function updateSecurityEquipment(organizationId: string, securityEquipmen
   return apiFetch<SecurityEquipment>(`/zylo-liquid/security-equipment/${securityEquipmentId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
 }
 
+export type SupplierContractStatus = "valid" | "renew_soon" | "expired" | "unknown";
+
 export interface StationSupplier {
   id: string;
   stationId: string;
   supplierId: string;
   active: boolean;
   notes: string | null;
+  contractReference: string | null;
+  contractType: string | null;
+  contractStartDate: string | null;
+  contractEndDate: string | null;
+  equipmentTags: string | null;
+  contractStatus: SupplierContractStatus;
 }
+
+export interface CreateStationSupplierInput {
+  stationId: string;
+  supplierId: string;
+  notes?: string;
+  contractReference?: string;
+  contractType?: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
+  equipmentTags?: string;
+}
+
+export type UpdateStationSupplierInput = Partial<Omit<CreateStationSupplierInput, "stationId" | "supplierId">> & { active?: boolean };
 
 export function listStationSuppliers(organizationId: string, params: { stationId?: string; limit?: number } = {}): Promise<Page<StationSupplier>> {
   const search = new URLSearchParams();
@@ -1375,11 +1532,11 @@ export function listStationSuppliers(organizationId: string, params: { stationId
   return apiFetch<Page<StationSupplier>>(`/zylo-liquid/station-suppliers?${search.toString()}`, withOrg(organizationId));
 }
 
-export function createStationSupplier(organizationId: string, data: { stationId: string; supplierId: string; notes?: string }): Promise<StationSupplier> {
+export function createStationSupplier(organizationId: string, data: CreateStationSupplierInput): Promise<StationSupplier> {
   return apiFetch<StationSupplier>("/zylo-liquid/station-suppliers", { method: "POST", organizationId, body: JSON.stringify(data) });
 }
 
-export function updateStationSupplier(organizationId: string, stationSupplierId: string, data: { active?: boolean; notes?: string }): Promise<StationSupplier> {
+export function updateStationSupplier(organizationId: string, stationSupplierId: string, data: UpdateStationSupplierInput): Promise<StationSupplier> {
   return apiFetch<StationSupplier>(`/zylo-liquid/station-suppliers/${stationSupplierId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
 }
 
@@ -1419,6 +1576,16 @@ export function listDocumentsByEntity(organizationId: string, linkedEntityType: 
   return apiFetch<ZyloDocument[]>(`/zylo-liquid/documents/by-entity?${search.toString()}`, withOrg(organizationId));
 }
 
+/** Un seul appel réseau pour le nombre de pièces jointes de PLUSIEURS
+ * entités (table Réglementation/Fournisseurs) — remplace un
+ * `listDocumentsByEntity` par ligne, cause directe de lenteur constatée
+ * sur une base distante (audit performance). */
+export function countDocumentsByEntity(organizationId: string, linkedEntityType: string, linkedEntityIds: string[]): Promise<Record<string, number>> {
+  if (linkedEntityIds.length === 0) return Promise.resolve({});
+  const search = new URLSearchParams({ linkedEntityType, linkedEntityIds: linkedEntityIds.join(",") });
+  return apiFetch<{ counts: Record<string, number> }>(`/zylo-liquid/documents/counts-by-entity?${search.toString()}`, withOrg(organizationId)).then((r) => r.counts);
+}
+
 export function createDocument(
   organizationId: string,
   data: { storageReference: string; fileName: string; mimeType?: string; linkedEntityType?: string; linkedEntityId?: string; sensitivityLevel?: "normal" | "restreint" }
@@ -1432,4 +1599,70 @@ export function deleteDocument(organizationId: string, documentId: string): Prom
 
 export function getDocumentDownloadUrl(organizationId: string, documentId: string): Promise<{ url: string }> {
   return apiFetch<{ url: string }>(`/zylo-liquid/documents/${documentId}/download-url`, withOrg(organizationId));
+}
+
+// ================================================================
+// Module Personnel — création de compte + profil de poste pour un membre du
+// personnel d'une station (mockup emalioration/personnel/). Le rôle
+// lui-même reste géré par le RBAC existant (@/core/api/rbac), jamais
+// dupliqué ici.
+// ================================================================
+
+export interface StationStaff {
+  id: string;
+  userId: string;
+  organizationId: string;
+  email: string;
+  fullName: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  status: string;
+  employeeNumber: string | null;
+  contractType: string | null;
+  assignedStationId: string | null;
+  directManagerUserId: string | null;
+  assignedAt: string;
+}
+
+export interface CreateStationStaffInput {
+  stationId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  photoStorageReference?: string;
+  roleId?: string;
+  employeeNumber?: string;
+  contractType?: string;
+  directManagerUserId?: string;
+}
+
+export interface CreateStationStaffResult {
+  staff: StationStaff;
+  /** N'apparaît que dans cette réponse, une seule fois — jamais rejoué par
+   * aucun autre appel. À afficher au gérant puis oublier côté client. */
+  temporaryPassword: string;
+}
+
+export function createStationStaff(organizationId: string, data: CreateStationStaffInput): Promise<CreateStationStaffResult> {
+  return apiFetch<CreateStationStaffResult>("/zylo-liquid/station-staff", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateStationStaff(
+  organizationId: string,
+  userId: string,
+  data: Partial<Omit<CreateStationStaffInput, "stationId" | "email" | "roleId">> & { assignedStationId?: string }
+): Promise<StationStaff> {
+  return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+export function deactivateStationStaff(organizationId: string, userId: string): Promise<StationStaff> {
+  return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}/deactivate`, { method: "POST", organizationId });
+}
+
+export function listStationStaff(organizationId: string, stationId: string): Promise<StationStaff[]> {
+  const search = new URLSearchParams({ stationId });
+  return apiFetch<StationStaff[]>(`/zylo-liquid/station-staff?${search.toString()}`, withOrg(organizationId));
 }
