@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { ApiError } from "@/core/api/client";
@@ -11,11 +11,19 @@ import { Alert, Button, Card, FormField, Input } from "@/shared/ui";
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations("auth.login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Redirection après perte de session (`AuthContext`, évènement
+  // `auth:session-expired`) — l'utilisateur retrouve la page qu'il
+  // consultait plutôt que de repartir de l'accueil, avec un message
+  // explicite plutôt qu'un silence qui laisserait croire à un bug aléatoire.
+  const sessionExpired = searchParams.get("sessionExpired") === "1";
+  const nextPath = searchParams.get("next");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +31,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push("/");
+      router.push(nextPath && nextPath.startsWith("/") ? nextPath : "/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("genericError"));
     } finally {
@@ -36,6 +44,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm" variant="default">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <h1 className="text-h4 font-semibold text-text">{t("title")}</h1>
+          {sessionExpired && !error && <Alert tone="warning">{t("sessionExpired")}</Alert>}
           {error && <Alert tone="error">{error}</Alert>}
           <FormField label={t("email")}>
             {(fieldProps) => (

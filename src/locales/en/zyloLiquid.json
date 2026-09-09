@@ -1430,6 +1430,7 @@
       "pumps": "Pumps",
       "staff": "Staff",
       "compliance": "Compliance",
+      "regulation": "Regulation",
       "atg": "ATG",
       "administration": "Administration"
     },
@@ -1566,6 +1567,185 @@
         "operationalStatus": "Status"
       },
       "weekdayShort": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" }
+    },
+    "regulationTab": {
+      "tableTitle": "Regulatory declarations table",
+      "newDeclaration": "New declaration",
+      "empty": "No regulatory declaration for this station.",
+      "table": {
+        "type": "Type",
+        "authority": "Authority",
+        "issuedAt": "Issue date",
+        "expiresAt": "Expiry date",
+        "status": "Status",
+        "files": "Attachments"
+      },
+      "status": {
+        "valid": "Valid",
+        "renew_soon": "Renew soon",
+        "expired": "Expired",
+        "unknown": "Unknown deadline"
+      },
+      "certainty": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "form": {
+        "title": "New regulatory declaration",
+        "type": "Document type",
+        "typePlaceholder": "E.g. Operating license, Compliance certificate…",
+        "typeRequired": "Document type is required.",
+        "authority": "Issuing authority",
+        "issuedAt": "Issue date",
+        "expiresAt": "Expiry date",
+        "certaintyLevel": "Certainty level",
+        "notes": "Notes",
+        "attachments": "Attachments",
+        "dropZone": "Drag and drop files or click to browse",
+        "submit": "Create declaration"
+      },
+      "declarationsTitle": "Regulatory declarations",
+      "declarationsNote": "Regulatory declarations to produce or already produced for this station.",
+      "declarationsTable": {
+        "type": "Type",
+        "authority": "Authority",
+        "status": "Status"
+      },
+      "declarationStatus": {
+        "to_produce": "To produce",
+        "produced": "Produced"
+      },
+      "modal": {
+        "title": "Declaration detail",
+        "editButton": "Edit",
+        "addFileButton": "Add a file",
+        "infoTitle": "Information",
+        "type": "Type",
+        "authority": "Authority",
+        "issuedAt": "Issue date",
+        "expiresAt": "Expiry date",
+        "certainty": "Certainty level",
+        "responsible": "Responsible",
+        "noResponsible": "No responsible assigned",
+        "sourceReference": "Source reference",
+        "notes": "Notes",
+        "newExpiresAt": "New expiry date",
+        "confirmRenew": "Confirm renewal",
+        "renewButton": "Renew",
+        "filesTitle": "Attachments ({count})",
+        "dropZone": "Drag and drop files or click to browse",
+        "noFiles": "No files.",
+        "groupImages": "Images ({count})",
+        "groupPdf": "PDF ({count})",
+        "groupDocx": "Word documents ({count})",
+        "groupOther": "Other ({count})",
+        "preview": "Preview"
+      }
+    },
+    "suppliersTab": {
+      "searchPlaceholder": "Search a supplier…",
+      "filterCategory": "Category",
+      "allCategories": "All categories",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "addButton": "Add a supplier",
+      "empty": "No supplier linked to this station.",
+      "table": {
+        "name": "Supplier",
+        "category": "Category",
+        "contact": "Contact",
+        "status": "Status",
+        "contract": "Contract",
+        "files": "Documents"
+      },
+      "modal": {
+        "subtitle": "Supplier sheet",
+        "editButton": "Edit",
+        "tabs": {
+          "info": "Information",
+          "contract": "Contract",
+          "equipment": "Services & Equipment",
+          "documents": "Documents ({count})",
+          "history": "History"
+        },
+        "name": "Name",
+        "categoryLabel": "Category",
+        "type": "Type",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "contactTitle": "Contact",
+        "contactName": "Contact name",
+        "contactRole": "Role",
+        "contactPhone": "Phone",
+        "contactEmail": "Email",
+        "website": "Website",
+        "address": "Address",
+        "notes": "Notes",
+        "contractReference": "Contract reference",
+        "contractType": "Contract type",
+        "contractStartDate": "Start date",
+        "contractEndDate": "End date",
+        "contractStatus": {
+          "valid": "Valid",
+          "renew_soon": "Renew soon",
+          "expired": "Expired",
+          "unknown": "Unknown"
+        },
+        "noEquipment": "No equipment/service listed.",
+        "dropZone": "Drag and drop files or click to browse",
+        "noFiles": "No documents.",
+        "preview": "Preview",
+        "noHistory": "No recorded event.",
+        "category": {
+          "carburant": "Fuel",
+          "equipement": "Equipment",
+          "maintenance": "Maintenance",
+          "securite": "Security",
+          "service": "Service",
+          "autre": "Other"
+        }
+      },
+      "form": {
+        "editTitle": "Edit supplier",
+        "createTitle": "Add a supplier",
+        "tabs": {
+          "general": "General information",
+          "contract": "Contract",
+          "equipment": "Services & Equipment"
+        },
+        "name": "Name",
+        "nameRequired": "Name is required.",
+        "type": "Type",
+        "typePlaceholder": "E.g. Distributor, Wholesaler…",
+        "categoryLabel": "Category",
+        "selectCategory": "Select a category",
+        "status": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "contactName": "Contact name",
+        "contactRole": "Role",
+        "contactPhone": "Phone",
+        "contactEmail": "Email",
+        "website": "Website",
+        "address": "Address",
+        "contractReference": "Contract reference",
+        "contractType": "Contract type",
+        "contractTypePlaceholder": "E.g. Annual, Framework…",
+        "contractStartDate": "Start date",
+        "contractEndDate": "End date",
+        "notes": "Notes",
+        "equipmentHint": "Select the services/equipment covered by this supplier.",
+        "category": {
+          "carburant": "Fuel",
+          "equipement": "Equipment",
+          "maintenance": "Maintenance",
+          "securite": "Security",
+          "service": "Service",
+          "autre": "Other"
+        }
+      }
     }
   },
   "stationAdmin": {
@@ -1586,10 +1766,109 @@
       "tanksLink": "Tanks & storage →"
     },
     "operations": {
-      "productsTitle": "Products sold",
-      "productsHint": "Explicit station ↔ product association — never inferred from an existing tank.",
-      "noProducts": "No fuel product in the network catalog.",
-      "servicesTitle": "Services",
+      "pageTitle": "Operations",
+      "pageSubtitle": "Manage the station's operations: fuels, services and commercial configuration.",
+      "tabs": {
+        "carburants": "Fuels",
+        "services": "Services",
+        "configuration": "Commercial configuration",
+        "historique": "History"
+      },
+      "kpis": {
+        "productsAvailable": "Available products",
+        "activeLanes": "Active lanes",
+        "totalStock": "Total stock (all tanks)",
+        "products": "Products"
+      },
+      "searchPlaceholder": "Search a product…",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "status": {
+        "normal": "Normal",
+        "attention": "Attention",
+        "critique": "Critical",
+        "inconnu": "Unknown"
+      },
+      "addProduct": "Add / Edit",
+      "empty": "No fuel product for this station.",
+      "table": {
+        "product": "Product",
+        "price": "Price",
+        "stock": "Current stock",
+        "capacity": "Max capacity",
+        "minThreshold": "Min threshold",
+        "criticalThreshold": "Critical threshold",
+        "status": "Status"
+      },
+      "servicesTitle": "Station services",
+      "newServicePlaceholder": "Service name",
+      "addService": "Add a service",
+      "noServices": "No service for this station.",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "noProductsForPolicy": "Add a product in the Fuels tab first to configure its commercial policy.",
+      "policy": {
+        "product": "Product",
+        "type": "Policy type",
+        "typeFixed": "Fixed price",
+        "typeVariable": "Variable",
+        "period": "Application period",
+        "periodAlways": "Always active",
+        "periodRange": "Date range",
+        "promotionsEnabled": "Enable promotions",
+        "specialRulesTitle": "Special rules",
+        "differentPriceByPeriod": "Different price by period",
+        "volumeDiscount": "Volume discount",
+        "corporateRate": "Corporate / card rate"
+      },
+      "noHistory": "No recorded action.",
+      "history": {
+        "date": "Date",
+        "event": "Event"
+      },
+      "productModal": {
+        "tabs": {
+          "info": "General information",
+          "stock": "Stock & thresholds",
+          "price": "Price & pricing",
+          "history": "History"
+        },
+        "active": "Active",
+        "inactive": "Inactive",
+        "status": {
+          "normal": "Normal",
+          "attention": "Attention",
+          "critique": "Critical",
+          "inconnu": "Unknown"
+        },
+        "name": "Product name",
+        "code": "Code",
+        "unit": "Unit",
+        "litre": "Liter",
+        "status_label": "Status",
+        "capacity": "Maximum capacity",
+        "currentStock": "Current stock",
+        "capacityHint": "Capacity and stock are computed from this product's active tanks — never entered manually.",
+        "minThreshold": "Minimum threshold",
+        "criticalThreshold": "Critical threshold",
+        "safetyStock": "Safety stock",
+        "currentPrice": "Current price",
+        "priceHistory": {
+          "date": "Date",
+          "amount": "Amount"
+        },
+        "noHistory": "No recorded action for this product."
+      },
+      "productForm": {
+        "title": "Add a product",
+        "required": "Select a product from the network catalog.",
+        "product": "Product",
+        "selectProduct": "Select a product",
+        "capacityHint": "The maximum capacity will be computed automatically from the tanks linked to this product.",
+        "minThreshold": "Minimum threshold",
+        "criticalThreshold": "Critical threshold",
+        "safetyStock": "Safety stock"
+      },
       "hasShop": "Shop",
       "shopName": "Shop name",
       "shopSurfaceM2": "Shop surface (m²)",
@@ -1616,6 +1895,9 @@
       "sensitivity": { "normal": "Normal", "restreint": "Restricted" }
     },
     "personnel": {
+      "pageTitle": "Staff",
+      "newButton": "New",
+      "cardTitle": "Assigned members",
       "form": {
         "title": "Assign a member to this station",
         "member": "Member",
@@ -1626,7 +1908,55 @@
         "required": "Member and role required."
       },
       "empty": "No member assigned to this station.",
-      "table": { "member": "Member", "roles": "Role(s)", "unassign": "Remove {role}" }
+      "table": { "member": "Member", "roles": "Role(s)", "unassign": "Remove {role}" },
+      "addModal": {
+        "title": "Add a staff member",
+        "successTitle": "Member created",
+        "required": "First name, last name and email are required.",
+        "passwordWarning": "This temporary password will not be shown again — share it now.",
+        "successDescription": "{name} ({email}) was created successfully.",
+        "submit": "Create",
+        "photo": "Photo",
+        "importPhoto": "Import a photo",
+        "personalInfoTitle": "Personal information",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "jobInfoTitle": "Job information",
+        "role": "Role",
+        "selectRole": "Select a role",
+        "employeeNumber": "Employee number"
+      },
+      "detailModal": {
+        "title": "Staff member sheet",
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "personalInfoTitle": "Personal information",
+        "jobInfoTitle": "Job information",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "phone": "Phone",
+        "assignedAt": "Assigned on",
+        "role": "Role",
+        "employeeNumber": "Employee number",
+        "assignedStation": "Assigned station",
+        "contractType": "Contract type",
+        "accessTitle": "Access & permissions",
+        "activityTitle": "Recent activity",
+        "noActivity": "No recent activity.",
+        "deactivate": "Deactivate access"
+      },
+      "domains": {
+        "exploitation": "Operations",
+        "stocks": "Stocks",
+        "maintenance": "Maintenance",
+        "documents": "Documents",
+        "reglementation": "Regulation",
+        "personnel": "Staff"
+      }
     },
     "security": {
       "form": {

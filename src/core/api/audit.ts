@@ -16,12 +16,13 @@ export interface AuditLogEntry {
 
 export function listAuditLogs(
   organizationId: string,
-  params: { actionPrefix?: string; scopeResourceType?: string; scopeResourceId?: string; limit?: number; offset?: number } = {}
+  params: { actionPrefix?: string; scopeResourceType?: string; scopeResourceId?: string; actorUserId?: string; limit?: number; offset?: number } = {}
 ): Promise<Page<AuditLogEntry>> {
   const search = new URLSearchParams();
   if (params.actionPrefix) search.set("actionPrefix", params.actionPrefix);
   if (params.scopeResourceType) search.set("scopeResourceType", params.scopeResourceType);
   if (params.scopeResourceId) search.set("scopeResourceId", params.scopeResourceId);
+  if (params.actorUserId) search.set("actorUserId", params.actorUserId);
   search.set("limit", String(params.limit ?? 20));
   search.set("offset", String(params.offset ?? 0));
   return apiFetch<Page<AuditLogEntry>>(`/audit/organizations/${organizationId}?${search.toString()}`, { organizationId });

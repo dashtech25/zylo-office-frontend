@@ -19,8 +19,8 @@ import { AddTankModal } from "./AddTankModal";
 import { CalibrationModal } from "@/modules/zylo-liquid/components/CalibrationModal";
 import { StationAdminCenter } from "../station-admin/StationAdminCenter";
 import { AtgTab } from "./AtgTab";
-import { ComplianceTab } from "./ComplianceTab";
 import { PumpsTab } from "./PumpsTab";
+import { RegulationTab } from "./RegulationTab";
 import { StaffTab } from "./StaffTab";
 import { StackedBarChart, type StackedBarSeries } from "@/modules/zylo-liquid/components/StackedBarChart";
 import { ModeSwitcher, TankLegend } from "@/modules/zylo-liquid/components/TankVisual";
@@ -665,7 +665,7 @@ export default function StationDetailScreen() {
           ) },
           { value: "pompes", label: t("tabs.pumps"), content: currentOrganization ? <PumpsTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "personnel", label: t("tabs.staff"), content: currentOrganization ? <StaffTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
-          { value: "conformite", label: t("tabs.compliance"), content: currentOrganization ? <ComplianceTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
+          { value: "reglementation", label: t("tabs.regulation"), content: currentOrganization ? <RegulationTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "atg", label: t("tabs.atg"), content: currentOrganization ? <AtgTab organizationId={currentOrganization.id} tanks={activeTanks} /> : null },
         ]}
       />

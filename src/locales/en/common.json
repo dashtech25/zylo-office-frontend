@@ -11,7 +11,9 @@
     "delete": "Delete",
     "edit": "Edit",
     "open": "Open",
-    "back": "Back"
+    "back": "Back",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "states": {
     "loading": "Loading…",
