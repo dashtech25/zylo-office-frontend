@@ -4,30 +4,45 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 
-import type { CashMode, CurrencyCashBlock, StationCashSummary } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import type { CashMode, StationCashSummary } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { Badge, Button, Modal } from "@/shared/ui";
 
 import { CashConfidenceBadge } from "./CashConfidenceBadge";
+import { CashReasonNote } from "./CashReasonNote";
 import { StationCashModal } from "./StationCashModal";
 
 type SortKey = "station" | "volume" | "value";
 
-/** Répartition réseau -> station pour une devise (page_caisse.md §17) —
- * clic sur une station pour descendre au niveau produit/cuve
- * (StationCashModal). S'inspire du principe d'exploration de
- * ProductBreakdownModal (tableau groupé, ligne total), adapté à la caisse
- * plutôt qu'au stock. Tri par en-tête + badges meilleure/plus faible
- * contribution (page_caisse.md §L, classement des stations) : le
- * classement reste calculé sur la valeur réelle, indépendamment du tri
- * affiché, pour ne jamais perdre le repère si l'utilisateur trie par nom. */
+/** Répartition réseau -> station (page_caisse.md §17) — clic sur une
+ * station pour descendre au niveau produit/cuve (StationCashModal).
+ * S'inspire du principe d'exploration de ProductBreakdownModal (tableau
+ * groupé, ligne total), adapté à la caisse plutôt qu'au stock. Tri par
+ * en-tête + badges meilleure/plus faible contribution (page_caisse.md §L,
+ * classement des stations) : le classement reste calculé sur la valeur
+ * réelle, indépendamment du tri affiché, pour ne jamais perdre le repère si
+ * l'utilisateur trie par nom.
+ *
+ * `block` reste structurel (pas juste `CurrencyCashBlock`) pour être
+ * réutilisé tel quel par un `NetworkProductCashLine` (drill-down au clic
+ * sur une carte produit de CashSummaryCards) — jamais une deuxième modale
+ * dupliquée pour ce même besoin d'exploration réseau -> station. */
+interface CashDrilldownBlock {
+  currencyCode: string | null;
+  monetaryValue: number | null;
+  monetaryValueNotCalculableReason?: string | null;
+  volumeSoldLiters: number;
+  stations: StationCashSummary[];
+}
+
 export function NetworkCashModal({
   open,
   onOpenChange,
   organizationId,
   block,
+  title,
   fromDate,
   toDate,
   mode = "calendar",
@@ -35,7 +50,11 @@ export function NetworkCashModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  block: CurrencyCashBlock | null;
+  block: CashDrilldownBlock | null;
+  /** Titre déjà résolu par l'appelant (devise seule pour le total réseau,
+   * produit + devise pour le drill-down d'une carte produit) — cette modale
+   * reste agnostique de ce qu'elle représente. */
+  title: string;
   fromDate: string;
   toDate: string;
   mode?: CashMode;
@@ -83,9 +102,9 @@ export function NetworkCashModal({
 
   function handleExport() {
     if (!block) return;
-    downloadCsv(`caisse-${block.currencyCode}.csv`, [
+    downloadCsv(`caisse-${block.currencyCode ?? "produit"}.csv`, [
       ["station", "volumeSoldLiters", "monetaryValue", "currency", "confidence"],
-      ...sortedStations.map((s) => [s.stationName, String(s.volumeSoldLiters), s.monetaryValue !== null ? String(s.monetaryValue) : "", block.currencyCode, s.confidence]),
+      ...sortedStations.map((s) => [s.stationName, String(s.volumeSoldLiters), s.monetaryValue !== null ? String(s.monetaryValue) : "", block.currencyCode ?? "", s.confidence]),
     ]);
   }
 
@@ -94,7 +113,7 @@ export function NetworkCashModal({
       <Modal
         open={open}
         onOpenChange={onOpenChange}
-        title={block ? t("title", { currency: block.currencyCode }) : ""}
+        title={title}
         closeLabel={tCommon("actions.close")}
         size="xl"
         footer={
@@ -154,7 +173,7 @@ export function NetworkCashModal({
                         : "—"}
                     </td>
                     <td className="py-2 text-right tabular-nums text-text-muted">
-                      {station.monetaryValue !== null && block.monetaryValue > 0
+                      {station.monetaryValue !== null && block.monetaryValue !== null && block.monetaryValue > 0
                         ? `${((station.monetaryValue / block.monetaryValue) * 100).toFixed(1)}%`
                         : "—"}
                     </td>
@@ -167,7 +186,11 @@ export function NetworkCashModal({
                   <td className="rounded-l-button py-3">{t("total")}</td>
                   <td className="py-3 text-right tabular-nums">{formatLiters(block.volumeSoldLiters)} L</td>
                   <td className="rounded-r-button py-3 text-right tabular-nums" colSpan={3}>
-                    {formatMoney(format, block.monetaryValue, block.currencyCode)}
+                    {block.monetaryValue !== null && block.currencyCode ? (
+                      formatMoney(format, block.monetaryValue, block.currencyCode)
+                    ) : (
+                      <CashReasonNote reason={block.monetaryValueNotCalculableReason ?? null} />
+                    )}
                   </td>
                 </tr>
               </tbody>
