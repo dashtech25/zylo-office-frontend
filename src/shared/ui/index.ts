@@ -17,6 +17,7 @@ export * from "./Modal";
 export * from "./PageHeader";
 export * from "./Pagination";
 export * from "./ProgressBar";
+export * from "./SearchableSelect";
 export * from "./Select";
 export * from "./Skeleton";
 export * from "./Spinner";

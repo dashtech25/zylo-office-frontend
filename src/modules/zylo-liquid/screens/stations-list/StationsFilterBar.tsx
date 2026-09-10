@@ -3,115 +3,118 @@
 import { Search } from "lucide-react";
 
 import type { City, FuelProduct } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, Input, Select } from "@/shared/ui";
+import { Badge, type BadgeProps, Input, Select } from "@/shared/ui";
 
-export type StationsStatusFilter = "all" | "online" | "offline" | "alert" | "critical";
-export type StationsSortBy = "criticality" | "name" | "lowestLevel" | "highestValue" | "oldestSync";
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterBadge {
+  key: string;
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+  tone?: BadgeProps["tone"];
+}
 
 interface StationsFilterBarProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: (key: string, values?: Record<string, any>) => string;
-  statusFilter: StationsStatusFilter;
-  onStatusFilterChange: (value: StationsStatusFilter) => void;
-  badgeActive: boolean;
-  onBadgeActiveToggle: () => void;
-  activeCount: number;
-  badgeOffline: boolean;
-  onBadgeOfflineToggle: () => void;
-  offlineCount: number;
-  badgeAlerts: boolean;
-  onBadgeAlertsToggle: () => void;
-  activeAlertsCount: number;
+  /** Rangée de badges toggle au-dessus des filtres (ex. "X actives") —
+   * omise si non fournie, un contexte comme la Caisse n'a pas forcément de
+   * badges d'état de cuve pertinents. */
+  badges?: FilterBadge[];
+  statusLabel: string;
+  statusValue: string;
+  onStatusChange: (value: string) => void;
+  statusOptions: FilterOption[];
+  cityLabel: string;
+  cityAllLabel: string;
   cityFilter: string;
   onCityFilterChange: (value: string) => void;
   cities: City[];
+  productLabel: string;
+  productAllLabel: string;
   productFilter: string;
   onProductFilterChange: (value: string) => void;
   fuelProducts: FuelProduct[];
-  sortBy: StationsSortBy;
-  onSortByChange: (value: StationsSortBy) => void;
+  sortLabel: string;
+  sortValue: string;
+  onSortChange: (value: string) => void;
+  sortOptions: FilterOption[];
+  searchPlaceholder: string;
   search: string;
   onSearchChange: (value: string) => void;
 }
 
-/** Barre de badges + filtres + recherche de la page Stations, factorisée pour
- * être utilisée à l'identique (même état, même comportement) sur la page et
- * dans le modal "Carte du réseau" — jamais deux implémentations divergentes
- * du même filtrage. */
+/** Barre de badges + filtres + recherche, factorisée pour être réutilisée à
+ * l'identique (même comportement, jamais deux implémentations divergentes)
+ * partout où une liste de stations doit être filtrée — page Stations, son
+ * modal carte, et la page Caisse (ventes du jour par station). Entièrement
+ * agnostique de l'i18n et du vocabulaire d'un filtre donné : tous les
+ * libellés/options sont résolus par l'appelant (ex. "statut" veut dire
+ * "état de la cuve" sur Stations mais "confiance du calcul" sur Caisse). */
 export function StationsFilterBar({
-  t,
-  statusFilter,
-  onStatusFilterChange,
-  badgeActive,
-  onBadgeActiveToggle,
-  activeCount,
-  badgeOffline,
-  onBadgeOfflineToggle,
-  offlineCount,
-  badgeAlerts,
-  onBadgeAlertsToggle,
-  activeAlertsCount,
+  badges,
+  statusLabel,
+  statusValue,
+  onStatusChange,
+  statusOptions,
+  cityLabel,
+  cityAllLabel,
   cityFilter,
   onCityFilterChange,
   cities,
+  productLabel,
+  productAllLabel,
   productFilter,
   onProductFilterChange,
   fuelProducts,
-  sortBy,
-  onSortByChange,
+  sortLabel,
+  sortValue,
+  onSortChange,
+  sortOptions,
+  searchPlaceholder,
   search,
   onSearchChange,
 }: StationsFilterBarProps) {
   return (
     <>
-      <div className="mb-3 flex flex-wrap gap-2">
-        <Badge tone={badgeActive ? "success" : "neutral"} dot className="cursor-pointer" onClick={onBadgeActiveToggle}>
-          {t("list.badges.active", { count: activeCount })}
-        </Badge>
-        <Badge tone={badgeOffline ? "neutral" : "neutral"} dot className="cursor-pointer border border-border" onClick={onBadgeOfflineToggle}>
-          {t("list.badges.offline", { count: offlineCount })}
-        </Badge>
-        <Badge tone={badgeAlerts ? "warning" : "neutral"} dot className="cursor-pointer" onClick={onBadgeAlertsToggle}>
-          {t("list.badges.alerts", { count: activeAlertsCount })}
-        </Badge>
-      </div>
+      {badges && badges.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <Badge key={badge.key} tone={badge.active ? (badge.tone ?? "neutral") : "neutral"} dot className="cursor-pointer" onClick={badge.onToggle}>
+              {badge.label}
+            </Badge>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap gap-3">
         <div className="w-full sm:w-44">
-          <Select
-            aria-label={t("list.filters.status")}
-            value={statusFilter}
-            onValueChange={(v) => onStatusFilterChange(v as StationsStatusFilter)}
-            options={(["all", "online", "offline", "alert", "critical"] as StationsStatusFilter[]).map((v) => ({ value: v, label: t(`list.filters.statusOptions.${v}`) }))}
-          />
+          <Select aria-label={statusLabel} value={statusValue} onValueChange={onStatusChange} options={statusOptions} />
         </div>
         <div className="w-full sm:w-44">
           <Select
-            aria-label={t("list.filters.city")}
+            aria-label={cityLabel}
             value={cityFilter || undefined}
             onValueChange={(v) => onCityFilterChange(v === "__all__" ? "" : v)}
-            placeholder={t("list.filters.cityAll")}
-            options={[{ value: "__all__", label: t("list.filters.cityAll") }, ...cities.map((c) => ({ value: c.id, label: c.name }))]}
+            placeholder={cityAllLabel}
+            options={[{ value: "__all__", label: cityAllLabel }, ...cities.map((c) => ({ value: c.id, label: c.name }))]}
           />
         </div>
         <div className="w-full sm:w-44">
           <Select
-            aria-label={t("list.filters.product")}
+            aria-label={productLabel}
             value={productFilter || undefined}
             onValueChange={(v) => onProductFilterChange(v === "__all__" ? "" : v)}
-            placeholder={t("list.filters.productAll")}
-            options={[{ value: "__all__", label: t("list.filters.productAll") }, ...fuelProducts.map((p) => ({ value: p.id, label: p.name }))]}
+            placeholder={productAllLabel}
+            options={[{ value: "__all__", label: productAllLabel }, ...fuelProducts.map((p) => ({ value: p.id, label: p.name }))]}
           />
         </div>
         <div className="w-full sm:w-44">
-          <Select
-            aria-label={t("list.filters.sortBy")}
-            value={sortBy}
-            onValueChange={(v) => onSortByChange(v as StationsSortBy)}
-            options={(["criticality", "name", "lowestLevel", "highestValue", "oldestSync"] as StationsSortBy[]).map((v) => ({ value: v, label: t(`list.filters.sortOptions.${v}`) }))}
-          />
+          <Select aria-label={sortLabel} value={sortValue} onValueChange={onSortChange} options={sortOptions} />
         </div>
         <div className="min-w-[200px] flex-1">
-          <Input icon={<Search className="size-4" aria-hidden />} placeholder={t("list.searchPlaceholder")} value={search} onChange={(e) => onSearchChange(e.target.value)} aria-label={t("list.searchPlaceholder")} />
+          <Input icon={<Search className="size-4" aria-hidden />} placeholder={searchPlaceholder} value={search} onChange={(e) => onSearchChange(e.target.value)} aria-label={searchPlaceholder} />
         </div>
       </div>
     </>

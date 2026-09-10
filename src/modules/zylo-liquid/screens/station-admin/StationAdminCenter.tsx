@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   ArrowLeft,
   Building2,
   ClipboardList,
@@ -10,6 +11,7 @@ import {
   Landmark,
   Shield,
   ShoppingBag,
+  ShoppingCart,
   Truck as TruckIcon,
   Users,
   Wrench,
@@ -21,6 +23,7 @@ import { cn } from "@/shared/lib/cn";
 import type { City, FuelProduct, Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 import { AdministrationTab } from "../station-detail/AdministrationTab";
+import { DeliveriesSection } from "./DeliveriesSection";
 import { DocumentsSection } from "./DocumentsSection";
 import { EquipmentSection } from "./EquipmentSection";
 import { FinancialSection } from "./FinancialSection";
@@ -28,14 +31,19 @@ import { HistorySection } from "./HistorySection";
 import { InfrastructureSection } from "./InfrastructureSection";
 import { MaintenanceSection } from "./MaintenanceSection";
 import { OperationsSection } from "./OperationsSection";
+import { OrdersSection } from "./OrdersSection";
 import { PersonnelSection } from "./PersonnelSection";
 import { SecuritySection } from "./SecuritySection";
+import { StationAlertsSection } from "./StationAlertsSection";
 import { RegulationTab } from "../station-detail/RegulationTab";
 import { SuppliersSection } from "./SuppliersSection";
 
 type SectionKey =
   | "identity"
   | "operations"
+  | "orders"
+  | "deliveries"
+  | "stationAlerts"
   | "infrastructure"
   | "equipment"
   | "maintenance"
@@ -77,6 +85,9 @@ export function StationAdminCenter({
   const items: { key: SectionKey; label: string; icon: typeof Building2 }[] = [
     { key: "identity", label: t("sections.identity"), icon: Building2 },
     { key: "operations", label: t("sections.operations"), icon: Fuel },
+    { key: "orders", label: t("sections.orders"), icon: ShoppingCart },
+    { key: "deliveries", label: t("sections.deliveries"), icon: TruckIcon },
+    { key: "stationAlerts", label: t("sections.stationAlerts"), icon: AlertTriangle },
     { key: "infrastructure", label: t("sections.infrastructure"), icon: Landmark },
     { key: "equipment", label: t("sections.equipment"), icon: Wrench },
     { key: "maintenance", label: t("sections.maintenance"), icon: ClipboardList },
@@ -135,6 +146,9 @@ export function StationAdminCenter({
         {section === "operations" && (
           <OperationsSection organizationId={organizationId} station={station} />
         )}
+        {section === "orders" && <OrdersSection organizationId={organizationId} station={station} />}
+        {section === "deliveries" && <DeliveriesSection organizationId={organizationId} station={station} />}
+        {section === "stationAlerts" && <StationAlertsSection organizationId={organizationId} station={station} />}
         {section === "infrastructure" && (
           <InfrastructureSection organizationId={organizationId} station={station} onReload={onReload} />
         )}

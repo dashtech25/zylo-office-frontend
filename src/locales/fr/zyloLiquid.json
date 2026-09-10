@@ -138,6 +138,38 @@
     "stationsCoverage": "Stations avec données",
     "productsCount": "{count} produit(s) concerné(s)",
     "lastUpdate": "Dernière mesure reçue à {time}",
+    "noResultsFiltered": "Aucune station ne correspond aux filtres sélectionnés",
+    "clearFilters": "Effacer les filtres",
+    "filters": {
+      "confidence": "Confiance du calcul",
+      "confidenceAll": "Toutes",
+      "city": "Ville",
+      "cityAll": "Toutes les villes",
+      "product": "Produit",
+      "productAll": "Tous les produits",
+      "sortBy": "Trier par",
+      "sortOptions": {
+        "highestValue": "Chiffre le plus élevé",
+        "lowestValue": "Chiffre le plus faible",
+        "name": "Nom"
+      },
+      "searchPlaceholder": "Rechercher une station..."
+    },
+    "stationsTable": {
+      "columns": {
+        "station": "Station",
+        "confidence": "Confiance",
+        "salesByProduct": "Ventes par produit",
+        "estimatedValue": "Chiffre estimé"
+      }
+    },
+    "productCards": {
+      "title": "Ventes du jour",
+      "stationsConcerned": "{count} station(s) concernée(s)",
+      "estimatedValue": "Chiffre estimé",
+      "totalNetwork": "Total réseau ({currency})",
+      "totalStation": "Total station"
+    },
     "dailySummary": {
       "title": "Résumé automatique (règles déterministes, pas une analyse humaine)",
       "total": "Caisse du jour : {value} — {stations} station(s) contributrices.",
@@ -165,6 +197,7 @@
     },
     "networkModal": {
       "title": "Répartition par station — {currency}",
+      "productTitle": "Répartition par station — {product} ({currency})",
       "columns": {
         "station": "Station",
         "volume": "Volume vendu",
@@ -1324,7 +1357,10 @@
       "level_low": "Stock bas",
       "water": "Eau détectée",
       "leak": "Fuite détectée",
-      "sensor_offline": "Station hors ligne"
+      "sensor_offline": "Station hors ligne",
+      "delivery_discrepancy": "Écart de livraison",
+      "delivery_undeclared": "Livraison non déclarée",
+      "delivery_declaration_pending": "Déclaration en attente de confirmation"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -1763,6 +1799,9 @@
     "sections": {
       "identity": "Identité",
       "operations": "Exploitation",
+      "orders": "Commande",
+      "deliveries": "Livraison",
+      "stationAlerts": "Alertes",
       "infrastructure": "Infrastructure",
       "equipment": "Équipements & IoT",
       "maintenance": "Maintenance",
@@ -1885,6 +1924,124 @@
       "hasLavage": "Lavage",
       "hasVidange": "Vidange",
       "hasGazDomestique": "Gaz domestique"
+    },
+    "orders": {
+      "pageTitle": "Commande",
+      "pageSubtitle": "Commandez auprès d'un fournisseur déjà rattaché à cette station, sur une cuve existante.",
+      "newOrder": "Nouvelle commande",
+      "prerequisiteHint": "Rattachez d'abord un fournisseur (onglet Fournisseurs) et créez au moins une cuve avant de passer une commande.",
+      "empty": "Aucune commande pour cette station.",
+      "table": {
+        "reference": "Référence",
+        "tank": "Cuve",
+        "supplier": "Fournisseur",
+        "volume": "Volume commandé",
+        "orderedAt": "Commandée le",
+        "expectedAt": "Attendue le",
+        "status": "Statut"
+      },
+      "status": {
+        "open": "Ouverte",
+        "received": "Réceptionnée"
+      },
+      "form": {
+        "title": "Nouvelle commande",
+        "required": "Produit, cuve, fournisseur, référence et volume sont requis.",
+        "fuelProduct": "Produit",
+        "selectFuelProduct": "Sélectionner un produit",
+        "tank": "Cuve",
+        "selectTank": "Sélectionner une cuve",
+        "selectFuelProductFirst": "Sélectionnez d'abord un produit",
+        "searchPlaceholder": "Rechercher…",
+        "noResult": "Aucun résultat.",
+        "capacityPrefix": "capacité",
+        "availableSuffix": "{volume} L disponibles",
+        "availableUnknown": "espace disponible inconnu",
+        "tankContext": "Capacité totale : {capacity} L · Espace disponible : {available}",
+        "supplier": "Fournisseur",
+        "selectSupplier": "Sélectionner un fournisseur",
+        "reference": "Référence de commande",
+        "referencePlaceholder": "Ex. CMD-2026-0042",
+        "generateReference": "Générer une référence unique",
+        "volume": "Volume commandé (L)",
+        "expectedAt": "Date attendue",
+        "exceedsCapacity": "Ce volume dépasse l'espace disponible dans la cuve sélectionnée.",
+        "nearsCapacityWarning": "Ce volume approche la limite de l'espace disponible dans la cuve — vérifiez avant de confirmer."
+      },
+      "detail": {
+        "fuelProduct": "Produit",
+        "tank": "Cuve",
+        "supplier": "Fournisseur",
+        "orderedVolume": "Volume commandé",
+        "orderedAt": "Commandée le",
+        "expectedAt": "Attendue le",
+        "tankCapacity": "Capacité de la cuve",
+        "tankAvailable": "Espace disponible",
+        "unknown": "Inconnu",
+        "linkedDeliveries": "Livraisons rattachées",
+        "noLinkedDelivery": "Aucune livraison déclarée pour cette commande."
+      }
+    },
+    "deliveries": {
+      "pageTitle": "Livraison",
+      "pageSubtitle": "Déclarez la réception d'une commande — le rapprochement avec les mesures de la cuve se fait automatiquement.",
+      "declareDelivery": "Déclarer une livraison",
+      "noOpenOrderHint": "Aucune commande ouverte — créez d'abord une commande dans l'onglet Commande.",
+      "empty": "Aucune livraison déclarée pour cette station.",
+      "table": {
+        "eventAt": "Date de réception",
+        "order": "Commande",
+        "volume": "Volume déclaré",
+        "noteReference": "Code du bon",
+        "status": "Statut"
+      },
+      "lifecycle": {
+        "declared": "Déclarée",
+        "locked": "Verrouillée"
+      },
+      "form": {
+        "title": "Déclarer une livraison",
+        "required": "Commande, date et volume sont requis.",
+        "order": "Commande",
+        "selectOrder": "Sélectionner une commande ouverte",
+        "orderHint": "Le fournisseur et le produit sont ceux de la commande sélectionnée — rien à ressaisir.",
+        "eventAt": "Date de réception",
+        "volume": "Volume livré (L)",
+        "noteReference": "Code du bon de livraison",
+        "noteReferencePlaceholder": "Ex. BL-778812",
+        "attachments": "Bon de livraison scanné",
+        "dropZone": "Glisser-déposer ou cliquer pour scanner/uploader"
+      },
+      "detail": {
+        "title": "Détail de la livraison",
+        "order": "Commande",
+        "fuelProduct": "Produit",
+        "supplier": "Fournisseur",
+        "eventAt": "Date de réception",
+        "declaredVolume": "Volume déclaré",
+        "noteReference": "Code du bon",
+        "attachments": "Pièces jointes",
+        "noAttachment": "Aucune pièce jointe.",
+        "reconciliation": {
+          "matched": "Rapprochée",
+          "discrepancy": "Écart détecté",
+          "pending": "En attente de détection",
+          "insufficient_data": "Donnée insuffisante"
+        },
+        "discrepancy": "Écart de {value} L (tolérance {tolerance} L)"
+      }
+    },
+    "stationAlerts": {
+      "pageTitle": "Alertes",
+      "pageSubtitle": "Toutes les alertes du système pour cette station.",
+      "empty": "Aucune alerte pour cette station.",
+      "status": {
+        "active": "Active",
+        "resolved": "Résolue"
+      },
+      "triggeredValue": "Valeur constatée",
+      "thresholdValue": "Seuil",
+      "resolve": "Résoudre"
     },
     "infrastructure": {
       "title": "Infrastructure",

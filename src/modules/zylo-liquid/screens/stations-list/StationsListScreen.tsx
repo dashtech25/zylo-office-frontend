@@ -23,8 +23,11 @@ import { StationSyncBadge } from "./StationCard/StationSyncBadge";
 import { StationsTable } from "./StationCard/StationsTable";
 import { StatusBadge } from "./StationCard/StatusBadge";
 import { StatusDot } from "./StationCard/StatusDot";
-import { StationsFilterBar, type StationsSortBy as SortBy, type StationsStatusFilter as StatusFilter } from "./StationsFilterBar";
+import { StationsFilterBar } from "./StationsFilterBar";
 import { useStationsList, type StationRow } from "./useStationsList";
+
+type StatusFilter = "all" | "online" | "offline" | "alert" | "critical";
+type SortBy = "criticality" | "name" | "lowestLevel" | "highestValue" | "oldestSync";
 
 // Reprend l'ordre de tri par défaut du prototype validé (prototype.html,
 // pageStations() ~ligne 3878 : "Triées par criticité — les stations
@@ -238,6 +241,35 @@ export default function StationsListScreen() {
   const networkVolumeLiters = filteredRows.reduce((sum, r) => sum + r.totalVolumeLiters, 0);
   const networkCapacityLiters = filteredRows.reduce((sum, r) => sum + r.totalCapacityLiters, 0);
 
+  const filterBarProps = {
+    badges: [
+      { key: "active", label: t("list.badges.active", { count: activeCount }), active: badgeActive, onToggle: () => setBadgeActive((v) => !v), tone: "success" as const },
+      { key: "offline", label: t("list.badges.offline", { count: offlineCount }), active: badgeOffline, onToggle: () => setBadgeOffline((v) => !v) },
+      { key: "alerts", label: t("list.badges.alerts", { count: data.activeAlertsCount }), active: badgeAlerts, onToggle: () => setBadgeAlerts((v) => !v), tone: "warning" as const },
+    ],
+    statusLabel: t("list.filters.status"),
+    statusValue: statusFilter,
+    onStatusChange: (v: string) => setStatusFilter(v as StatusFilter),
+    statusOptions: (["all", "online", "offline", "alert", "critical"] as StatusFilter[]).map((v) => ({ value: v, label: t(`list.filters.statusOptions.${v}`) })),
+    cityLabel: t("list.filters.city"),
+    cityAllLabel: t("list.filters.cityAll"),
+    cityFilter,
+    onCityFilterChange: setCityFilter,
+    cities: data.cities,
+    productLabel: t("list.filters.product"),
+    productAllLabel: t("list.filters.productAll"),
+    productFilter,
+    onProductFilterChange: setProductFilter,
+    fuelProducts: data.fuelProducts,
+    sortLabel: t("list.filters.sortBy"),
+    sortValue: sortBy,
+    onSortChange: (v: string) => setSortBy(v as SortBy),
+    sortOptions: (["criticality", "name", "lowestLevel", "highestValue", "oldestSync"] as SortBy[]).map((v) => ({ value: v, label: t(`list.filters.sortOptions.${v}`) })),
+    searchPlaceholder: t("list.searchPlaceholder"),
+    search,
+    onSearchChange: setSearch,
+  };
+
   return (
     <Stack>
       <PageHeader
@@ -289,30 +321,7 @@ export default function StationsListScreen() {
           </Card>
 
           <Card>
-            <StationsFilterBar
-              t={t}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              badgeActive={badgeActive}
-              onBadgeActiveToggle={() => setBadgeActive((v) => !v)}
-              activeCount={activeCount}
-              badgeOffline={badgeOffline}
-              onBadgeOfflineToggle={() => setBadgeOffline((v) => !v)}
-              offlineCount={offlineCount}
-              badgeAlerts={badgeAlerts}
-              onBadgeAlertsToggle={() => setBadgeAlerts((v) => !v)}
-              activeAlertsCount={data.activeAlertsCount}
-              cityFilter={cityFilter}
-              onCityFilterChange={setCityFilter}
-              cities={data.cities}
-              productFilter={productFilter}
-              onProductFilterChange={setProductFilter}
-              fuelProducts={data.fuelProducts}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              search={search}
-              onSearchChange={setSearch}
-            />
+            <StationsFilterBar {...filterBarProps} />
           </Card>
 
           {filteredRows.length > 0 && (
@@ -367,30 +376,7 @@ export default function StationsListScreen() {
       <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="full" closeLabel={tCommon("actions.close")}>
         <Stack>
           <Card>
-            <StationsFilterBar
-              t={t}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              badgeActive={badgeActive}
-              onBadgeActiveToggle={() => setBadgeActive((v) => !v)}
-              activeCount={activeCount}
-              badgeOffline={badgeOffline}
-              onBadgeOfflineToggle={() => setBadgeOffline((v) => !v)}
-              offlineCount={offlineCount}
-              badgeAlerts={badgeAlerts}
-              onBadgeAlertsToggle={() => setBadgeAlerts((v) => !v)}
-              activeAlertsCount={data.activeAlertsCount}
-              cityFilter={cityFilter}
-              onCityFilterChange={setCityFilter}
-              cities={data.cities}
-              productFilter={productFilter}
-              onProductFilterChange={setProductFilter}
-              fuelProducts={data.fuelProducts}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              search={search}
-              onSearchChange={setSearch}
-            />
+            <StationsFilterBar {...filterBarProps} />
           </Card>
           <StationsMap
             height={640}

@@ -1,29 +1,42 @@
 "use client";
 
-import { Banknote, Droplet, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import type { CurrencyCashBlock } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
-import { Alert, Card, Input, Kpi, PageHeader, Stack } from "@/shared/ui";
+import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { Alert, Card, EmptyState, Input, PageHeader, Stack } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 import { cn } from "@/shared/lib/cn";
 
+import { StationsFilterBar } from "@/modules/zylo-liquid/screens/stations-list/StationsFilterBar";
+import { useStationsList } from "@/modules/zylo-liquid/screens/stations-list/useStationsList";
+
+import { aggregateCaisseCurrencyBlocks, aggregateCaisseProducts } from "./cashAggregation";
+import { CaisseStationsTable } from "./CaisseStationsTable";
+import { CashSummaryCards } from "./CashSummaryCards";
 import { DailySummaryCard } from "./DailySummaryCard";
 import { NetworkCashModal } from "./NetworkCashModal";
+import { StationCashCardsModal } from "./StationCashCardsModal";
 import { useCashPeriod, useNetworkCash, type CashQuickPeriod } from "./useCashData";
+import { useCaisseStationRows, type CaisseStationRow } from "./useCaisseStationRows";
 
 const QUICK_PERIODS: CashQuickPeriod[] = ["today", "yesterday", "7d", "30d", "custom"];
+type ConfidenceFilter = "all" | "reliable" | "partial" | "incomplete_data" | "insufficient_data" | "anomaly";
+type CaisseSortBy = "name" | "highestValue" | "lowestValue";
 
 /** Caisse du jour (page_caisse.md, validé avant implémentation) : le
  * propriétaire du réseau part d'un chiffre global par devise et descend
  * réseau -> station -> produit -> cuve -> mesures (NetworkCashModal ->
  * StationCashModal -> TankCashModal). Rien n'est jamais présenté comme une
  * comptabilité officielle (page_caisse.md §33) : chaque montant non
- * calculable affiche sa raison plutôt qu'un zéro silencieux. */
+ * calculable affiche sa raison plutôt qu'un zéro silencieux.
+ *
+ * Filtrage par station (ville/produit/confiance/recherche) réutilise
+ * `StationsFilterBar` (page Stations) — les cartes et le tableau se
+ * recalculent tous deux à partir du même sous-ensemble filtré, jamais deux
+ * périmètres divergents. */
 export default function CaisseScreen() {
   const t = useTranslations("zyloLiquid.caisse");
   const tCommon = useTranslations("common");
@@ -32,6 +45,7 @@ export default function CaisseScreen() {
 
   const period = useCashPeriod();
   const { data, loading, error } = useNetworkCash(currentOrganization?.id ?? null, period.fromDate, period.toDate, period.mode);
+  const stationsList = useStationsList(currentOrganization?.id ?? null);
 
   const yesterdayRange = useMemo(() => {
     const now = new Date();
@@ -61,6 +75,46 @@ export default function CaisseScreen() {
   const last7Days = useNetworkCash(showComparison ? currentOrganization?.id ?? null : null, last7DaysRange.from, last7DaysRange.to);
 
   const [openBlock, setOpenBlock] = useState<CurrencyCashBlock | null>(null);
+  const [openProductBlock, setOpenProductBlock] = useState<NetworkProductCashLine | null>(null);
+  const [openStationRow, setOpenStationRow] = useState<CaisseStationRow | null>(null);
+
+  const [cityFilter, setCityFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
+  const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceFilter>("all");
+  const [sortBy, setSortBy] = useState<CaisseSortBy>("highestValue");
+  const [search, setSearch] = useState("");
+
+  const activeStations = useMemo(() => stationsList.stations.filter((s) => s.status === "active"), [stationsList.stations]);
+  const allRows = useCaisseStationRows(activeStations, data);
+  const cityById = useMemo(() => new Map(stationsList.cities.map((c) => [c.id, c])), [stationsList.cities]);
+
+  const filteredRows = useMemo(() => {
+    const rows = allRows.filter((row) => {
+      if (confidenceFilter !== "all" && row.confidence !== confidenceFilter) return false;
+      if (cityFilter && row.station.cityId !== cityFilter) return false;
+      if (productFilter && !row.products.some((p) => p.fuelProductId === productFilter)) return false;
+      if (search.trim() && !row.station.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      return true;
+    });
+    return [...rows].sort((a, b) => {
+      if (sortBy === "name") return a.station.name.localeCompare(b.station.name);
+      if (sortBy === "highestValue") return (b.monetaryValue ?? -Infinity) - (a.monetaryValue ?? -Infinity);
+      return (a.monetaryValue ?? Infinity) - (b.monetaryValue ?? Infinity);
+    });
+  }, [allRows, confidenceFilter, cityFilter, productFilter, search, sortBy]);
+
+  function clearFilters() {
+    setCityFilter("");
+    setProductFilter("");
+    setConfidenceFilter("all");
+    setSearch("");
+  }
+
+  const filteredProductBlocks = useMemo(() => aggregateCaisseProducts(filteredRows), [filteredRows]);
+  const filteredCurrencyBlocks = useMemo(() => aggregateCaisseCurrencyBlocks(filteredRows), [filteredRows]);
+
+  const confidenceOptions: ConfidenceFilter[] = ["all", "reliable", "partial", "incomplete_data", "insufficient_data", "anomaly"];
+  const sortOptions: CaisseSortBy[] = ["highestValue", "lowestValue", "name"];
 
   return (
     <Stack gap="lg">
@@ -124,58 +178,51 @@ export default function CaisseScreen() {
         </Card>
       )}
 
-      {loading ? (
+      {loading || stationsList.loading ? (
         <PageSpinner label={tCommon("states.loading")} />
-      ) : data && data.currencyBlocks.length === 0 ? (
+      ) : allRows.length === 0 ? (
         <Alert tone="warning">{t("noData")}</Alert>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.currencyBlocks.map((block) => {
-            const comparisonBlock = comparison.data?.currencyBlocks.find((b) => b.currencyCode === block.currencyCode);
-            const trend =
-              showComparison && comparisonBlock && comparisonBlock.monetaryValue > 0
-                ? {
-                    direction: (block.monetaryValue >= comparisonBlock.monetaryValue ? "up" : "down") as "up" | "down",
-                    value: `${(((block.monetaryValue - comparisonBlock.monetaryValue) / comparisonBlock.monetaryValue) * 100).toFixed(1)}%`,
-                  }
-                : undefined;
-            const last7Block = last7Days.data?.currencyBlocks.find((b) => b.currencyCode === block.currencyCode);
-            const dailyAverage7d = last7Block && last7Block.monetaryValue > 0 ? last7Block.monetaryValue / 7 : null;
-            return (
-              <Kpi
-                key={block.currencyCode}
-                icon={Banknote}
-                label={t("currencyCardTitle", { currency: block.currencyCode })}
-                value={formatMoney(format, block.monetaryValue, block.currencyCode)}
-                trend={trend}
-                sub={
-                  <span className="flex flex-col gap-0.5">
-                    <span>{t("currencyCardSub", { volume: formatLiters(block.volumeSoldLiters), stations: block.stationCount })}</span>
-                    {dailyAverage7d !== null && (
-                      <span>
-                        {t("vsWeeklyAverage", {
-                          sign: block.monetaryValue >= dailyAverage7d ? "+" : "",
-                          pct: (((block.monetaryValue - dailyAverage7d) / dailyAverage7d) * 100).toFixed(1),
-                        })}
-                      </span>
-                    )}
-                  </span>
-                }
-                tone="primary"
-                onClick={() => setOpenBlock(block)}
-              />
-            );
-          })}
-          {data && (
-            <Kpi
-              icon={Droplet}
-              label={t("stationsCoverage")}
-              value={`${data.stationsWithDataCount} / ${data.stationsTotalCount}`}
-              sub={t("productsCount", { count: data.productCount })}
-              tone="neutral"
+        <>
+          <Card>
+            <StationsFilterBar
+              statusLabel={t("filters.confidence")}
+              statusValue={confidenceFilter}
+              onStatusChange={(v) => setConfidenceFilter(v as ConfidenceFilter)}
+              statusOptions={confidenceOptions.map((v) => ({ value: v, label: v === "all" ? t("filters.confidenceAll") : t(`confidence.${v}`) }))}
+              cityLabel={t("filters.city")}
+              cityAllLabel={t("filters.cityAll")}
+              cityFilter={cityFilter}
+              onCityFilterChange={setCityFilter}
+              cities={stationsList.cities}
+              productLabel={t("filters.product")}
+              productAllLabel={t("filters.productAll")}
+              productFilter={productFilter}
+              onProductFilterChange={setProductFilter}
+              fuelProducts={stationsList.fuelProducts}
+              sortLabel={t("filters.sortBy")}
+              sortValue={sortBy}
+              onSortChange={(v) => setSortBy(v as CaisseSortBy)}
+              sortOptions={sortOptions.map((v) => ({ value: v, label: t(`filters.sortOptions.${v}`) }))}
+              searchPlaceholder={t("filters.searchPlaceholder")}
+              search={search}
+              onSearchChange={setSearch}
             />
+          </Card>
+
+          <CashSummaryCards
+            productBlocks={filteredProductBlocks}
+            currencyBlocks={filteredCurrencyBlocks}
+            onProductClick={setOpenProductBlock}
+            onTotalClick={setOpenBlock}
+          />
+
+          {filteredRows.length === 0 ? (
+            <EmptyState title={t("noResultsFiltered")} actionLabel={t("clearFilters")} onAction={clearFilters} />
+          ) : (
+            <CaisseStationsTable rows={filteredRows} cityById={cityById} onRowClick={setOpenStationRow} />
           )}
-        </div>
+        </>
       )}
 
       {data?.lastMeasurementAt && (
@@ -189,6 +236,28 @@ export default function CaisseScreen() {
         onOpenChange={(next) => !next && setOpenBlock(null)}
         organizationId={currentOrganization?.id ?? ""}
         block={openBlock}
+        title={openBlock ? t("networkModal.title", { currency: openBlock.currencyCode }) : ""}
+        fromDate={period.fromDate}
+        toDate={period.toDate}
+        mode={period.mode}
+      />
+
+      <NetworkCashModal
+        open={openProductBlock !== null}
+        onOpenChange={(next) => !next && setOpenProductBlock(null)}
+        organizationId={currentOrganization?.id ?? ""}
+        block={openProductBlock}
+        title={openProductBlock ? t("networkModal.productTitle", { product: openProductBlock.fuelProductName, currency: openProductBlock.currencyCode ?? "—" }) : ""}
+        fromDate={period.fromDate}
+        toDate={period.toDate}
+        mode={period.mode}
+      />
+
+      <StationCashCardsModal
+        open={openStationRow !== null}
+        onOpenChange={(next) => !next && setOpenStationRow(null)}
+        organizationId={currentOrganization?.id ?? ""}
+        row={openStationRow}
         fromDate={period.fromDate}
         toDate={period.toDate}
         mode={period.mode}

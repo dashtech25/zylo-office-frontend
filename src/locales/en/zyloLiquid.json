@@ -138,6 +138,38 @@
     "stationsCoverage": "Stations with data",
     "productsCount": "{count} product(s) involved",
     "lastUpdate": "Last measurement received at {time}",
+    "noResultsFiltered": "No station matches the selected filters",
+    "clearFilters": "Clear filters",
+    "filters": {
+      "confidence": "Calculation confidence",
+      "confidenceAll": "All",
+      "city": "City",
+      "cityAll": "All cities",
+      "product": "Product",
+      "productAll": "All products",
+      "sortBy": "Sort by",
+      "sortOptions": {
+        "highestValue": "Highest revenue",
+        "lowestValue": "Lowest revenue",
+        "name": "Name"
+      },
+      "searchPlaceholder": "Search a station..."
+    },
+    "stationsTable": {
+      "columns": {
+        "station": "Station",
+        "confidence": "Confidence",
+        "salesByProduct": "Sales by product",
+        "estimatedValue": "Estimated revenue"
+      }
+    },
+    "productCards": {
+      "title": "Sales today",
+      "stationsConcerned": "{count} station(s) involved",
+      "estimatedValue": "Estimated revenue",
+      "totalNetwork": "Network total ({currency})",
+      "totalStation": "Station total"
+    },
     "dailySummary": {
       "title": "Automatic summary (deterministic rules, not a human analysis)",
       "total": "Cash today: {value} — {stations} contributing station(s).",
@@ -165,6 +197,7 @@
     },
     "networkModal": {
       "title": "Breakdown by station — {currency}",
+      "productTitle": "Breakdown by station — {product} ({currency})",
       "columns": {
         "station": "Station",
         "volume": "Volume sold",
@@ -1324,7 +1357,10 @@
       "level_low": "Low stock",
       "water": "Water detected",
       "leak": "Leak detected",
-      "sensor_offline": "Station offline"
+      "sensor_offline": "Station offline",
+      "delivery_discrepancy": "Delivery discrepancy",
+      "delivery_undeclared": "Undeclared delivery",
+      "delivery_declaration_pending": "Declaration awaiting confirmation"
     },
     "page": {
       "title": "Alert center",
@@ -1763,6 +1799,9 @@
     "sections": {
       "identity": "Identity",
       "operations": "Operations",
+      "orders": "Order",
+      "deliveries": "Delivery",
+      "stationAlerts": "Alerts",
       "infrastructure": "Infrastructure",
       "equipment": "Equipment & IoT",
       "maintenance": "Maintenance",
@@ -1885,6 +1924,124 @@
       "hasLavage": "Car wash",
       "hasVidange": "Oil change",
       "hasGazDomestique": "Domestic gas"
+    },
+    "orders": {
+      "pageTitle": "Order",
+      "pageSubtitle": "Order from a supplier already linked to this station, for an existing tank.",
+      "newOrder": "New order",
+      "prerequisiteHint": "Link a supplier first (Suppliers tab) and create at least one tank before placing an order.",
+      "empty": "No order for this station.",
+      "table": {
+        "reference": "Reference",
+        "tank": "Tank",
+        "supplier": "Supplier",
+        "volume": "Ordered volume",
+        "orderedAt": "Ordered on",
+        "expectedAt": "Expected on",
+        "status": "Status"
+      },
+      "status": {
+        "open": "Open",
+        "received": "Received"
+      },
+      "form": {
+        "title": "New order",
+        "required": "Product, tank, supplier, reference and volume are required.",
+        "fuelProduct": "Product",
+        "selectFuelProduct": "Select a product",
+        "tank": "Tank",
+        "selectTank": "Select a tank",
+        "selectFuelProductFirst": "Select a product first",
+        "searchPlaceholder": "Search…",
+        "noResult": "No result.",
+        "capacityPrefix": "capacity",
+        "availableSuffix": "{volume} L available",
+        "availableUnknown": "available space unknown",
+        "tankContext": "Total capacity: {capacity} L · Available space: {available}",
+        "supplier": "Supplier",
+        "selectSupplier": "Select a supplier",
+        "reference": "Order reference",
+        "referencePlaceholder": "E.g. PO-2026-0042",
+        "generateReference": "Generate a unique reference",
+        "volume": "Ordered volume (L)",
+        "expectedAt": "Expected date",
+        "exceedsCapacity": "This volume exceeds the available space in the selected tank.",
+        "nearsCapacityWarning": "This volume is close to the tank's available space limit — check before confirming."
+      },
+      "detail": {
+        "fuelProduct": "Product",
+        "tank": "Tank",
+        "supplier": "Supplier",
+        "orderedVolume": "Ordered volume",
+        "orderedAt": "Ordered on",
+        "expectedAt": "Expected on",
+        "tankCapacity": "Tank capacity",
+        "tankAvailable": "Available space",
+        "unknown": "Unknown",
+        "linkedDeliveries": "Linked deliveries",
+        "noLinkedDelivery": "No delivery declared for this order."
+      }
+    },
+    "deliveries": {
+      "pageTitle": "Delivery",
+      "pageSubtitle": "Declare the receipt of an order — reconciliation with tank measurements happens automatically.",
+      "declareDelivery": "Declare a delivery",
+      "noOpenOrderHint": "No open order — create an order in the Order tab first.",
+      "empty": "No delivery declared for this station.",
+      "table": {
+        "eventAt": "Received on",
+        "order": "Order",
+        "volume": "Declared volume",
+        "noteReference": "Note code",
+        "status": "Status"
+      },
+      "lifecycle": {
+        "declared": "Declared",
+        "locked": "Locked"
+      },
+      "form": {
+        "title": "Declare a delivery",
+        "required": "Order, date and volume are required.",
+        "order": "Order",
+        "selectOrder": "Select an open order",
+        "orderHint": "Supplier and product come from the selected order — nothing to re-enter.",
+        "eventAt": "Received on",
+        "volume": "Delivered volume (L)",
+        "noteReference": "Delivery note code",
+        "noteReferencePlaceholder": "E.g. DN-778812",
+        "attachments": "Scanned delivery note",
+        "dropZone": "Drag and drop or click to scan/upload"
+      },
+      "detail": {
+        "title": "Delivery detail",
+        "order": "Order",
+        "fuelProduct": "Product",
+        "supplier": "Supplier",
+        "eventAt": "Received on",
+        "declaredVolume": "Declared volume",
+        "noteReference": "Note code",
+        "attachments": "Attachments",
+        "noAttachment": "No attachment.",
+        "reconciliation": {
+          "matched": "Matched",
+          "discrepancy": "Discrepancy detected",
+          "pending": "Awaiting detection",
+          "insufficient_data": "Insufficient data"
+        },
+        "discrepancy": "Discrepancy of {value} L (tolerance {tolerance} L)"
+      }
+    },
+    "stationAlerts": {
+      "pageTitle": "Alerts",
+      "pageSubtitle": "All system alerts for this station.",
+      "empty": "No alert for this station.",
+      "status": {
+        "active": "Active",
+        "resolved": "Resolved"
+      },
+      "triggeredValue": "Observed value",
+      "thresholdValue": "Threshold",
+      "resolve": "Resolve"
     },
     "infrastructure": {
       "title": "Infrastructure",
