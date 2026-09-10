@@ -210,7 +210,16 @@ export interface NetworkSummary {
   totalSellableVolumeLiters: number;
 }
 
-export type AlertType = "level_high" | "level_high_pre_alarm" | "level_low" | "water" | "leak" | "sensor_offline";
+export type AlertType =
+  | "level_high"
+  | "level_high_pre_alarm"
+  | "level_low"
+  | "water"
+  | "leak"
+  | "sensor_offline"
+  | "delivery_discrepancy"
+  | "delivery_undeclared"
+  | "delivery_declaration_pending";
 
 export interface Alert {
   id: string;
@@ -803,10 +812,26 @@ export interface CurrencyCashBlock {
   stations: StationCashSummary[];
 }
 
+export interface NetworkProductCashLine {
+  fuelProductId: string;
+  fuelProductName: string;
+  displayColor: string | null;
+  tankCount: number;
+  stationCount: number;
+  volumeSoldLiters: number;
+  monetaryValue: number | null;
+  currencyCode: string | null;
+  monetaryValueNotCalculableReason: string | null;
+  confidence: CashConfidence;
+  stations: StationCashSummary[];
+}
+
 export interface NetworkCashSummary {
   periodStart: string;
   periodEnd: string;
   currencyBlocks: CurrencyCashBlock[];
+  productBlocks: NetworkProductCashLine[];
+  stationLines: StationCashSummary[];
   volumeSoldLitersTotal: number;
   stationsWithDataCount: number;
   stationsTotalCount: number;
@@ -869,6 +894,9 @@ export interface DeliveryDeclaration {
   declaredAt: string;
   declaredVolumeLiters: number;
   supplierName: string | null;
+  supplierId: string | null;
+  truckId: string | null;
+  purchaseOrderId: string | null;
   deliveryNoteReference: string | null;
   lifecycleStatus: "declared" | "locked";
   changeReason: string | null;
@@ -882,6 +910,9 @@ export interface CreateDeliveryDeclarationInput {
   fuelProductId: string;
   eventAt: string;
   declaredVolumeLiters: number;
+  supplierId?: string;
+  truckId?: string;
+  purchaseOrderId?: string;
   supplierName?: string;
   deliveryNoteReference?: string;
   changeReason?: string;
@@ -892,6 +923,43 @@ export function listDeliveryDeclarations(organizationId: string, params: { stati
   if (params.stationId) search.set("stationId", params.stationId);
   search.set("limit", String(params.limit ?? 100));
   return apiFetch<Page<DeliveryDeclaration>>(`/zylo-liquid/delivery-declarations?${search.toString()}`, withOrg(organizationId));
+}
+
+// Approvisionnement — commandes fournisseur (PurchaseOrder), portée
+// station, produit/fournisseur/cuve toujours en sélection depuis le
+// référentiel déjà défini pour la station — jamais une saisie libre
+// (mission « flux de livraison station »).
+export interface PurchaseOrder {
+  id: string;
+  stationId: string;
+  tankId: string;
+  supplierId: string;
+  authorUserId: string;
+  orderReference: string;
+  orderedVolumeLiters: number;
+  orderedAt: string;
+  expectedAt: string | null;
+  status: "open" | "received";
+}
+
+export interface CreatePurchaseOrderInput {
+  stationId: string;
+  tankId: string;
+  supplierId: string;
+  orderReference: string;
+  orderedVolumeLiters: number;
+  expectedAt?: string;
+}
+
+export function listPurchaseOrders(organizationId: string, params: { stationId?: string; limit?: number } = {}): Promise<Page<PurchaseOrder>> {
+  const search = new URLSearchParams();
+  if (params.stationId) search.set("stationId", params.stationId);
+  search.set("limit", String(params.limit ?? 100));
+  return apiFetch<Page<PurchaseOrder>>(`/zylo-liquid/purchase-orders?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createPurchaseOrder(organizationId: string, data: CreatePurchaseOrderInput): Promise<PurchaseOrder> {
+  return apiFetch<PurchaseOrder>("/zylo-liquid/purchase-orders", { method: "POST", organizationId, body: JSON.stringify(data) });
 }
 
 export function createDeliveryDeclaration(organizationId: string, data: CreateDeliveryDeclarationInput): Promise<DeliveryDeclaration> {

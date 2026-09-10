@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Droplet, Printer, Waves, Wifi, X } from "lucide-react";
+import { AlertTriangle, Droplet, Printer, Truck, Waves, Wifi, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -64,6 +64,9 @@ export default function AlertsScreen() {
     level_high_pre_alarm: AlertTriangle,
     water: Waves,
     sensor_offline: Wifi,
+    delivery_discrepancy: Truck,
+    delivery_undeclared: Truck,
+    delivery_declaration_pending: Truck,
   };
   const typeTone: Record<AlertType, "error" | "warning" | "info" | "neutral"> = {
     leak: "error",
@@ -72,6 +75,11 @@ export default function AlertsScreen() {
     level_high_pre_alarm: "warning",
     water: "info",
     sensor_offline: "neutral",
+    delivery_discrepancy: "error",
+    delivery_undeclared: "error",
+    // Alerte "plus légère" (décision du commanditaire) — jamais confondue
+    // avec un écart avéré, seule des 3 nouvelles alertes en "warning".
+    delivery_declaration_pending: "warning",
   };
 
   return (

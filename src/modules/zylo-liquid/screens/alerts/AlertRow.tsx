@@ -8,7 +8,12 @@ import { Badge, buttonVariants, Button, Card } from "@/shared/ui";
 
 import type { AlertRow as AlertRowData } from "./useAlertsList";
 
-const CRITICAL_TYPES = new Set(["leak", "level_high"]);
+const CRITICAL_TYPES = new Set(["leak", "level_high", "delivery_discrepancy", "delivery_undeclared"]);
+// Unité affichée pour triggeredValue/thresholdValue — mm pour les alertes
+// télémétriques existantes, litres pour les nouvelles alertes de
+// rapprochement livraison (mission « flux de livraison station »), jamais
+// la même unité supposée pour toutes.
+const VOLUME_ALERT_TYPES = new Set(["delivery_discrepancy", "delivery_undeclared"]);
 
 /** Une seule définition de la ligne d'alerte, réutilisée par la vue
  * "Toutes" et par chaque groupe de la vue "Par station" — jamais deux
@@ -20,6 +25,7 @@ export function AlertRow({ row, resolvingId, onResolve }: { row: AlertRowData; r
   const format = useFormatter();
   const { alert, tank, station } = row;
   const critical = CRITICAL_TYPES.has(alert.type);
+  const valueUnit = VOLUME_ALERT_TYPES.has(alert.type) ? "L" : "mm";
 
   function formatDateTime(iso: string): string {
     return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -57,13 +63,13 @@ export function AlertRow({ row, resolvingId, onResolve }: { row: AlertRowData; r
                 {alert.triggeredValue !== null && (
                   <div>
                     <div className="text-caption text-text-muted">{t("page.triggeredValue")}</div>
-                    <div className="font-mono tabular-nums text-text">{format.number(alert.triggeredValue, { maximumFractionDigits: 1 })} mm</div>
+                    <div className="font-mono tabular-nums text-text">{format.number(alert.triggeredValue, { maximumFractionDigits: 1 })} {valueUnit}</div>
                   </div>
                 )}
                 {alert.thresholdValue !== null && (
                   <div>
                     <div className="text-caption text-text-muted">{t("page.thresholdValue")}</div>
-                    <div className="font-mono tabular-nums text-text">{format.number(alert.thresholdValue, { maximumFractionDigits: 1 })} mm</div>
+                    <div className="font-mono tabular-nums text-text">{format.number(alert.thresholdValue, { maximumFractionDigits: 1 })} {valueUnit}</div>
                   </div>
                 )}
               </div>
