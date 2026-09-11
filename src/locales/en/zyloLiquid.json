@@ -589,6 +589,55 @@
       "locked": "Locked"
     }
   },
+  "trucks": {
+    "pageTitle": "Trucks",
+    "pageSubtitle": "Tanker truck fleet and position tracking (tracking mission, step 1).",
+    "tabs": {
+      "list": "List",
+      "map": "Map"
+    },
+    "newTruck": "New truck",
+    "empty": "No truck registered.",
+    "noGpsDevice": "No device",
+    "manageDevice": "GPS device",
+    "edit": "Edit",
+    "table": {
+      "plate": "Plate",
+      "carrier": "Carrier",
+      "gpsDevice": "GPS device"
+    },
+    "map": {
+      "selectHint": "Click a truck to see its route and stops.",
+      "loadingRoute": "Loading route…",
+      "stopsCount": "{count, plural, =0 {No stop} one {# stop} other {# stops}} over the last 24 hours",
+      "stopDuration": "Stop of {minutes} min",
+      "stopOngoing": "Ongoing stop for {minutes} min"
+    },
+    "form": {
+      "createTitle": "New truck",
+      "editTitle": "Edit truck",
+      "required": "The plate number is required.",
+      "plateNumber": "Plate number",
+      "platePlaceholder": "E.g. CE 1234 AB",
+      "carrier": "Carrier",
+      "selectCarrier": "Select a carrier",
+      "newCarrier": "Or create a new carrier",
+      "newCarrierPlaceholder": "Carrier name",
+      "searchPlaceholder": "Search…",
+      "noResult": "No result",
+      "capacity": "Capacity (L)",
+      "compartments": "Number of compartments"
+    },
+    "deviceForm": {
+      "title": "GPS device — {plate}",
+      "existingHint": "A device is already linked to this truck — only the label can be edited here.",
+      "required": "The device identifier is required.",
+      "deviceIdentifier": "Device identifier (IMEI)",
+      "identifierPlaceholder": "E.g. 862345061234567",
+      "label": "Label (optional)",
+      "labelPlaceholder": "E.g. Teltonika FMC125 device"
+    }
+  },
   "shiftsScreen": {
     "pageTitle": "Shifts",
     "pageSubtitle": "Shift start/end and cash declared, per tank.",
@@ -1096,6 +1145,7 @@
       "cuves": "Tanks & ATG",
       "deliveries": "Deliveries",
       "approvisionnement": "Supply",
+      "camions": "Trucks",
       "reconciliation": "Stock reconciliation",
       "ventes": "Sales journal",
       "produits": "Products & shop",
@@ -1360,7 +1410,10 @@
       "sensor_offline": "Station offline",
       "delivery_discrepancy": "Delivery discrepancy",
       "delivery_undeclared": "Undeclared delivery",
-      "delivery_declaration_pending": "Declaration awaiting confirmation"
+      "delivery_declaration_pending": "Declaration awaiting confirmation",
+      "price_missing": "Missing sale price",
+      "sensor_mapping_missing": "Sensor not mapped",
+      "calibration_missing": "Missing calibration chart"
     },
     "page": {
       "title": "Alert center",
@@ -1369,9 +1422,19 @@
       "filterStatus": "All statuses",
       "status": {
         "active": "Active",
+        "acknowledged": "Acknowledged",
         "resolved": "Resolved",
         "all": "All"
       },
+      "severity": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "acknowledge": "I'm on it",
+      "acknowledged": "Acknowledged",
+      "autoResolveHint": "Closes automatically once the condition clears.",
       "resolve": "Resolve",
       "resolveNotePrompt": "Resolution note (optional)",
       "triggeredValue": "Triggering value",
@@ -1728,6 +1791,7 @@
         "contactEmail": "Email",
         "website": "Website",
         "address": "Address",
+        "taxId": "Tax ID",
         "notes": "Notes",
         "contractReference": "Contract reference",
         "contractType": "Contract type",
@@ -1776,6 +1840,7 @@
         "contactEmail": "Email",
         "website": "Website",
         "address": "Address",
+        "taxId": "Tax ID",
         "contractReference": "Contract reference",
         "contractType": "Contract type",
         "contractTypePlaceholder": "E.g. Annual, Framework…",
@@ -1979,7 +2044,18 @@
         "tankAvailable": "Available space",
         "unknown": "Unknown",
         "linkedDeliveries": "Linked deliveries",
-        "noLinkedDelivery": "No delivery declared for this order."
+        "noLinkedDelivery": "No delivery declared for this order.",
+        "document": {
+          "title": "Purchase order document",
+          "generatePdf": "Generate (PDF)",
+          "generateDocx": "Generate (DOCX)",
+          "empty": "No purchase order document generated yet.",
+          "preview": "Preview",
+          "share": "Share",
+          "shareEmail": "Send by email",
+          "shareWhatsapp": "Send on WhatsApp",
+          "previewUnavailable": "Preview not available for this file type — download it to view."
+        }
       }
     },
     "deliveries": {
@@ -2318,7 +2394,8 @@
     "alertBanner": {
       "since": "Since {date}",
       "rate": "Rate: {rate} L/h",
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "acknowledge": "I'm on it"
     },
     "cards": {
       "thresholdsTitle": "Configured thresholds",

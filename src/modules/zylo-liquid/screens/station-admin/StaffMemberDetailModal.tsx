@@ -47,7 +47,10 @@ export function StaffMemberDetailModal({
     return { role, activity: activityPage.data };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, staff.userId, roleAssignment?.id, reloadKey]);
-  const state = usePartData(load);
+  const state = usePartData(
+    ["zylo-liquid", "station-admin", "staff-member-detail", organizationId, staff.userId, roleAssignment?.id, reloadKey],
+    load
+  );
 
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState(staff.firstName ?? "");

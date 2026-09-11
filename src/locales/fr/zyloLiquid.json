@@ -589,6 +589,55 @@
       "locked": "Verrouillée"
     }
   },
+  "trucks": {
+    "pageTitle": "Camions",
+    "pageSubtitle": "Référentiel des camions-citernes et suivi de leur position (mission tracking, étape 1).",
+    "tabs": {
+      "list": "Liste",
+      "map": "Carte"
+    },
+    "newTruck": "Nouveau camion",
+    "empty": "Aucun camion enregistré.",
+    "noGpsDevice": "Aucun boîtier",
+    "manageDevice": "Boîtier GPS",
+    "edit": "Modifier",
+    "table": {
+      "plate": "Plaque",
+      "carrier": "Transporteur",
+      "gpsDevice": "Boîtier GPS"
+    },
+    "map": {
+      "selectHint": "Cliquez sur un camion pour voir son trajet et ses arrêts.",
+      "loadingRoute": "Chargement du trajet…",
+      "stopsCount": "{count, plural, =0 {Aucun arrêt} one {# arrêt} other {# arrêts}} sur les 24 dernières heures",
+      "stopDuration": "Arrêt de {minutes} min",
+      "stopOngoing": "Arrêt en cours depuis {minutes} min"
+    },
+    "form": {
+      "createTitle": "Nouveau camion",
+      "editTitle": "Modifier le camion",
+      "required": "La plaque d'immatriculation est requise.",
+      "plateNumber": "Plaque d'immatriculation",
+      "platePlaceholder": "Ex. CE 1234 AB",
+      "carrier": "Transporteur",
+      "selectCarrier": "Sélectionner un transporteur",
+      "newCarrier": "Ou créer un nouveau transporteur",
+      "newCarrierPlaceholder": "Nom du transporteur",
+      "searchPlaceholder": "Rechercher…",
+      "noResult": "Aucun résultat",
+      "capacity": "Capacité (L)",
+      "compartments": "Nombre de compartiments"
+    },
+    "deviceForm": {
+      "title": "Boîtier GPS — {plate}",
+      "existingHint": "Un boîtier est déjà associé à ce camion — seul le libellé peut être modifié ici.",
+      "required": "L'identifiant du boîtier est requis.",
+      "deviceIdentifier": "Identifiant du boîtier (IMEI)",
+      "identifierPlaceholder": "Ex. 862345061234567",
+      "label": "Libellé (optionnel)",
+      "labelPlaceholder": "Ex. Boîtier Teltonika FMC125"
+    }
+  },
   "shiftsScreen": {
     "pageTitle": "Shifts",
     "pageSubtitle": "Prise/fin de poste et caisse déclarées, par cuve.",
@@ -1096,6 +1145,7 @@
       "cuves": "Cuves & ATG",
       "deliveries": "Livraisons",
       "approvisionnement": "Approvisionnement",
+      "camions": "Camions",
       "reconciliation": "Réconciliation de stock",
       "ventes": "Journal des ventes",
       "produits": "Produits & boutique",
@@ -1360,7 +1410,10 @@
       "sensor_offline": "Station hors ligne",
       "delivery_discrepancy": "Écart de livraison",
       "delivery_undeclared": "Livraison non déclarée",
-      "delivery_declaration_pending": "Déclaration en attente de confirmation"
+      "delivery_declaration_pending": "Déclaration en attente de confirmation",
+      "price_missing": "Prix de vente manquant",
+      "sensor_mapping_missing": "Sonde non associée",
+      "calibration_missing": "Barème de calibration manquant"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -1369,9 +1422,19 @@
       "filterStatus": "Tous statuts",
       "status": {
         "active": "Active",
+        "acknowledged": "Prise en charge",
         "resolved": "Résolue",
         "all": "Toutes"
       },
+      "severity": {
+        "critical": "Critique",
+        "high": "Élevée",
+        "medium": "Moyenne",
+        "low": "Faible"
+      },
+      "acknowledge": "Je m'en occupe",
+      "acknowledged": "Prise en charge",
+      "autoResolveHint": "Se referme automatiquement dès que la condition disparaît.",
       "resolve": "Résoudre",
       "resolveNotePrompt": "Note de résolution (facultative)",
       "triggeredValue": "Valeur déclenchante",
@@ -1728,6 +1791,7 @@
         "contactEmail": "Email",
         "website": "Site web",
         "address": "Adresse",
+        "taxId": "SIRET/RCS",
         "notes": "Notes",
         "contractReference": "Référence contrat",
         "contractType": "Type de contrat",
@@ -1776,6 +1840,7 @@
         "contactEmail": "Email",
         "website": "Site web",
         "address": "Adresse",
+        "taxId": "SIRET/RCS",
         "contractReference": "Référence contrat",
         "contractType": "Type de contrat",
         "contractTypePlaceholder": "Ex. Annuel, Cadre…",
@@ -1979,7 +2044,18 @@
         "tankAvailable": "Espace disponible",
         "unknown": "Inconnu",
         "linkedDeliveries": "Livraisons rattachées",
-        "noLinkedDelivery": "Aucune livraison déclarée pour cette commande."
+        "noLinkedDelivery": "Aucune livraison déclarée pour cette commande.",
+        "document": {
+          "title": "Bon de commande",
+          "generatePdf": "Générer (PDF)",
+          "generateDocx": "Générer (DOCX)",
+          "empty": "Aucun bon de commande généré pour l'instant.",
+          "preview": "Aperçu",
+          "share": "Partager",
+          "shareEmail": "Envoyer par e-mail",
+          "shareWhatsapp": "Envoyer sur WhatsApp",
+          "previewUnavailable": "Aperçu non disponible pour ce type de fichier — téléchargez-le pour le consulter."
+        }
       }
     },
     "deliveries": {
@@ -2318,7 +2394,8 @@
     "alertBanner": {
       "since": "Depuis {date}",
       "rate": "Taux : {rate} L/h",
-      "resolve": "Résoudre"
+      "resolve": "Résoudre",
+      "acknowledge": "Je m'en occupe"
     },
     "cards": {
       "thresholdsTitle": "Seuils configurés",

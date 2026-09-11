@@ -9,7 +9,7 @@ import { useAlertsList, type AlertRow as AlertRowData, type AlertStatusFilter } 
 import { ActivityRow, Button, EmptyState, Modal, Select, Stack } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
-const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "resolved"];
+const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "acknowledged", "resolved"];
 
 /** Modale maître/détail des alertes d'une station OU d'une cuve — ouverte
  * depuis `StationDetailScreen` et `TankDetailScreen`. Réutilise
@@ -38,7 +38,7 @@ export function AlertsBrowserModal({
   const tCommon = useTranslations("common");
   const [statusFilter, setStatusFilter] = useState<AlertStatusFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(initialAlertId ?? null);
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const data = useAlertsList(organizationId, statusFilter, null, { stationId, tankId });
 
   // La modale reste montée en permanence (jamais démontée/remontée) — sans
@@ -51,12 +51,12 @@ export function AlertsBrowserModal({
 
   const selected: AlertRowData | null = selectedId ? data.rows.find((row) => row.alert.id === selectedId) ?? null : null;
 
-  async function handleResolve(alertId: string) {
-    setResolvingId(alertId);
+  async function handleAcknowledge(alertId: string) {
+    setAcknowledgingId(alertId);
     try {
-      await data.resolve(alertId);
+      await data.acknowledge(alertId);
     } finally {
-      setResolvingId(null);
+      setAcknowledgingId(null);
     }
   }
 
@@ -73,7 +73,7 @@ export function AlertsBrowserModal({
             <ArrowLeft className="size-4" aria-hidden />
             {tCommon("actions.back")}
           </Button>
-          <AlertRow row={selected} resolvingId={resolvingId} onResolve={handleResolve} />
+          <AlertRow row={selected} acknowledgingId={acknowledgingId} onAcknowledge={handleAcknowledge} />
         </Stack>
       ) : (
         <Stack>
@@ -96,7 +96,7 @@ export function AlertsBrowserModal({
                 <ActivityRow
                   key={row.alert.id}
                   icon={AlertTriangle}
-                  iconTone={row.alert.status === "active" ? (row.alert.type === "leak" || row.alert.type === "level_high" ? "error" : "warning") : "neutral"}
+                  iconTone={row.alert.status === "resolved" ? "neutral" : row.alert.severity === "critical" ? "error" : "warning"}
                   title={t(`types.${row.alert.type}`)}
                   meta={row.tank?.displayName ?? "—"}
                   onClick={() => setSelectedId(row.alert.id)}

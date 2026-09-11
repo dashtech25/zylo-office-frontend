@@ -10,7 +10,7 @@ import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/serv
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Button, Card, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
 import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
@@ -297,80 +297,100 @@ export default function StationsListScreen() {
       {statusActionError && <Alert tone="error">{statusActionError}</Alert>}
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
+      {/* La barre de filtres ne dépend d'aucune donnée réseau pour
+          s'afficher (elle lit `data.cities`/`data.fuelProducts`, vides tant
+          que la requête n'a pas répondu, mais son squelette d'interaction
+          reste utilisable) — elle ne doit jamais être bloquée par le
+          chargement de la carte/des cartes/du tableau. */}
+      <Card
+        className="flex cursor-pointer items-center gap-3 transition-shadow hover:shadow-elevated"
+        onClick={() => setMapOpen(true)}
+      >
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-muted text-primary">
+          <MapIcon className="size-5" aria-hidden />
+        </div>
+        <div>
+          <h2 className="text-h4 font-semibold text-text">{t("list.map.title")}</h2>
+          <p className="text-body-sm text-primary">{t("list.map.open")}</p>
+        </div>
+      </Card>
+
+      <Card>
+        <StationsFilterBar {...filterBarProps} />
+      </Card>
+
+      {!data.loading && offlineStations.length > 0 && (
+        <Alert tone="error">
+          {t("list.reliabilityBanner.offline", { count: offlineStations.length, names: offlineStations.map((r) => r.station.name).join(", ") })}
+        </Alert>
+      )}
+
+      {/* Cartes de synthèse réseau — dépendent des lignes filtrées, donc de
+          `data.loading`. */}
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <section>
+          <Skeleton className="mb-3 h-6 w-48" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <KpiSkeleton key={i} />
+            ))}
+          </div>
+        </section>
       ) : (
-        <>
-          {offlineStations.length > 0 && (
-            <Alert tone="error">
-              {t("list.reliabilityBanner.offline", { count: offlineStations.length, names: offlineStations.map((r) => r.station.name).join(", ") })}
-            </Alert>
-          )}
+        filteredRows.length > 0 && (
+          <NetworkStockSummaryCards
+            products={networkProducts}
+            totalVolumeLiters={networkVolumeLiters}
+            totalCapacityLiters={networkCapacityLiters}
+            totalSellableVolumeLiters={networkTotalSellableVolumeLiters}
+            totalMonetaryValue={networkTotalValue}
+            totalSellableMonetaryValue={networkTotalSellableValue}
+            totalCurrencyCode={[...networkCurrencies][0] ?? null}
+            formatMoney={formatMoney}
+            onProductClick={setBreakdownFilter}
+            onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("list.footer.networkTotal") })}
+          />
+        )
+      )}
 
-          <Card
-            className="flex cursor-pointer items-center gap-3 transition-shadow hover:shadow-elevated"
-            onClick={() => setMapOpen(true)}
-          >
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-muted text-primary">
-              <MapIcon className="size-5" aria-hidden />
-            </div>
-            <div>
-              <h2 className="text-h4 font-semibold text-text">{t("list.map.title")}</h2>
-              <p className="text-body-sm text-primary">{t("list.map.open")}</p>
-            </div>
-          </Card>
-
-          <Card>
-            <StationsFilterBar {...filterBarProps} />
-          </Card>
-
-          {filteredRows.length > 0 && (
-            <NetworkStockSummaryCards
-              products={networkProducts}
-              totalVolumeLiters={networkVolumeLiters}
-              totalCapacityLiters={networkCapacityLiters}
-              totalSellableVolumeLiters={networkTotalSellableVolumeLiters}
-              totalMonetaryValue={networkTotalValue}
-              totalSellableMonetaryValue={networkTotalSellableValue}
-              totalCurrencyCode={[...networkCurrencies][0] ?? null}
+      {/* Liste des stations (cartes) — même donnée, squelette dédié plutôt
+          que de réutiliser celui des cartes de synthèse au-dessus. */}
+      {data.loading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-card" />
+          ))}
+        </div>
+      ) : data.stations.length === 0 ? (
+        <EmptyState
+          title={t("list.empty.title")}
+          actionLabel={t("list.empty.add")}
+          onAction={() => setCreateOpen(true)}
+        />
+      ) : filteredRows.length === 0 ? (
+        <EmptyState title={t("list.noResults")} actionLabel={t("list.clearFilters")} onAction={clearFilters} />
+      ) : (
+        <StationsTable>
+          {filteredRows.map((row, index) => (
+            <StationCard
+              key={row.station.id}
+              row={row}
+              city={row.station.cityId ? (cityById.get(row.station.cityId) ?? null) : null}
+              formatVolume={formatVolume}
               formatMoney={formatMoney}
-              onProductClick={setBreakdownFilter}
-              onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("list.footer.networkTotal") })}
+              formatUnitPrice={(value) => format.number(value, { maximumFractionDigits: 1 })}
+              menuOpen={menuOpenId === row.station.id}
+              menuRef={menuOpenId === row.station.id ? menuRef : undefined}
+              onToggleMenu={() => setMenuOpenId(menuOpenId === row.station.id ? null : row.station.id)}
+              onEdit={() => {
+                setMenuOpenId(null);
+                setEditStation(row.station);
+              }}
+              onToggleStatus={() => handleToggleStatus(row)}
+              isLast={index === filteredRows.length - 1}
             />
-          )}
-
-          {data.stations.length === 0 ? (
-            <EmptyState
-              title={t("list.empty.title")}
-              actionLabel={t("list.empty.add")}
-              onAction={() => setCreateOpen(true)}
-            />
-          ) : filteredRows.length === 0 ? (
-            <EmptyState title={t("list.noResults")} actionLabel={t("list.clearFilters")} onAction={clearFilters} />
-          ) : (
-            <StationsTable>
-              {filteredRows.map((row, index) => (
-                <StationCard
-                  key={row.station.id}
-                  row={row}
-                  city={row.station.cityId ? (cityById.get(row.station.cityId) ?? null) : null}
-                  formatVolume={formatVolume}
-                  formatMoney={formatMoney}
-                  formatUnitPrice={(value) => format.number(value, { maximumFractionDigits: 1 })}
-                  menuOpen={menuOpenId === row.station.id}
-                  menuRef={menuOpenId === row.station.id ? menuRef : undefined}
-                  onToggleMenu={() => setMenuOpenId(menuOpenId === row.station.id ? null : row.station.id)}
-                  onEdit={() => {
-                    setMenuOpenId(null);
-                    setEditStation(row.station);
-                  }}
-                  onToggleStatus={() => handleToggleStatus(row)}
-                  isLast={index === filteredRows.length - 1}
-                />
-              ))}
-            </StationsTable>
-          )}
-        </>
+          ))}
+        </StationsTable>
       )}
 
       <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="full" closeLabel={tCommon("actions.close")}>

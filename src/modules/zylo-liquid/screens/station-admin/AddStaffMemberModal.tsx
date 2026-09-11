@@ -35,7 +35,7 @@ export function AddStaffMemberModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadRoles = useCallback(() => listRoles(organizationId), [organizationId]);
-  const rolesState = usePartData(loadRoles);
+  const rolesState = usePartData(["zylo-liquid", "station-admin", "add-staff-roles", organizationId], loadRoles);
 
   const [photoStorageReference, setPhotoStorageReference] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);

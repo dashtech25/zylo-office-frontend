@@ -46,7 +46,7 @@ export function ProductDetailModal({
     () => listPrices(organizationId, { stationId: station.id, fuelProductId: product.fuelProductId, limit: 20 }).then((p) => p.data),
     [organizationId, station.id, product.fuelProductId]
   );
-  const pricesState = usePartData(loadPrices);
+  const pricesState = usePartData(["zylo-liquid", "station-detail", "product-prices", organizationId, station.id, product.fuelProductId], loadPrices);
 
   async function handleSaveThresholds() {
     setSavingThresholds(true);

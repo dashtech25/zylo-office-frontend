@@ -33,7 +33,7 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [organizationId, stationId, reloadKey]
   );
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "security", organizationId, stationId, reloadKey], load);
 
   const [category, setCategory] = useState<SecurityEquipmentCategory>("extincteur");
   const [label, setLabel] = useState("");

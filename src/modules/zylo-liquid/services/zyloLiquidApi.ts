@@ -219,18 +219,35 @@ export type AlertType =
   | "sensor_offline"
   | "delivery_discrepancy"
   | "delivery_undeclared"
-  | "delivery_declaration_pending";
+  | "delivery_declaration_pending"
+  | "price_missing"
+  | "sensor_mapping_missing"
+  | "calibration_missing";
 
+export type AlertSeverity = "critical" | "high" | "medium" | "low";
+export type AlertStatus = "active" | "acknowledged" | "resolved";
+export type AlertResolutionMethod = "auto_verified" | "manual_justified";
+
+// Refonte alertes (2026-09) — `severity` vient désormais du backend (D7) :
+// ne plus dériver la gravité d'un `Set` de types dupliqué côté frontend.
 export interface Alert {
   id: string;
-  tankId: string;
   stationId: string;
+  tankId: string | null;
+  productId: string | null;
   type: AlertType;
-  status: "active" | "resolved";
+  severity: AlertSeverity;
+  status: AlertStatus;
+  sourceType: string | null;
+  sourceId: string | null;
   triggeredAt: string;
   triggeredValue: number | null;
   thresholdValue: number | null;
+  acknowledgedAt: string | null;
+  acknowledgedByUserId: string | null;
   resolvedAt: string | null;
+  resolvedByUserId: string | null;
+  resolutionMethod: AlertResolutionMethod | null;
   resolutionNote: string | null;
 }
 
@@ -557,7 +574,22 @@ export function listAlerts(
   return apiFetch<Page<Alert>>(`/zylo-liquid/alerts?${search.toString()}`, withOrg(organizationId));
 }
 
-export function resolveAlert(organizationId: string, alertId: string, resolutionNote?: string): Promise<Alert> {
+// D3 (refonte alertes) : "je m'en occupe" — ne referme jamais l'alerte,
+// distinct de resolveAlert. Ouvert à des rôles qui n'ont pas le droit de
+// résolution manuelle (ALERT_ACKNOWLEDGE vs ALERT_MANAGE).
+export function acknowledgeAlert(organizationId: string, alertId: string): Promise<Alert> {
+  return apiFetch<Alert>(`/zylo-liquid/alerts/${alertId}/acknowledge`, {
+    method: "POST",
+    organizationId,
+  });
+}
+
+// D2 : réservé aux types sans vérification automatique possible — le
+// backend renvoie 422 (code "alert_requires_automatic_verification") pour
+// un type auto-vérifiable (seuils, eau, sonde, fuite, livraison) : ces
+// types se referment tout seuls dès que la condition réelle disparaît,
+// jamais par ce clic. `resolutionNote` est obligatoire côté backend.
+export function resolveAlert(organizationId: string, alertId: string, resolutionNote: string): Promise<Alert> {
   return apiFetch<Alert>(`/zylo-liquid/alerts/${alertId}`, {
     method: "PATCH",
     organizationId,
@@ -925,6 +957,158 @@ export function listDeliveryDeclarations(organizationId: string, params: { stati
   return apiFetch<Page<DeliveryDeclaration>>(`/zylo-liquid/delivery-declarations?${search.toString()}`, withOrg(organizationId));
 }
 
+// Camions-citernes et transporteurs — référentiels réseau (pas de portée
+// station, un camion dessert plusieurs stations).
+export interface Carrier {
+  id: string;
+  organizationId: string;
+  name: string;
+  active: boolean;
+}
+
+export interface CreateCarrierInput {
+  name: string;
+}
+
+export function listCarriers(organizationId: string, params: { limit?: number } = {}): Promise<Page<Carrier>> {
+  const search = new URLSearchParams();
+  search.set("limit", String(params.limit ?? 100));
+  return apiFetch<Page<Carrier>>(`/zylo-liquid/carriers?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createCarrier(organizationId: string, data: CreateCarrierInput): Promise<Carrier> {
+  return apiFetch<Carrier>("/zylo-liquid/carriers", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateCarrier(organizationId: string, carrierId: string, data: Partial<CreateCarrierInput> & { active?: boolean }): Promise<Carrier> {
+  return apiFetch<Carrier>(`/zylo-liquid/carriers/${carrierId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+export interface Truck {
+  id: string;
+  organizationId: string;
+  carrierId: string | null;
+  plateNumber: string;
+  capacityLiters: number | null;
+  compartmentsCount: number | null;
+}
+
+export interface CreateTruckInput {
+  carrierId?: string;
+  plateNumber: string;
+  capacityLiters?: number;
+  compartmentsCount?: number;
+}
+
+export function listTrucks(organizationId: string, params: { carrierId?: string; limit?: number } = {}): Promise<Page<Truck>> {
+  const search = new URLSearchParams();
+  if (params.carrierId) search.set("carrierId", params.carrierId);
+  search.set("limit", String(params.limit ?? 100));
+  return apiFetch<Page<Truck>>(`/zylo-liquid/trucks?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createTruck(organizationId: string, data: CreateTruckInput): Promise<Truck> {
+  return apiFetch<Truck>("/zylo-liquid/trucks", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateTruck(organizationId: string, truckId: string, data: Partial<CreateTruckInput>): Promise<Truck> {
+  return apiFetch<Truck>(`/zylo-liquid/trucks/${truckId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+/** Tracking GPS des camions-citernes (mission « tracking », étape 1 —
+ * position + arrêts sur carte, 2026-09-11). Un boîtier GPS enregistré,
+ * rattaché optionnellement à un camion — même schéma que les sondes
+ * Holykell pour les cuves : référentiel → journal brut → état dérivé,
+ * jamais mélangés. */
+export interface GpsDevice {
+  id: string;
+  organizationId: string;
+  truckId: string | null;
+  deviceIdentifier: string;
+  label: string | null;
+  active: boolean;
+}
+
+export interface CreateGpsDeviceInput {
+  truckId?: string;
+  deviceIdentifier: string;
+  label?: string;
+}
+
+export function listGpsDevices(organizationId: string, params: { truckId?: string; limit?: number } = {}): Promise<Page<GpsDevice>> {
+  const search = new URLSearchParams();
+  if (params.truckId) search.set("truckId", params.truckId);
+  search.set("limit", String(params.limit ?? 100));
+  return apiFetch<Page<GpsDevice>>(`/zylo-liquid/gps-devices?${search.toString()}`, withOrg(organizationId));
+}
+
+export function createGpsDevice(organizationId: string, data: CreateGpsDeviceInput): Promise<GpsDevice> {
+  return apiFetch<GpsDevice>("/zylo-liquid/gps-devices", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateGpsDevice(organizationId: string, gpsDeviceId: string, data: Partial<CreateGpsDeviceInput> & { active?: boolean }): Promise<GpsDevice> {
+  return apiFetch<GpsDevice>(`/zylo-liquid/gps-devices/${gpsDeviceId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+/** Secret d'ingestion de l'organisation — à copier dans la configuration
+ * de renvoi (forwarding) de la passerelle Traccar, jamais reloggé
+ * ailleurs que dans cet écran d'administration. */
+export function getGpsIngestCredential(organizationId: string): Promise<{ secretToken: string }> {
+  return apiFetch<{ secretToken: string }>("/zylo-liquid/gps-ingest-credential", withOrg(organizationId));
+}
+
+export function regenerateGpsIngestCredential(organizationId: string): Promise<{ secretToken: string }> {
+  return apiFetch<{ secretToken: string }>("/zylo-liquid/gps-ingest-credential/regenerate", { method: "POST", organizationId });
+}
+
+export interface TruckStopEvent {
+  id: string;
+  truckId: string;
+  latitude: number;
+  longitude: number;
+  startAt: string;
+  endAt: string | null;
+}
+
+export interface TruckCurrentPosition {
+  truckId: string;
+  latitude: number | null;
+  longitude: number | null;
+  recordedAt: string | null;
+  channel: string | null;
+  currentStop: TruckStopEvent | null;
+}
+
+export function listTruckCurrentPositions(organizationId: string): Promise<TruckCurrentPosition[]> {
+  return apiFetch<TruckCurrentPosition[]>("/zylo-liquid/trucks/current-positions", withOrg(organizationId));
+}
+
+export interface TruckPositionPing {
+  id: string;
+  gpsDeviceId: string;
+  recordedAt: string;
+  receivedAt: string;
+  latitude: number;
+  longitude: number;
+  channel: string | null;
+  accuracyMeters: number | null;
+  speedKmh: number | null;
+}
+
+export function listTruckPositions(organizationId: string, truckId: string, params: { since?: string; until?: string } = {}): Promise<TruckPositionPing[]> {
+  const search = new URLSearchParams();
+  if (params.since) search.set("since", params.since);
+  if (params.until) search.set("until", params.until);
+  return apiFetch<TruckPositionPing[]>(`/zylo-liquid/trucks/${truckId}/positions?${search.toString()}`, withOrg(organizationId));
+}
+
+export function listTruckStops(organizationId: string, truckId: string, params: { since?: string; until?: string } = {}): Promise<TruckStopEvent[]> {
+  const search = new URLSearchParams();
+  if (params.since) search.set("since", params.since);
+  if (params.until) search.set("until", params.until);
+  return apiFetch<TruckStopEvent[]>(`/zylo-liquid/trucks/${truckId}/stops?${search.toString()}`, withOrg(organizationId));
+}
+
 // Approvisionnement — commandes fournisseur (PurchaseOrder), portée
 // station, produit/fournisseur/cuve toujours en sélection depuis le
 // référentiel déjà défini pour la station — jamais une saisie libre
@@ -960,6 +1144,15 @@ export function listPurchaseOrders(organizationId: string, params: { stationId?:
 
 export function createPurchaseOrder(organizationId: string, data: CreatePurchaseOrderInput): Promise<PurchaseOrder> {
   return apiFetch<PurchaseOrder>("/zylo-liquid/purchase-orders", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+/** Génère un bon de commande PDF ou DOCX, rattaché à la commande via le
+ * mécanisme Document/DocumentLink générique (mission « bon de commande +
+ * aperçu/partage », 2026-09-10). */
+export function generatePurchaseOrderDocument(organizationId: string, purchaseOrderId: string, format: "pdf" | "docx"): Promise<ZyloDocument> {
+  return apiFetch<ZyloDocument>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/generate-document`, {
+    method: "POST", organizationId, body: JSON.stringify({ format }),
+  });
 }
 
 export function createDeliveryDeclaration(organizationId: string, data: CreateDeliveryDeclarationInput): Promise<DeliveryDeclaration> {
@@ -1502,6 +1695,7 @@ export interface Supplier {
   contactEmail: string | null;
   website: string | null;
   address: string | null;
+  taxId: string | null;
   active: boolean;
 }
 
@@ -1515,6 +1709,7 @@ export interface CreateSupplierInput {
   contactEmail?: string;
   website?: string;
   address?: string;
+  taxId?: string;
 }
 
 export function listSuppliers(organizationId: string, params: { limit?: number } = {}): Promise<Page<Supplier>> {

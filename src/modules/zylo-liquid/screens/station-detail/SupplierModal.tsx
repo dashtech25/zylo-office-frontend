@@ -154,6 +154,7 @@ export function SupplierModal({
         <InfoLine label={t("contactEmail")} value={supplier.contactEmail ?? "—"} />
         <InfoLine label={t("website")} value={supplier.website ?? "—"} />
         <InfoLine label={t("address")} value={supplier.address ?? "—"} />
+        <InfoLine label={t("taxId")} value={supplier.taxId ?? "—"} />
       </div>
       {link.notes && (
         <div className="mt-2 border-t border-border-subtle pt-2">

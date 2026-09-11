@@ -376,6 +376,7 @@ import { useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { Badge, Card } from "@/shared/ui";
+import { KpiSkeleton, ListSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { PageSpinner } from "@/shared/ui/Spinner";
 import { cn } from "@/shared/lib/cn";
 
@@ -446,20 +447,24 @@ function NetworkDashboardScreen() {
     <div className="flex flex-col gap-6">
       {/* Zone A — barre de statut réseau */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border-subtle bg-surface px-4 py-3">
-        <div className="flex flex-wrap items-center gap-5 text-body-sm">
-          <span className="flex items-center gap-2 text-text">
-            <Circle className="size-2 fill-success text-success" aria-hidden />
-            {t("statusBar.stationsActive", { count: data.stationsActiveCount })}
-          </span>
-          <span className="flex items-center gap-2 text-text-muted">
-            <Circle className="size-2 fill-text-disabled text-text-disabled" aria-hidden />
-            {t("statusBar.stationsOffline", { count: data.stationsOfflineCount })}
-          </span>
-          <span className="flex items-center gap-2 text-warning">
-            <AlertTriangle className="size-4" aria-hidden />
-            {t("statusBar.alertsActive", { count: data.activeAlertsCount })}
-          </span>
-        </div>
+        {data.loading ? (
+          <Skeleton className="h-5 w-64" />
+        ) : (
+          <div className="flex flex-wrap items-center gap-5 text-body-sm">
+            <span className="flex items-center gap-2 text-text">
+              <Circle className="size-2 fill-success text-success" aria-hidden />
+              {t("statusBar.stationsActive", { count: data.stationsActiveCount })}
+            </span>
+            <span className="flex items-center gap-2 text-text-muted">
+              <Circle className="size-2 fill-text-disabled text-text-disabled" aria-hidden />
+              {t("statusBar.stationsOffline", { count: data.stationsOfflineCount })}
+            </span>
+            <span className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="size-4" aria-hidden />
+              {t("statusBar.alertsActive", { count: data.activeAlertsCount })}
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-1">
           {PERIODS.map((value) => (
             <button
@@ -491,94 +496,125 @@ function NetworkDashboardScreen() {
         </Card>
       )}
 
+      {/* Zone B — synthèse stock réseau : dépend uniquement de la requête de
+          base (produits/synthèse réseau), indépendante des états par station
+          et du graphique. */}
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
-      ) : (
-        <>
-          {/* Zone B — synthèse stock réseau */}
-          <NetworkStockSummaryCards
-            products={data.products}
-            totalVolumeLiters={data.networkSummary?.totalVolumeLiters ?? 0}
-            totalCapacityLiters={data.totalCapacityLiters}
-            totalSellableVolumeLiters={data.totalSellableVolumeLiters}
-            totalMonetaryValue={data.totalMonetaryValue}
-            totalSellableMonetaryValue={data.totalSellableMonetaryValue}
-            totalCurrencyCode={data.totalMonetaryCurrencyCode}
-            formatMoney={formatMoney}
-            onProductClick={setBreakdownFilter}
-            onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
-          />
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Zone C — graphique de tendance */}
-            <Card className="lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-h3 font-semibold text-text">{t("chart.title")}</h3>
-                <span className="text-caption text-text-muted">{t("chart.unit")}</span>
-              </div>
-              {data.chartLoading ? (
-                <PageSpinner label={tCommon("states.loading")} />
-              ) : data.chartPoints.length < 2 ? (
-                <p className="text-body-sm text-text-muted">{t("chart.insufficientData")}</p>
-              ) : (
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <div className="flex-1">
-                    <TrendChart
-                      points={data.chartPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
-                      formatValue={formatVolume}
-                      formatDate={formatDateShort}
-                      seriesLabel={t("chart.seriesLabel")}
-                    />
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-3 sm:w-40">
-                    <div>
-                      <p className="text-caption text-text-muted">{t("chart.currentStock")}</p>
-                      <p className="text-body-lg font-semibold tabular-nums text-text">{formatVolume(data.networkSummary?.totalVolumeLiters ?? 0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-caption text-text-muted">{t("chart.totalCapacity")}</p>
-                      <p className="text-body-md tabular-nums text-text">{formatVolume(data.totalCapacityLiters)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Alertes actives */}
-            <Card>
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-h3 font-semibold text-text">{t("alerts.title")}</h3>
-              </div>
-              {data.activeAlerts.length === 0 ? (
-                <p className="text-body-sm text-text-muted">{t("alerts.empty")}</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {data.activeAlerts.slice(0, 6).map((alert) => {
-                    const station = data.stations.find((s) => s.id === alert.stationId);
-                    const tone = alert.type === "leak" || alert.type === "sensor_offline" ? "error" : "warning";
-                    return (
-                      <li key={alert.id} className="flex items-start gap-2">
-                        <AlertTriangle className={cn("mt-0.5 size-4", tone === "error" ? "text-error" : "text-warning")} aria-hidden />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-body-sm font-medium text-text">{t(`alerts.types.${alert.type}`)}</p>
-                          <p className="truncate text-caption text-text-muted">{station?.name}</p>
-                        </div>
-                        <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(alert.triggeredAt)}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card>
+        <section>
+          <Skeleton className="mb-3 h-6 w-48" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <KpiSkeleton key={i} />
+            ))}
           </div>
+        </section>
+      ) : (
+        <NetworkStockSummaryCards
+          products={data.products}
+          totalVolumeLiters={data.networkSummary?.totalVolumeLiters ?? 0}
+          totalCapacityLiters={data.totalCapacityLiters}
+          totalSellableVolumeLiters={data.totalSellableVolumeLiters}
+          totalMonetaryValue={data.totalMonetaryValue}
+          totalSellableMonetaryValue={data.totalSellableMonetaryValue}
+          totalCurrencyCode={data.totalMonetaryCurrencyCode}
+          formatMoney={formatMoney}
+          onProductClick={setBreakdownFilter}
+          onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
+        />
+      )}
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Stations du réseau */}
-            <Card className="lg:col-span-2" padding="none">
-              <div className="flex items-center justify-between p-5 pb-0">
-                <h3 className="text-h3 font-semibold text-text">{t("stations.title")}</h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Zone C — graphique de tendance : garde son propre `chartLoading`
+            (requête indépendante, déjà exposée par le hook). */}
+        <Card className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-h3 font-semibold text-text">{t("chart.title")}</h3>
+            <span className="text-caption text-text-muted">{t("chart.unit")}</span>
+          </div>
+          {data.chartLoading ? (
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Skeleton className="h-48 flex-1" />
+              <div className="flex shrink-0 flex-col gap-3 sm:w-40">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
-              <div className="overflow-x-auto p-5">
+            </div>
+          ) : data.chartPoints.length < 2 ? (
+            <p className="text-body-sm text-text-muted">{t("chart.insufficientData")}</p>
+          ) : (
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1">
+                <TrendChart
+                  points={data.chartPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
+                  formatValue={formatVolume}
+                  formatDate={formatDateShort}
+                  seriesLabel={t("chart.seriesLabel")}
+                />
+              </div>
+              <div className="flex shrink-0 flex-col gap-3 sm:w-40">
+                <div>
+                  <p className="text-caption text-text-muted">{t("chart.currentStock")}</p>
+                  <p className="text-body-lg font-semibold tabular-nums text-text">{formatVolume(data.networkSummary?.totalVolumeLiters ?? 0)}</p>
+                </div>
+                <div>
+                  <p className="text-caption text-text-muted">{t("chart.totalCapacity")}</p>
+                  <p className="text-body-md tabular-nums text-text">{formatVolume(data.totalCapacityLiters)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Alertes actives — vient de la requête de base. */}
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-h3 font-semibold text-text">{t("alerts.title")}</h3>
+          </div>
+          {data.loading ? (
+            <ListSkeleton rows={4} />
+          ) : data.activeAlerts.length === 0 ? (
+            <p className="text-body-sm text-text-muted">{t("alerts.empty")}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {data.activeAlerts.slice(0, 6).map((alert) => {
+                const station = data.stations.find((s) => s.id === alert.stationId);
+                const tone = alert.type === "leak" || alert.type === "sensor_offline" ? "error" : "warning";
+                return (
+                  <li key={alert.id} className="flex items-start gap-2">
+                    <AlertTriangle className={cn("mt-0.5 size-4", tone === "error" ? "text-error" : "text-warning")} aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-body-sm font-medium text-text">{t(`alerts.types.${alert.type}`)}</p>
+                      <p className="truncate text-caption text-text-muted">{station?.name}</p>
+                    </div>
+                    <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(alert.triggeredAt)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Stations du réseau : dépend des états courants par station
+            (`statesLoading`), qui se chargent après la base — reste en
+            squelette même quand la synthèse et le graphique sont déjà
+            affichés. */}
+        <Card className="lg:col-span-2" padding="none">
+          <div className="flex items-center justify-between p-5 pb-0">
+            <h3 className="text-h3 font-semibold text-text">{t("stations.title")}</h3>
+          </div>
+          <div className="overflow-x-auto p-5">
+            {data.statesLoading ? (
+              <table className="w-full border-collapse text-body-sm">
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <TableRowSkeleton key={i} columns={7} />
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <>
                 <table className="w-full border-collapse text-body-sm">
                   <thead>
                     <tr className="border-b border-border-subtle text-caption font-semibold uppercase tracking-wide text-text-muted">
@@ -623,39 +659,43 @@ function NetworkDashboardScreen() {
                 </table>
                 {data.stationAggregates.length === 0 && <p className="py-4 text-body-sm text-text-muted">{t("stations.empty")}</p>}
                 <p className="mt-3 text-caption text-text-muted">{t("stations.totalStations", { count: data.stations.length })}</p>
-              </div>
-            </Card>
-
-            {/* Activité récente */}
-            <Card>
-              <h3 className="mb-3 text-h3 font-semibold text-text">{t("activity.title")}</h3>
-              {data.recentActivity.length === 0 ? (
-                <p className="text-body-sm text-text-muted">{t("activity.empty")}</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {data.recentActivity.map((event, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      {event.kind === "delivery" && <Truck className="mt-0.5 size-4 text-success" aria-hidden />}
-                      {event.kind === "alert" && <AlertTriangle className="mt-0.5 size-4 text-warning" aria-hidden />}
-                      {event.kind === "measurement" && <Wrench className="mt-0.5 size-4 text-info" aria-hidden />}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-body-sm font-medium text-text">{t(`activity.events.${event.kind}`)}</p>
-                        <p className="truncate text-caption text-text-muted">
-                          {event.kind === "delivery" && `${event.stationName} — ${t("activity.deliveryDetails", { volume: formatVolume(event.delivery.volumeLiters ?? 0) })}`}
-                          {event.kind === "alert" && `${event.stationName} — ${t(`alerts.types.${event.alert.type}`)}`}
-                          {event.kind === "measurement" &&
-                            t("activity.measurementDetails", { tank: `${event.stationName} / ${event.tankName}`, height: `${Math.round(event.heightMm)} mm` })}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(event.at)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
+              </>
+            )}
           </div>
-        </>
-      )}
+        </Card>
+
+        {/* Activité récente : combine base (livraisons/alertes) et états par
+            station (mesures) — reste en squelette tant que l'un des deux
+            n'est pas prêt. */}
+        <Card>
+          <h3 className="mb-3 text-h3 font-semibold text-text">{t("activity.title")}</h3>
+          {data.loading || data.statesLoading ? (
+            <ListSkeleton rows={5} />
+          ) : data.recentActivity.length === 0 ? (
+            <p className="text-body-sm text-text-muted">{t("activity.empty")}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {data.recentActivity.map((event, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  {event.kind === "delivery" && <Truck className="mt-0.5 size-4 text-success" aria-hidden />}
+                  {event.kind === "alert" && <AlertTriangle className="mt-0.5 size-4 text-warning" aria-hidden />}
+                  {event.kind === "measurement" && <Wrench className="mt-0.5 size-4 text-info" aria-hidden />}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body-sm font-medium text-text">{t(`activity.events.${event.kind}`)}</p>
+                    <p className="truncate text-caption text-text-muted">
+                      {event.kind === "delivery" && `${event.stationName} — ${t("activity.deliveryDetails", { volume: formatVolume(event.delivery.volumeLiters ?? 0) })}`}
+                      {event.kind === "alert" && `${event.stationName} — ${t(`alerts.types.${event.alert.type}`)}`}
+                      {event.kind === "measurement" &&
+                        t("activity.measurementDetails", { tank: `${event.stationName} / ${event.tankName}`, height: `${Math.round(event.heightMm)} mm` })}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(event.at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
 
       {breakdownFilter && (
         <ProductBreakdownModal

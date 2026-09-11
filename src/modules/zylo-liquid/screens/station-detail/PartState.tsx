@@ -1,8 +1,9 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode } from "react";
 
 import { ApiError } from "@/core/api/client";
 import { Alert, EmptyState } from "@/shared/ui";
@@ -26,28 +27,28 @@ export function isForbidden(err: unknown): boolean {
 
 /** Charge une partie quand son onglet est ouvert (le contenu d'un onglet
  * Radix n'est monté qu'à l'ouverture). `load` doit être stable
- * (`useCallback`) — même pattern que `useStationDetail`. */
-export function usePartData<T>(load: () => Promise<T>): PartState<T> {
-  const [state, setState] = useState<PartState<T>>({ status: "loading" });
+ * (`useCallback`) — même pattern que `useStationDetail`.
+ *
+ * Migré vers React Query (cache applicatif, cf. `QueryProvider`) : revenir
+ * sur un onglet déjà consulté récemment (le contenu d'un onglet Radix est
+ * démonté à la fermeture, donc remonté à chaque réouverture) affiche
+ * instantanément la dernière donnée connue au lieu de tout recharger avec un
+ * spinner plein écran — c'était la cause directe du symptôme « je change
+ * d'onglet et ça recharge tout ». `queryKey` doit inclure tout ce dont
+ * `load` dépend (mêmes valeurs que ses dépendances `useCallback`), sans quoi
+ * deux appels différents partageraient le même cache. */
+export function usePartData<T>(queryKey: readonly unknown[], load: () => Promise<T>): PartState<T> {
+  const query = useQuery({
+    queryKey,
+    queryFn: load,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    setState({ status: "loading" });
-    load()
-      .then((data) => {
-        if (!cancelled) setState({ status: "ready", data });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        if (isForbidden(err)) setState({ status: "denied" });
-        else setState({ status: "error", error: err instanceof Error ? err.message : String(err) });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [load]);
-
-  return state;
+  if (query.isPending) return { status: "loading" };
+  if (query.isError) {
+    if (isForbidden(query.error)) return { status: "denied" };
+    return { status: "error", error: query.error instanceof Error ? query.error.message : String(query.error) };
+  }
+  return { status: "ready", data: query.data as T };
 }
 
 /** Rendu commun des états chargement / refus (403) / erreur d'une partie.

@@ -16,12 +16,12 @@ import type { AlertStationGroup } from "./useAlertsList";
  * ses alertes dans la même page, sans navigation. */
 export function StationAlertGroup({
   group,
-  resolvingId,
-  onResolve,
+  acknowledgingId,
+  onAcknowledge,
 }: {
   group: AlertStationGroup;
-  resolvingId: string | null;
-  onResolve: (alertId: string) => void;
+  acknowledgingId: string | null;
+  onAcknowledge: (alertId: string) => void;
 }) {
   const t = useTranslations("zyloLiquid.alerts");
   const [open, setOpen] = useState(false);
@@ -46,7 +46,7 @@ export function StationAlertGroup({
         <div className="border-t border-border-subtle p-4">
           <Stack gap="sm">
             {group.rows.map((row) => (
-              <AlertRow key={row.alert.id} row={row} resolvingId={resolvingId} onResolve={onResolve} />
+              <AlertRow key={row.alert.id} row={row} acknowledgingId={acknowledgingId} onAcknowledge={onAcknowledge} />
             ))}
           </Stack>
         </div>

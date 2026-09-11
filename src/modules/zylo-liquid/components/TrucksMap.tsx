@@ -1,0 +1,188 @@
+"use client";
+
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { useEffect, useRef } from "react";
+
+export type TruckMapStatus = "moving" | "stopped" | "unknown";
+
+export interface TruckMapPoint {
+  id: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+  status: TruckMapStatus;
+}
+
+export interface TruckMapStop {
+  latitude: number;
+  longitude: number;
+  durationLabel: string;
+}
+
+const STATUS_COLOR: Record<TruckMapStatus, string> = {
+  moving: "#1F9D55",
+  stopped: "#D97706",
+  unknown: "#6B7280",
+};
+
+const ROUTE_SOURCE_ID = "truck-route";
+const ROUTE_LAYER_ID = "truck-route-line";
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
+/** Carte de tracking des camions-citernes (mission « tracking », étape 1
+ * — position + arrêts sur carte, 2026-09-11) — même composant mapbox que
+ * `StationsMap`, étendu pour un tracé de trajet (polyligne) et des
+ * marqueurs d'arrêt avec durée au clic. Camions sans position connue
+ * (aucun boîtier, ou aucune position encore reçue) silencieusement omis
+ * — jamais positionnés à une coordonnée inventée. */
+export function TrucksMap({
+  trucks,
+  route,
+  stops,
+  height = 480,
+  selectedTruckId,
+  onTruckClick,
+}: {
+  trucks: TruckMapPoint[];
+  /** Trajet du camion sélectionné — [longitude, latitude][] triés
+   * chronologiquement, ou absent/vide si aucun camion sélectionné. */
+  route?: [number, number][];
+  stops?: TruckMapStop[];
+  height?: number;
+  selectedTruckId?: string | null;
+  onTruckClick?: (truckId: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupsRef = useRef<mapboxgl.Popup[]>([]);
+  const stopMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+  useEffect(() => {
+    if (!containerRef.current || !token) return;
+    mapboxgl.accessToken = token;
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [9.7, 4.05],
+      zoom: 5,
+    });
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    const maybeMap = mapRef.current;
+    if (!maybeMap || !token) return;
+    const map: mapboxgl.Map = maybeMap;
+
+    function placeMarkers() {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      popupsRef.current.forEach((p) => p.remove());
+      popupsRef.current = [];
+
+      const bounds = new mapboxgl.LngLatBounds();
+      let hasBounds = false;
+      trucks.forEach((t) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.setAttribute("aria-label", t.label);
+        const selected = t.id === selectedTruckId;
+        el.style.width = selected ? "20px" : "16px";
+        el.style.height = selected ? "20px" : "16px";
+        el.style.borderRadius = "50%";
+        el.style.border = selected ? "3px solid #1D4ED8" : "2px solid white";
+        el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
+        el.style.background = STATUS_COLOR[t.status];
+        el.style.cursor = "pointer";
+        el.onclick = () => onTruckClick?.(t.id);
+
+        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false }).setLngLat([t.longitude, t.latitude]);
+        popup.setHTML(`<div style="font-weight:600;">${escapeHtml(t.label)}</div>`);
+        el.addEventListener("mouseenter", () => popup.addTo(map));
+        el.addEventListener("mouseleave", () => popup.remove());
+        popupsRef.current.push(popup);
+
+        const marker = new mapboxgl.Marker({ element: el }).setLngLat([t.longitude, t.latitude]).addTo(map);
+        markersRef.current.push(marker);
+        bounds.extend([t.longitude, t.latitude]);
+        hasBounds = true;
+      });
+      if (hasBounds && !route?.length) {
+        map.fitBounds(bounds, { padding: 60, maxZoom: 12, duration: 0 });
+      }
+    }
+
+    function placeRoute() {
+      const existingSource = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+      const geojson: GeoJSON.Feature<GeoJSON.LineString> = {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: route && route.length > 1 ? route : [] },
+      };
+      if (existingSource) {
+        existingSource.setData(geojson);
+      } else {
+        map.addSource(ROUTE_SOURCE_ID, { type: "geojson", data: geojson });
+        map.addLayer({
+          id: ROUTE_LAYER_ID,
+          type: "line",
+          source: ROUTE_SOURCE_ID,
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: { "line-color": "#1D4ED8", "line-width": 3, "line-opacity": 0.7 },
+        });
+      }
+
+      stopMarkersRef.current.forEach((m) => m.remove());
+      stopMarkersRef.current = [];
+      (stops ?? []).forEach((stop) => {
+        const el = document.createElement("div");
+        el.style.width = "12px";
+        el.style.height = "12px";
+        el.style.borderRadius = "3px";
+        el.style.border = "2px solid white";
+        el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.2)";
+        el.style.background = "#D97706";
+        const popup = new mapboxgl.Popup({ offset: 10, closeButton: false, closeOnClick: false }).setLngLat([stop.longitude, stop.latitude]);
+        popup.setText(stop.durationLabel);
+        el.addEventListener("mouseenter", () => popup.addTo(map));
+        el.addEventListener("mouseleave", () => popup.remove());
+        const marker = new mapboxgl.Marker({ element: el }).setLngLat([stop.longitude, stop.latitude]).addTo(map);
+        stopMarkersRef.current.push(marker);
+      });
+
+      if (route && route.length > 1) {
+        const bounds = route.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(route[0], route[0]));
+        map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 0 });
+      }
+    }
+
+    function placeAll() {
+      placeMarkers();
+      placeRoute();
+    }
+
+    if (map.loaded()) placeAll();
+    else map.once("load", placeAll);
+  }, [trucks, route, stops, selectedTruckId, token, onTruckClick]);
+
+  if (!token) {
+    return (
+      <div className="flex items-center justify-center rounded-card border border-dashed border-border-subtle text-body-sm text-text-muted" style={{ height }}>
+        Carte indisponible — jeton Mapbox non configuré.
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} style={{ height, borderRadius: "var(--radius-card, 8px)", overflow: "hidden" }} />;
+}

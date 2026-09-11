@@ -88,6 +88,7 @@ const NAV: NavGroup[] = [
       { labelKey: "nav.items.cuves", href: "/zylo-liquid/cuves", icon: Gauge, requiredPermission: "zyloLiquid.tank.read" },
       { labelKey: "nav.items.deliveries", href: "/zylo-liquid/livraisons", icon: Truck, requiredPermission: "zyloLiquid.delivery.read" },
       { labelKey: "nav.items.approvisionnement", href: "/zylo-liquid/approvisionnement", icon: Package, requiredPermission: "zyloLiquid.deliveryDeclaration.read" },
+      { labelKey: "nav.items.camions", href: "/zylo-liquid/camions", icon: Truck, requiredPermission: "zyloLiquid.truck.read" },
       { labelKey: "nav.items.reconciliation", href: "/zylo-liquid/reconciliation", icon: Scale, requiredPermission: "zyloLiquid.reconciliation.read" },
     ],
   },

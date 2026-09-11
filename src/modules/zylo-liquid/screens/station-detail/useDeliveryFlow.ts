@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { resolveStorageUrl, uploadFile } from "@/core/api/storage";
 import {
+  acknowledgeAlert,
   createDeliveryDeclaration,
   createDocument,
   createPurchaseOrder,
@@ -107,9 +108,17 @@ export function useDeliveryFlow(organizationId: string | null, stationId: string
     return record;
   }
 
-  async function closeAlert(alertId: string, resolutionNote?: string): Promise<Alert | null> {
+  async function closeAlert(alertId: string, resolutionNote: string): Promise<Alert | null> {
     if (!organizationId) return null;
     const alert = await resolveAlert(organizationId, alertId, resolutionNote);
+    await invalidate();
+    return alert;
+  }
+
+  // D3 (refonte alertes) : "je m'en occupe" — ne referme jamais l'alerte.
+  async function acknowledgeAlertAction(alertId: string): Promise<Alert | null> {
+    if (!organizationId) return null;
+    const alert = await acknowledgeAlert(organizationId, alertId);
     await invalidate();
     return alert;
   }
@@ -169,6 +178,7 @@ export function useDeliveryFlow(organizationId: string | null, stationId: string
     declareDelivery,
     reevaluateReconciliation,
     closeAlert,
+    acknowledgeAlert: acknowledgeAlertAction,
     attachDeliveryFiles,
     listDeliveryFiles,
     removeDeliveryFile,

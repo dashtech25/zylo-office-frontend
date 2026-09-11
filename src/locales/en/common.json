@@ -13,7 +13,8 @@
     "open": "Open",
     "back": "Back",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "download": "Download"
   },
   "states": {
     "loading": "Loading…",

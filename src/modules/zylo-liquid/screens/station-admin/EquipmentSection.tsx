@@ -27,7 +27,7 @@ export function EquipmentSection({ organizationId, stationId }: { organizationId
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [organizationId, stationId, reloadKey]
   );
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "equipment", organizationId, stationId, reloadKey], load);
 
   const [type, setType] = useState<(typeof EQUIPMENT_TYPES)[number]>("autre");
   const [name, setName] = useState("");
