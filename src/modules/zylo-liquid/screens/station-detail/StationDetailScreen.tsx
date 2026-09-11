@@ -604,7 +604,7 @@ export default function StationDetailScreen() {
             activeLeakAlerts.map((a) => {
               const tank = data.tanks.find((tk) => tk.id === a.tankId);
               const product = tank ? data.fuelProductById.get(tank.fuelProductId) : null;
-              const anomalyLeak = anomalyLeaksByTank.get(a.tankId);
+              const anomalyLeak = a.tankId ? anomalyLeaksByTank.get(a.tankId) : undefined;
               return (
                 <ActivityRow
                   key={a.id}

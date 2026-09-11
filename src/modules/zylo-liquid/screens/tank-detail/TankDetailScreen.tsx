@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { resolveAlert, type Alert as ZyloAlert, type TankMeasurement } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { acknowledgeAlert, type Alert as ZyloAlert, type TankMeasurement } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, EmptyState, InfoRow, Kpi, PageHeader, Stack, Tabs } from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
@@ -83,11 +83,13 @@ export default function TankDetailScreen() {
     return format.dateTime(new Date(iso), { hour: "2-digit", minute: "2-digit" });
   }
 
-  async function handleResolve(alert: ZyloAlert) {
+  // D3 (refonte alertes) : "je m'en occupe" — ne referme jamais l'alerte,
+  // se ferme automatiquement dès que la condition disparaît.
+  async function handleAcknowledge(alert: ZyloAlert) {
     if (!currentOrganization) return;
     setResolvingId(alert.id);
     try {
-      await resolveAlert(currentOrganization.id, alert.id);
+      await acknowledgeAlert(currentOrganization.id, alert.id);
       await data.reload();
     } finally {
       setResolvingId(null);
@@ -130,7 +132,7 @@ export default function TankDetailScreen() {
 
   const activeAlerts = data.alerts.filter((a) => a.status === "active");
   const bannerAlert = activeAlerts.find((a) => a.type === "leak") ?? activeAlerts.find((a) => a.type === "level_high") ?? activeAlerts[0] ?? null;
-  const bannerTone = bannerAlert && (bannerAlert.type === "leak" || bannerAlert.type === "level_high") ? "error" : "warning";
+  const bannerTone = bannerAlert && bannerAlert.severity === "critical" ? "error" : "warning";
   const bannerLeakRate = bannerAlert?.type === "leak" ? data.leakEvents.find((e) => e.result === "anomaly")?.leakRateLph ?? null : null;
 
   const activeSensorMappings = data.sensorMappings.filter((m) => m.active);
@@ -191,8 +193,8 @@ export default function TankDetailScreen() {
           tone={bannerTone}
           title={tAlerts(`types.${bannerAlert.type}`)}
           action={
-            <Button variant={bannerTone === "error" ? "destructive" : "outline"} size="sm" loading={resolvingId === bannerAlert.id} onClick={() => handleResolve(bannerAlert)}>
-              {t("alertBanner.resolve")}
+            <Button variant={bannerTone === "error" ? "destructive" : "outline"} size="sm" loading={resolvingId === bannerAlert.id} onClick={() => handleAcknowledge(bannerAlert)}>
+              {t("alertBanner.acknowledge")}
             </Button>
           }
         >

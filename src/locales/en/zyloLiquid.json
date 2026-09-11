@@ -1360,7 +1360,10 @@
       "sensor_offline": "Station offline",
       "delivery_discrepancy": "Delivery discrepancy",
       "delivery_undeclared": "Undeclared delivery",
-      "delivery_declaration_pending": "Declaration awaiting confirmation"
+      "delivery_declaration_pending": "Declaration awaiting confirmation",
+      "price_missing": "Missing sale price",
+      "sensor_mapping_missing": "Sensor not mapped",
+      "calibration_missing": "Missing calibration chart"
     },
     "page": {
       "title": "Alert center",
@@ -1369,9 +1372,19 @@
       "filterStatus": "All statuses",
       "status": {
         "active": "Active",
+        "acknowledged": "Acknowledged",
         "resolved": "Resolved",
         "all": "All"
       },
+      "severity": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "acknowledge": "I'm on it",
+      "acknowledged": "Acknowledged",
+      "autoResolveHint": "Closes automatically once the condition clears.",
       "resolve": "Resolve",
       "resolveNotePrompt": "Resolution note (optional)",
       "triggeredValue": "Triggering value",
@@ -1728,6 +1741,7 @@
         "contactEmail": "Email",
         "website": "Website",
         "address": "Address",
+        "taxId": "Tax ID",
         "notes": "Notes",
         "contractReference": "Contract reference",
         "contractType": "Contract type",
@@ -1776,6 +1790,7 @@
         "contactEmail": "Email",
         "website": "Website",
         "address": "Address",
+        "taxId": "Tax ID",
         "contractReference": "Contract reference",
         "contractType": "Contract type",
         "contractTypePlaceholder": "E.g. Annual, Framework…",
@@ -1979,7 +1994,18 @@
         "tankAvailable": "Available space",
         "unknown": "Unknown",
         "linkedDeliveries": "Linked deliveries",
-        "noLinkedDelivery": "No delivery declared for this order."
+        "noLinkedDelivery": "No delivery declared for this order.",
+        "document": {
+          "title": "Purchase order document",
+          "generatePdf": "Generate (PDF)",
+          "generateDocx": "Generate (DOCX)",
+          "empty": "No purchase order document generated yet.",
+          "preview": "Preview",
+          "share": "Share",
+          "shareEmail": "Send by email",
+          "shareWhatsapp": "Send on WhatsApp",
+          "previewUnavailable": "Preview not available for this file type — download it to view."
+        }
       }
     },
     "deliveries": {
@@ -2318,7 +2344,8 @@
     "alertBanner": {
       "since": "Since {date}",
       "rate": "Rate: {rate} L/h",
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "acknowledge": "I'm on it"
     },
     "cards": {
       "thresholdsTitle": "Configured thresholds",

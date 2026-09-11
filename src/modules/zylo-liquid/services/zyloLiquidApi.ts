@@ -219,18 +219,35 @@ export type AlertType =
   | "sensor_offline"
   | "delivery_discrepancy"
   | "delivery_undeclared"
-  | "delivery_declaration_pending";
+  | "delivery_declaration_pending"
+  | "price_missing"
+  | "sensor_mapping_missing"
+  | "calibration_missing";
 
+export type AlertSeverity = "critical" | "high" | "medium" | "low";
+export type AlertStatus = "active" | "acknowledged" | "resolved";
+export type AlertResolutionMethod = "auto_verified" | "manual_justified";
+
+// Refonte alertes (2026-09) — `severity` vient désormais du backend (D7) :
+// ne plus dériver la gravité d'un `Set` de types dupliqué côté frontend.
 export interface Alert {
   id: string;
-  tankId: string;
   stationId: string;
+  tankId: string | null;
+  productId: string | null;
   type: AlertType;
-  status: "active" | "resolved";
+  severity: AlertSeverity;
+  status: AlertStatus;
+  sourceType: string | null;
+  sourceId: string | null;
   triggeredAt: string;
   triggeredValue: number | null;
   thresholdValue: number | null;
+  acknowledgedAt: string | null;
+  acknowledgedByUserId: string | null;
   resolvedAt: string | null;
+  resolvedByUserId: string | null;
+  resolutionMethod: AlertResolutionMethod | null;
   resolutionNote: string | null;
 }
 
@@ -557,7 +574,22 @@ export function listAlerts(
   return apiFetch<Page<Alert>>(`/zylo-liquid/alerts?${search.toString()}`, withOrg(organizationId));
 }
 
-export function resolveAlert(organizationId: string, alertId: string, resolutionNote?: string): Promise<Alert> {
+// D3 (refonte alertes) : "je m'en occupe" — ne referme jamais l'alerte,
+// distinct de resolveAlert. Ouvert à des rôles qui n'ont pas le droit de
+// résolution manuelle (ALERT_ACKNOWLEDGE vs ALERT_MANAGE).
+export function acknowledgeAlert(organizationId: string, alertId: string): Promise<Alert> {
+  return apiFetch<Alert>(`/zylo-liquid/alerts/${alertId}/acknowledge`, {
+    method: "POST",
+    organizationId,
+  });
+}
+
+// D2 : réservé aux types sans vérification automatique possible — le
+// backend renvoie 422 (code "alert_requires_automatic_verification") pour
+// un type auto-vérifiable (seuils, eau, sonde, fuite, livraison) : ces
+// types se referment tout seuls dès que la condition réelle disparaît,
+// jamais par ce clic. `resolutionNote` est obligatoire côté backend.
+export function resolveAlert(organizationId: string, alertId: string, resolutionNote: string): Promise<Alert> {
   return apiFetch<Alert>(`/zylo-liquid/alerts/${alertId}`, {
     method: "PATCH",
     organizationId,
@@ -960,6 +992,15 @@ export function listPurchaseOrders(organizationId: string, params: { stationId?:
 
 export function createPurchaseOrder(organizationId: string, data: CreatePurchaseOrderInput): Promise<PurchaseOrder> {
   return apiFetch<PurchaseOrder>("/zylo-liquid/purchase-orders", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+/** Génère un bon de commande PDF ou DOCX, rattaché à la commande via le
+ * mécanisme Document/DocumentLink générique (mission « bon de commande +
+ * aperçu/partage », 2026-09-10). */
+export function generatePurchaseOrderDocument(organizationId: string, purchaseOrderId: string, format: "pdf" | "docx"): Promise<ZyloDocument> {
+  return apiFetch<ZyloDocument>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/generate-document`, {
+    method: "POST", organizationId, body: JSON.stringify({ format }),
+  });
 }
 
 export function createDeliveryDeclaration(organizationId: string, data: CreateDeliveryDeclarationInput): Promise<DeliveryDeclaration> {
@@ -1502,6 +1543,7 @@ export interface Supplier {
   contactEmail: string | null;
   website: string | null;
   address: string | null;
+  taxId: string | null;
   active: boolean;
 }
 
@@ -1515,6 +1557,7 @@ export interface CreateSupplierInput {
   contactEmail?: string;
   website?: string;
   address?: string;
+  taxId?: string;
 }
 
 export function listSuppliers(organizationId: string, params: { limit?: number } = {}): Promise<Page<Supplier>> {

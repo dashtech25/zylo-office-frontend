@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  acknowledgeAlert as acknowledgeAlertRequest,
   listAlerts,
   listStations,
   listTanks,
@@ -26,7 +27,7 @@ export interface AlertStationGroup {
   rows: AlertRow[];
 }
 
-export type AlertStatusFilter = "active" | "resolved" | "all";
+export type AlertStatusFilter = "active" | "acknowledged" | "resolved" | "all";
 
 export interface AlertScope {
   stationId?: string;
@@ -80,7 +81,17 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
     load();
   }, [load]);
 
-  async function resolve(alertId: string, resolutionNote?: string) {
+  // D3 : acquittement — "je m'en occupe", ne referme jamais l'alerte.
+  async function acknowledge(alertId: string) {
+    if (!organizationId) return;
+    await acknowledgeAlertRequest(organizationId, alertId);
+    await load();
+  }
+
+  // D2 : réservé aux types sans vérification automatique possible — le
+  // backend renvoie 422 pour un type auto-vérifiable ; l'appelant affiche
+  // alors err.message (déjà un texte clair côté backend).
+  async function resolve(alertId: string, resolutionNote: string) {
     if (!organizationId) return;
     await resolveAlertRequest(organizationId, alertId, resolutionNote);
     await load();
@@ -92,7 +103,7 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
   const rows: AlertRow[] = alerts
     .map((alert) => ({
       alert,
-      tank: tankById.get(alert.tankId) ?? null,
+      tank: alert.tankId ? (tankById.get(alert.tankId) ?? null) : null,
       station: stationById.get(alert.stationId) ?? null,
     }))
     .sort((a, b) => (a.alert.triggeredAt < b.alert.triggeredAt ? 1 : -1));
@@ -112,5 +123,5 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
     return [...byStation.values()].sort((a, b) => b.activeCount - a.activeCount || a.station.name.localeCompare(b.station.name));
   })();
 
-  return { loading, error, rows, activeCount, stationGroups, resolve, reload: load };
+  return { loading, error, rows, activeCount, stationGroups, acknowledge, resolve, reload: load };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Droplet, Printer, Truck, Waves, Wifi, X } from "lucide-react";
+import { AlertTriangle, DollarSign, Droplet, Gauge, Printer, Ruler, Truck, Waves, Wifi, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -13,7 +13,7 @@ import { AlertRow } from "./AlertRow";
 import { StationAlertGroup } from "./StationAlertGroup";
 import { useAlertsList, type AlertStatusFilter } from "./useAlertsList";
 
-const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "resolved"];
+const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "acknowledged", "resolved"];
 const COUNTABLE_TYPES: AlertType[] = ["leak", "level_low", "level_high", "water", "sensor_offline"];
 
 /** Centre d'alertes réseau : affiche par défaut l'historique complet
@@ -40,14 +40,14 @@ export default function AlertsScreen() {
   const [statusFilter, setStatusFilter] = useState<AlertStatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<AlertType | null>(null);
   const data = useAlertsList(currentOrganization?.id ?? null, statusFilter, typeFilter);
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
-  async function handleResolve(alertId: string) {
-    setResolvingId(alertId);
+  async function handleAcknowledge(alertId: string) {
+    setAcknowledgingId(alertId);
     try {
-      await data.resolve(alertId);
+      await data.acknowledge(alertId);
     } finally {
-      setResolvingId(null);
+      setAcknowledgingId(null);
     }
   }
 
@@ -67,6 +67,11 @@ export default function AlertsScreen() {
     delivery_discrepancy: Truck,
     delivery_undeclared: Truck,
     delivery_declaration_pending: Truck,
+    // D5 (refonte alertes) : types ajoutés au schéma, pas encore détectés
+    // automatiquement — icônes prêtes pour la prochaine incrémentation.
+    price_missing: DollarSign,
+    sensor_mapping_missing: Gauge,
+    calibration_missing: Ruler,
   };
   const typeTone: Record<AlertType, "error" | "warning" | "info" | "neutral"> = {
     leak: "error",
@@ -80,6 +85,9 @@ export default function AlertsScreen() {
     // Alerte "plus légère" (décision du commanditaire) — jamais confondue
     // avec un écart avéré, seule des 3 nouvelles alertes en "warning".
     delivery_declaration_pending: "warning",
+    price_missing: "warning",
+    sensor_mapping_missing: "warning",
+    calibration_missing: "warning",
   };
 
   return (
@@ -141,7 +149,7 @@ export default function AlertsScreen() {
               content: (
                 <Stack gap="sm">
                   {data.rows.map((row) => (
-                    <AlertRow key={row.alert.id} row={row} resolvingId={resolvingId} onResolve={handleResolve} />
+                    <AlertRow key={row.alert.id} row={row} acknowledgingId={acknowledgingId} onAcknowledge={handleAcknowledge} />
                   ))}
                 </Stack>
               ),
@@ -152,7 +160,7 @@ export default function AlertsScreen() {
               content: (
                 <Stack gap="sm">
                   {data.stationGroups.map((group) => (
-                    <StationAlertGroup key={group.station.id} group={group} resolvingId={resolvingId} onResolve={handleResolve} />
+                    <StationAlertGroup key={group.station.id} group={group} acknowledgingId={acknowledgingId} onAcknowledge={handleAcknowledge} />
                   ))}
                 </Stack>
               ),
