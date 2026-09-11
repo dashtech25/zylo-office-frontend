@@ -27,7 +27,7 @@ export function PumpsTab({ organizationId, stationId }: { organizationId: string
     const page = await listEquipment(organizationId, { stationId, limit: 100 });
     return page.data.filter((eq) => eq.type === "pompe");
   }, [organizationId, stationId]);
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-detail", "pumps", organizationId, stationId], load);
 
   function formatDate(iso: string | null): string {
     return iso

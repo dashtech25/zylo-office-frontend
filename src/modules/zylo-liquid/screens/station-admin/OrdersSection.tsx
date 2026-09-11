@@ -2,13 +2,21 @@
 
 import { Plus, RefreshCw, ShoppingCart } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { resolveStorageUrl } from "@/core/api/storage";
+import {
+  generatePurchaseOrderDocument, getDocumentDownloadUrl, listDocumentsByEntity, type ZyloDocument, type Station,
+} from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import {
+  Alert, Badge, Button, Card, EmptyState, FilePreviewModal, FormField, Input, Modal, SearchableSelect, ShareButton,
+  Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow,
+} from "@/shared/ui";
 import { PageSpinner } from "@/shared/ui/Spinner";
 
 import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
+
+const PURCHASE_ORDER_ENTITY_TYPE = "PurchaseOrder";
 
 const STATUS_TONE = { open: "warning", received: "success" } as const;
 
@@ -112,8 +120,41 @@ function OrderDetailModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.orders.detail");
+  const tDoc = useTranslations("zyloLiquid.stationAdmin.orders.detail.document");
   const tOrders = useTranslations("zyloLiquid.stationAdmin.orders");
   const tCommon = useTranslations("common");
+
+  const [documents, setDocuments] = useState<ZyloDocument[]>([]);
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+  const [generating, setGenerating] = useState<"pdf" | "docx" | null>(null);
+  const [previewDocId, setPreviewDocId] = useState<string | null>(null);
+
+  const organizationId = data.organizationId;
+
+  useEffect(() => {
+    if (!open || !order || !organizationId) {
+      setDocuments([]);
+      setDocUrls({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const docs = await listDocumentsByEntity(organizationId, PURCHASE_ORDER_ENTITY_TYPE, order.id);
+      if (cancelled) return;
+      setDocuments(docs);
+      const entries = await Promise.all(
+        docs.map(async (doc) => {
+          const { url } = await getDocumentDownloadUrl(organizationId, doc.id);
+          return [doc.id, resolveStorageUrl(url)] as const;
+        })
+      );
+      if (!cancelled) setDocUrls(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, order?.id, organizationId]);
 
   if (!order) return null;
 
@@ -122,6 +163,20 @@ function OrderDetailModal({
   const supplier = data.stationSuppliers.find((s) => s.id === order.supplierId);
   const tankState = tank ? data.tankStateById.get(tank.id) : undefined;
   const linkedDeliveries = data.declarations.filter((d) => d.purchaseOrderId === order.id);
+  const previewDoc = documents.find((doc) => doc.id === previewDocId) ?? null;
+
+  async function handleGenerate(format: "pdf" | "docx") {
+    if (!order || !organizationId) return;
+    setGenerating(format);
+    try {
+      const doc = await generatePurchaseOrderDocument(organizationId, order.id, format);
+      const { url } = await getDocumentDownloadUrl(organizationId, doc.id);
+      setDocuments((prev) => [doc, ...prev]);
+      setDocUrls((prev) => ({ ...prev, [doc.id]: resolveStorageUrl(url) }));
+    } finally {
+      setGenerating(null);
+    }
+  }
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={order.orderReference} closeLabel={tCommon("actions.close")} size="lg">
@@ -164,10 +219,62 @@ function OrderDetailModal({
           )}
         </div>
 
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-body-sm font-semibold text-text">{tDoc("title")}</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" loading={generating === "pdf"} disabled={generating !== null} onClick={() => handleGenerate("pdf")}>
+                {tDoc("generatePdf")}
+              </Button>
+              <Button variant="outline" size="sm" loading={generating === "docx"} disabled={generating !== null} onClick={() => handleGenerate("docx")}>
+                {tDoc("generateDocx")}
+              </Button>
+            </div>
+          </div>
+          {documents.length === 0 ? (
+            <p className="text-body-sm text-text-muted">{tDoc("empty")}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {documents.map((doc) => (
+                <li key={doc.id} className="flex items-center justify-between gap-2 rounded-card border border-border-subtle px-3 py-2 text-body-sm">
+                  <span className="truncate text-text">{doc.fileName}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setPreviewDocId(doc.id)}>{tDoc("preview")}</Button>
+                    {docUrls[doc.id] && (
+                      <ShareButton
+                        fileUrl={docUrls[doc.id]}
+                        fileName={doc.fileName}
+                        mimeType={doc.mimeType}
+                        label={tDoc("share")}
+                        copyLinkLabel={tCommon("actions.copy")}
+                        copiedLabel={tCommon("actions.copied")}
+                        emailLabel={tDoc("shareEmail")}
+                        whatsappLabel={tDoc("shareWhatsapp")}
+                      />
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="flex justify-end border-t border-border-subtle pt-4">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.close")}</Button>
         </div>
       </div>
+      {previewDoc && docUrls[previewDoc.id] && (
+        <FilePreviewModal
+          open={previewDocId !== null}
+          onOpenChange={(next) => { if (!next) setPreviewDocId(null); }}
+          fileName={previewDoc.fileName}
+          mimeType={previewDoc.mimeType}
+          fileUrl={docUrls[previewDoc.id]}
+          downloadLabel={tCommon("actions.download")}
+          closeLabel={tCommon("actions.close")}
+          unavailableLabel={tDoc("previewUnavailable")}
+        />
+      )}
     </Modal>
   );
 }

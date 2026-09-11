@@ -43,7 +43,7 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
     return { equipment: equipmentPage.data, interventions: interventionsPage.data, technicians: techniciansPage.data };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, stationId, reloadKey]);
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "maintenance", organizationId, stationId, reloadKey], load);
 
   const [equipmentId, setEquipmentId] = useState("");
   const [priority, setPriority] = useState<InterventionPriority>("medium");

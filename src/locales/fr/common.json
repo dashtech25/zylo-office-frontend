@@ -13,7 +13,8 @@
     "open": "Ouvrir",
     "back": "Retour",
     "copy": "Copier",
-    "copied": "Copié"
+    "copied": "Copié",
+    "download": "Télécharger"
   },
   "states": {
     "loading": "Chargement…",

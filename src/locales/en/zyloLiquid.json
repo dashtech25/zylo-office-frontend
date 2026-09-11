@@ -589,6 +589,55 @@
       "locked": "Locked"
     }
   },
+  "trucks": {
+    "pageTitle": "Trucks",
+    "pageSubtitle": "Tanker truck fleet and position tracking (tracking mission, step 1).",
+    "tabs": {
+      "list": "List",
+      "map": "Map"
+    },
+    "newTruck": "New truck",
+    "empty": "No truck registered.",
+    "noGpsDevice": "No device",
+    "manageDevice": "GPS device",
+    "edit": "Edit",
+    "table": {
+      "plate": "Plate",
+      "carrier": "Carrier",
+      "gpsDevice": "GPS device"
+    },
+    "map": {
+      "selectHint": "Click a truck to see its route and stops.",
+      "loadingRoute": "Loading route…",
+      "stopsCount": "{count, plural, =0 {No stop} one {# stop} other {# stops}} over the last 24 hours",
+      "stopDuration": "Stop of {minutes} min",
+      "stopOngoing": "Ongoing stop for {minutes} min"
+    },
+    "form": {
+      "createTitle": "New truck",
+      "editTitle": "Edit truck",
+      "required": "The plate number is required.",
+      "plateNumber": "Plate number",
+      "platePlaceholder": "E.g. CE 1234 AB",
+      "carrier": "Carrier",
+      "selectCarrier": "Select a carrier",
+      "newCarrier": "Or create a new carrier",
+      "newCarrierPlaceholder": "Carrier name",
+      "searchPlaceholder": "Search…",
+      "noResult": "No result",
+      "capacity": "Capacity (L)",
+      "compartments": "Number of compartments"
+    },
+    "deviceForm": {
+      "title": "GPS device — {plate}",
+      "existingHint": "A device is already linked to this truck — only the label can be edited here.",
+      "required": "The device identifier is required.",
+      "deviceIdentifier": "Device identifier (IMEI)",
+      "identifierPlaceholder": "E.g. 862345061234567",
+      "label": "Label (optional)",
+      "labelPlaceholder": "E.g. Teltonika FMC125 device"
+    }
+  },
   "shiftsScreen": {
     "pageTitle": "Shifts",
     "pageSubtitle": "Shift start/end and cash declared, per tank.",
@@ -1096,6 +1145,7 @@
       "cuves": "Tanks & ATG",
       "deliveries": "Deliveries",
       "approvisionnement": "Supply",
+      "camions": "Trucks",
       "reconciliation": "Stock reconciliation",
       "ventes": "Sales journal",
       "produits": "Products & shop",

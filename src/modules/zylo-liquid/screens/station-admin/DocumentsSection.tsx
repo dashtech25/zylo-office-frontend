@@ -28,7 +28,7 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [organizationId, stationId, reloadKey]
   );
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "documents", organizationId, stationId, reloadKey], load);
 
   const [sensitivityLevel, setSensitivityLevel] = useState<"normal" | "restreint">("normal");
   const [uploading, setUploading] = useState(false);

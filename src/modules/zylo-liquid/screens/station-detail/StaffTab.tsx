@@ -24,7 +24,7 @@ export function StaffTab({ organizationId, stationId }: { organizationId: string
       .map((m) => ({ member: m, stationRoles: m.roles.filter((r) => r.resourceType === "station" && r.resourceId === stationId) }))
       .filter((entry) => entry.stationRoles.length > 0);
   }, [organizationId, stationId]);
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-detail", "staff", organizationId, stationId], load);
 
   return (
     <PartStateBox state={state}>

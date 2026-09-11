@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getNetworkSummary,
@@ -54,76 +54,83 @@ export interface StationRow {
   pricingStatus: "complete" | "partial" | "none" | "mixed_currency";
 }
 
+interface StationsListData {
+  stations: Station[];
+  tanks: Tank[];
+  fuelProducts: FuelProduct[];
+  statesByStation: Record<string, StationCurrentState>;
+  activeAlertsCount: number;
+  activeAlerts: Alert[];
+  networkSummary: NetworkSummary | null;
+  cities: City[];
+  currencies: Currency[];
+}
+
+async function fetchStationsList(organizationId: string): Promise<StationsListData> {
+  // La liste des stations est le SEUL appel dont l'échec doit faire échouer
+  // toute la page (elle est la donnée principale de cet écran). Tout le
+  // reste est un COMPLÉMENT (KPI réseau, produits, alertes) qui peut
+  // légitimement être hors de portée pour un utilisateur scopé à une seule
+  // station (ex. un pompiste sans `fuelProduct.read` — un rôle par défaut
+  // plus restreint que le propriétaire) — un 403 sur l'un de ces compléments
+  // ne doit jamais masquer la station que l'utilisateur A le droit de voir
+  // (résout le point bloquant de `processus-double-sources-verite/02-modele-
+  // double-source.md` §6 : la portée existait déjà côté vérification, elle
+  // doit maintenant être VISIBLE et UTILISABLE de bout en bout, pas
+  // seulement techniquement correcte).
+  const emptyPage = { data: [], meta: { total: 0, limit: 0, offset: 0 } };
+  const stationsPage = await listStations(organizationId);
+  const [tanksPage, fuelProductsPage, alertsPage, summary, citiesPage, currenciesPage] = await Promise.all([
+    listTanks(organizationId).catch(() => ({ ...emptyPage, data: [] as Tank[] })),
+    listFuelProducts(organizationId).catch(() => ({ ...emptyPage, data: [] as FuelProduct[] })),
+    listAlerts(organizationId, { status: "active", limit: 100 }).catch(() => ({ ...emptyPage, data: [] as Alert[] })),
+    getNetworkSummary(organizationId).catch(() => null),
+    listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
+    listCurrencies(organizationId).catch(() => ({ data: [] as Currency[], meta: { total: 0, limit: 0, offset: 0 } })),
+  ]);
+  const activeStations = stationsPage.data.filter((s) => s.status === "active");
+  const states = await Promise.all(activeStations.map((s) => getStationCurrentState(organizationId, s.id).catch(() => null)));
+  const statesByStation: Record<string, StationCurrentState> = {};
+  activeStations.forEach((s, i) => {
+    const state = states[i];
+    if (state) statesByStation[s.id] = state;
+  });
+
+  return {
+    stations: stationsPage.data,
+    tanks: tanksPage.data,
+    fuelProducts: fuelProductsPage.data,
+    statesByStation,
+    activeAlertsCount: alertsPage.meta.total,
+    activeAlerts: alertsPage.data,
+    networkSummary: summary,
+    cities: citiesPage.data,
+    currencies: currenciesPage.data,
+  };
+}
+
+/** Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * revenir sur la liste des stations après l'avoir quittée affiche
+ * instantanément la dernière donnée connue au lieu de tout recharger. */
 export function useStationsList(organizationId: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
-  const [statesByStation, setStatesByStation] = useState<Record<string, StationCurrentState>>({});
-  const [activeAlertsCount, setActiveAlertsCount] = useState(0);
-  const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
-  const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
-  const [cities, setCities] = useState<City[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "stations-list", organizationId],
+    queryFn: () => fetchStationsList(organizationId as string),
+    enabled: !!organizationId,
+  });
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      // La liste des stations est le SEUL appel dont l'échec doit faire
-      // échouer toute la page (elle est la donnée principale de cet écran).
-      // Tout le reste est un COMPLÉMENT (KPI réseau, produits, alertes) qui
-      // peut légitimement être hors de portée pour un utilisateur scopé à
-      // une seule station (ex. un pompiste sans `fuelProduct.read` — un rôle
-      // par défaut plus restreint que le propriétaire) — un 403 sur l'un de
-      // ces compléments ne doit jamais masquer la station que l'utilisateur
-      // A le droit de voir (résout le point bloquant de `processus-double-
-      // sources-verite/02-modele-double-source.md` §6 : la portée existait
-      // déjà côté vérification, elle doit maintenant être VISIBLE et
-      // UTILISABLE de bout en bout, pas seulement techniquement correcte).
-      const emptyPage = { data: [], meta: { total: 0, limit: 0, offset: 0 } };
-      const stationsPage = await listStations(organizationId);
-      const [tanksPage, fuelProductsPage, alertsPage, summary, citiesPage, currenciesPage] = await Promise.all([
-        listTanks(organizationId).catch(() => ({ ...emptyPage, data: [] as Tank[] })),
-        listFuelProducts(organizationId).catch(() => ({ ...emptyPage, data: [] as FuelProduct[] })),
-        listAlerts(organizationId, { status: "active", limit: 100 }).catch(() => ({ ...emptyPage, data: [] as Alert[] })),
-        getNetworkSummary(organizationId).catch(() => null),
-        listCities(organizationId, { limit: 100 }).catch(() => ({ data: [] as City[], meta: { total: 0, limit: 0, offset: 0 } })),
-        listCurrencies(organizationId).catch(() => ({ data: [] as Currency[], meta: { total: 0, limit: 0, offset: 0 } })),
-      ]);
-      const activeStations = stationsPage.data.filter((s) => s.status === "active");
-      const states = await Promise.all(
-        activeStations.map((s) => getStationCurrentState(organizationId, s.id).catch(() => null))
-      );
-      const byStation: Record<string, StationCurrentState> = {};
-      activeStations.forEach((s, i) => {
-        const state = states[i];
-        if (state) byStation[s.id] = state;
-      });
-      setStations(stationsPage.data);
-      setTanks(tanksPage.data);
-      setFuelProducts(fuelProductsPage.data);
-      setStatesByStation(byStation);
-      setActiveAlertsCount(alertsPage.meta.total);
-      setActiveAlerts(alertsPage.data);
-      setNetworkSummary(summary);
-      setCities(citiesPage.data);
-      setCurrencies(currenciesPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const data = query.data;
+  const loading = !!organizationId && query.isPending;
+  const error = query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null;
+  const stations = data?.stations ?? [];
+  const tanks = data?.tanks ?? [];
+  const fuelProducts = data?.fuelProducts ?? [];
+  const statesByStation = data?.statesByStation ?? {};
+  const activeAlertsCount = data?.activeAlertsCount ?? 0;
+  const activeAlerts = data?.activeAlerts ?? [];
+  const networkSummary = data?.networkSummary ?? null;
+  const cities = data?.cities ?? [];
+  const currencies = data?.currencies ?? [];
 
   const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
   const tankById = new Map(tanks.map((t) => [t.id, t]));
@@ -237,6 +244,8 @@ export function useStationsList(organizationId: string | null) {
     stationsOfflineCount,
     networkSummary,
     stationStates: statesByStation,
-    reload: load,
+    reload: async () => {
+      await query.refetch();
+    },
   };
 }

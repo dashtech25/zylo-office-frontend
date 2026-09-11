@@ -29,7 +29,7 @@ export function PersonnelSection({ organizationId, stationId, stationName }: { o
     return { staff, rolesByUser };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, stationId, reloadKey]);
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "personnel", organizationId, stationId, reloadKey], load);
 
   async function handleUnassign(assignmentId: string) {
     await unassignRole(organizationId, assignmentId);

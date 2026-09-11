@@ -29,7 +29,7 @@ export function SupplierFormModal({
   supplier?: Supplier | null;
   link?: StationSupplier | null;
   onCreate: (
-    supplierData: { name: string; type?: string; category?: SupplierCategory; contactName?: string; contactRole?: string; contactPhone?: string; contactEmail?: string; website?: string; address?: string },
+    supplierData: { name: string; type?: string; category?: SupplierCategory; contactName?: string; contactRole?: string; contactPhone?: string; contactEmail?: string; website?: string; address?: string; taxId?: string },
     linkData: { notes?: string; contractReference?: string; contractType?: string; contractStartDate?: string; contractEndDate?: string; equipmentTags?: string }
   ) => Promise<unknown>;
   onUpdateSupplier: (supplierId: string, data: Partial<CreateSupplierInput> & { active?: boolean }) => Promise<void>;
@@ -49,6 +49,7 @@ export function SupplierFormModal({
   const [contactEmail, setContactEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [address, setAddress] = useState("");
+  const [taxId, setTaxId] = useState("");
 
   const [contractReference, setContractReference] = useState("");
   const [contractType, setContractType] = useState("");
@@ -75,6 +76,7 @@ export function SupplierFormModal({
     setContactEmail(supplier?.contactEmail ?? "");
     setWebsite(supplier?.website ?? "");
     setAddress(supplier?.address ?? "");
+    setTaxId(supplier?.taxId ?? "");
     setContractReference(link?.contractReference ?? "");
     setContractType(link?.contractType ?? "");
     setContractStartDate(link?.contractStartDate ?? "");
@@ -105,6 +107,7 @@ export function SupplierFormModal({
         contactEmail: contactEmail || undefined,
         website: website || undefined,
         address: address || undefined,
+        taxId: taxId || undefined,
       };
       const linkData = {
         notes: notes || undefined,
@@ -157,6 +160,7 @@ export function SupplierFormModal({
         <FormField label={t("contactPhone")}>{(f) => <Input {...f} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />}</FormField>
         <FormField label={t("contactEmail")}>{(f) => <Input {...f} type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />}</FormField>
         <FormField label={t("website")}>{(f) => <Input {...f} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.fournisseur.cm" />}</FormField>
+        <FormField label={t("taxId")}>{(f) => <Input {...f} value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="RC/DLA/2024/B/1234" />}</FormField>
       </div>
       <FormField label={t("address")}>{(f) => <Textarea {...f} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />}</FormField>
     </div>

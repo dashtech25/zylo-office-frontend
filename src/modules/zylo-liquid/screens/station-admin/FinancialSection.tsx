@@ -21,7 +21,7 @@ export function FinancialSection({ organizationId, stationId }: { organizationId
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [organizationId, stationId, reloadKey]
   );
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-admin", "financial", organizationId, stationId, reloadKey], load);
 
   return (
     <PartStateBox state={state}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getNetworkSnapshot,
@@ -57,6 +57,12 @@ export interface ChartPoint {
 
 export interface NetworkDashboardData {
   loading: boolean;
+  /** État de chargement de la requête d'états courants par station (dépend de
+   * `baseQuery` — cf. commentaire sur `useNetworkDashboard`). Exposé
+   * séparément de `loading` pour permettre au rendu de dégrader
+   * indépendamment la seule table des stations / activité récente (qui en
+   * dépendent) plutôt que de bloquer tout l'écran derrière un seul booléen. */
+  statesLoading: boolean;
   error: string | null;
   stations: Station[];
   tanks: Tank[];
@@ -91,111 +97,110 @@ function stationName(stations: Station[], stationId: string): string {
   return stations.find((s) => s.id === stationId)?.name ?? stationId;
 }
 
-export function useNetworkDashboard(organizationId: string | null, period: Period, customDate: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
-  const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
-  const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [stationStates, setStationStates] = useState<Record<string, StationCurrentState>>({});
-  const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
-  const [chartLoading, setChartLoading] = useState(true);
+interface NetworkBaseData {
+  stations: Station[];
+  tanks: Tank[];
+  fuelProducts: FuelProduct[];
+  networkSummary: NetworkSummary;
+  activeAlerts: Alert[];
+  deliveries: Delivery[];
+}
 
-  useEffect(() => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+async function fetchNetworkBase(organizationId: string): Promise<NetworkBaseData> {
+  const [stationsPage, tanksPage, fuelProductsPage, summary, alertsPage, deliveriesPage] = await Promise.all([
+    listStations(organizationId),
+    listTanks(organizationId),
+    listFuelProducts(organizationId),
+    getNetworkSummary(organizationId),
+    listAlerts(organizationId, { status: "active", limit: 20 }),
+    listDeliveries(organizationId, { limit: 10 }),
+  ]);
+  return {
+    stations: stationsPage.data,
+    tanks: tanksPage.data,
+    fuelProducts: fuelProductsPage.data,
+    networkSummary: summary,
+    activeAlerts: alertsPage.data,
+    deliveries: deliveriesPage.data,
+  };
+}
 
-    async function load() {
+async function fetchStationStates(organizationId: string, activeStationIds: string[]): Promise<Record<string, StationCurrentState>> {
+  const states = await Promise.all(activeStationIds.map((id) => getStationCurrentState(organizationId, id)));
+  const statesByStation: Record<string, StationCurrentState> = {};
+  activeStationIds.forEach((id, index) => {
+    statesByStation[id] = states[index];
+  });
+  return statesByStation;
+}
+
+async function fetchChartPoints(organizationId: string, period: Period, customDate: string | null): Promise<ChartPoint[]> {
+  if (period === "custom" && customDate) {
+    const point = await getNetworkSnapshot(organizationId, new Date(customDate).toISOString());
+    return [{ at: customDate, totalVolumeLiters: point.totalVolumeLiters }];
+  }
+
+  const key = period === "custom" ? "now" : period;
+  const count = CHART_SAMPLE_COUNTS[key];
+  const span = CHART_SPAN_MS[key];
+  const now = Date.now();
+  const timestamps = Array.from({ length: count }, (_, i) => new Date(now - span * ((count - 1 - i) / (count - 1))));
+
+  const points = await Promise.all(
+    timestamps.map(async (t) => {
       try {
-        const [stationsPage, tanksPage, fuelProductsPage, summary, alertsPage, deliveriesPage] = await Promise.all([
-          listStations(organizationId!),
-          listTanks(organizationId!),
-          listFuelProducts(organizationId!),
-          getNetworkSummary(organizationId!),
-          listAlerts(organizationId!, { status: "active", limit: 20 }),
-          listDeliveries(organizationId!, { limit: 10 }),
-        ]);
-        if (cancelled) return;
-
-        const activeStations = stationsPage.data.filter((s) => s.status === "active");
-        const states = await Promise.all(activeStations.map((s) => getStationCurrentState(organizationId!, s.id)));
-        if (cancelled) return;
-
-        const statesByStation: Record<string, StationCurrentState> = {};
-        activeStations.forEach((s, index) => {
-          statesByStation[s.id] = states[index];
-        });
-
-        setStations(stationsPage.data);
-        setTanks(tanksPage.data);
-        setFuelProducts(fuelProductsPage.data);
-        setNetworkSummary(summary);
-        setActiveAlerts(alertsPage.data);
-        setDeliveries(deliveriesPage.data);
-        setStationStates(statesByStation);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId]);
-
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
-    setChartLoading(true);
-
-    async function loadChart() {
-      try {
-        if (period === "custom" && customDate) {
-          const point = await getNetworkSnapshot(organizationId!, new Date(customDate).toISOString());
-          if (!cancelled) setChartPoints([{ at: customDate, totalVolumeLiters: point.totalVolumeLiters }]);
-          return;
-        }
-
-        const key = period === "custom" ? "now" : period;
-        const count = CHART_SAMPLE_COUNTS[key];
-        const span = CHART_SPAN_MS[key];
-        const now = Date.now();
-        const timestamps = Array.from({ length: count }, (_, i) => new Date(now - span * ((count - 1 - i) / (count - 1))));
-
-        const points = await Promise.all(
-          timestamps.map(async (t) => {
-            try {
-              const snapshot = await getNetworkSnapshot(organizationId!, t.toISOString());
-              return { at: t.toISOString(), totalVolumeLiters: snapshot.totalVolumeLiters };
-            } catch {
-              return null;
-            }
-          })
-        );
-        if (!cancelled) setChartPoints(points.filter((p): p is ChartPoint => p !== null));
+        const snapshot = await getNetworkSnapshot(organizationId, t.toISOString());
+        return { at: t.toISOString(), totalVolumeLiters: snapshot.totalVolumeLiters };
       } catch {
-        if (!cancelled) setChartPoints([]);
-      } finally {
-        if (!cancelled) setChartLoading(false);
+        return null;
       }
-    }
+    })
+  );
+  return points.filter((p): p is ChartPoint => p !== null);
+}
 
-    loadChart();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, period, customDate]);
+/** Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * revenir sur le dashboard après l'avoir quitté affiche instantanément la
+ * dernière donnée connue au lieu de tout recharger. Séparé en 3 requêtes
+ * plutôt qu'une seule car ce sont 3 enchaînements indépendants avec des
+ * fréquences de changement différentes : la base réseau, les états courants
+ * des stations actives (dépend de la liste de stations de la base, d'où
+ * `enabled`), et les points du graphique (dépend de `period`/`customDate`
+ * uniquement — inutile de refaire la base réseau quand on change juste la
+ * période affichée). */
+export function useNetworkDashboard(organizationId: string | null, period: Period, customDate: string | null) {
+  const baseQuery = useQuery({
+    queryKey: ["zylo-liquid", "network-dashboard", "base", organizationId],
+    queryFn: () => fetchNetworkBase(organizationId as string),
+    enabled: !!organizationId,
+  });
+
+  const stations = baseQuery.data?.stations ?? [];
+  const activeStationIds = stations.filter((s) => s.status === "active").map((s) => s.id);
+
+  const statesQuery = useQuery({
+    queryKey: ["zylo-liquid", "network-dashboard", "station-states", organizationId, activeStationIds],
+    queryFn: () => fetchStationStates(organizationId as string, activeStationIds),
+    enabled: !!organizationId && !!baseQuery.data,
+  });
+
+  const chartQuery = useQuery({
+    queryKey: ["zylo-liquid", "network-dashboard", "chart", organizationId, period, customDate],
+    queryFn: () => fetchChartPoints(organizationId as string, period, customDate),
+    enabled: !!organizationId,
+  });
+
+  const loading = !!organizationId && baseQuery.isPending;
+  const statesLoading = !!organizationId && (baseQuery.isPending || statesQuery.isPending);
+  const error = baseQuery.error ? (baseQuery.error instanceof Error ? baseQuery.error.message : String(baseQuery.error)) : null;
+  const tanks = baseQuery.data?.tanks ?? [];
+  const fuelProducts = baseQuery.data?.fuelProducts ?? [];
+  const networkSummary = baseQuery.data?.networkSummary ?? null;
+  const activeAlerts = baseQuery.data?.activeAlerts ?? [];
+  const deliveries = baseQuery.data?.deliveries ?? [];
+  const stationStates = statesQuery.data ?? {};
+  const chartPoints = chartQuery.data ?? [];
+  const chartLoading = !!organizationId && chartQuery.isPending;
 
   const tanksByFuelProduct = new Map<string, Tank[]>();
   for (const tank of tanks) {
@@ -306,6 +311,7 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
 
   const data: NetworkDashboardData = {
     loading,
+    statesLoading,
     error,
     stations,
     tanks,

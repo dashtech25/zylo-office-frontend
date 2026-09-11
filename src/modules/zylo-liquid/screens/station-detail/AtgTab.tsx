@@ -60,7 +60,7 @@ export function AtgTab({
     const account = [...accounts].sort((a, b) => (b.lastSyncAt ?? "").localeCompare(a.lastSyncAt ?? ""))[0] ?? null;
     return { account, mappings: mappingPages.flatMap((p) => p.data).filter((m) => m.active) };
   }, [organizationId, activeTankKey]);
-  const state = usePartData(load);
+  const state = usePartData(["zylo-liquid", "station-detail", "atg", organizationId, activeTankKey], load);
 
   function formatDateTime(iso: string | null): string {
     return iso
