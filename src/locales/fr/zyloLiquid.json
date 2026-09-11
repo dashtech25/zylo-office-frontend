@@ -636,6 +636,13 @@
       "identifierPlaceholder": "Ex. 862345061234567",
       "label": "Libellé (optionnel)",
       "labelPlaceholder": "Ex. Boîtier Teltonika FMC125"
+    },
+    "ingest": {
+      "action": "Secret d'ingestion",
+      "title": "Secret d'ingestion GPS",
+      "description": "À utiliser pour connecter un boîtier (ou un test manuel) à cette organisation — identique pour tous les boîtiers, à ne jamais partager publiquement.",
+      "warning": "Toute personne disposant de ce secret peut envoyer des positions pour cette organisation. Régénérez-le si vous pensez qu'il a fuité — les anciens boîtiers configurés avec l'ancien secret cesseront alors de fonctionner.",
+      "regenerate": "Régénérer le secret"
     }
   },
   "shiftsScreen": {

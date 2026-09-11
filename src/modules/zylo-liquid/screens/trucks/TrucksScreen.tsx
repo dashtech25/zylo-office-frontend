@@ -36,12 +36,17 @@ export default function TrucksScreen() {
   const [truckFormOpen, setTruckFormOpen] = useState(false);
   const [editingTruck, setEditingTruck] = useState<Truck | null>(null);
   const [deviceModalTruck, setDeviceModalTruck] = useState<Truck | null>(null);
+  const [ingestModalOpen, setIngestModalOpen] = useState(false);
 
   if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={t("pageTitle")} description={t("pageSubtitle")} />
+      <PageHeader
+        title={t("pageTitle")}
+        description={t("pageSubtitle")}
+        actions={<Button variant="outline" size="sm" onClick={() => setIngestModalOpen(true)}>{t("ingest.action")}</Button>}
+      />
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
       <Tabs
@@ -72,7 +77,72 @@ export default function TrucksScreen() {
 
       <TruckFormModal data={data} truck={editingTruck} open={truckFormOpen} onOpenChange={setTruckFormOpen} />
       <GpsDeviceFormModal data={data} truck={deviceModalTruck} open={deviceModalTruck !== null} onOpenChange={(next) => { if (!next) setDeviceModalTruck(null); }} />
+      <IngestCredentialModal data={data} open={ingestModalOpen} onOpenChange={setIngestModalOpen} />
     </div>
+  );
+}
+
+function IngestCredentialModal({
+  data,
+  open,
+  onOpenChange,
+}: {
+  data: ReturnType<typeof useTrucks>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const t = useTranslations("zyloLiquid.trucks.ingest");
+  const tCommon = useTranslations("common");
+  const [secret, setSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setSecret(null);
+    setLoading(true);
+    data.fetchIngestCredential().then((token) => {
+      setSecret(token);
+      setLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    const token = await data.regenerateIngestCredential();
+    setSecret(token);
+    setRegenerating(false);
+  }
+
+  async function handleCopy() {
+    if (!secret) return;
+    await navigator.clipboard.writeText(secret);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Modal open={open} onOpenChange={onOpenChange} title={t("title")} size="md" closeLabel={tCommon("actions.close")}>
+      <div className="flex flex-col gap-4">
+        <p className="text-body-sm text-text-muted">{t("description")}</p>
+        {loading ? (
+          <p className="text-body-sm text-text-muted">{tCommon("states.loading")}</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <Input readOnly value={secret ?? ""} />
+              <Button variant="outline" size="sm" onClick={handleCopy}>{copied ? tCommon("actions.copied") : tCommon("actions.copy")}</Button>
+            </div>
+            <Alert tone="warning">{t("warning")}</Alert>
+            <div>
+              <Button variant="outline" size="sm" loading={regenerating} onClick={handleRegenerate}>{t("regenerate")}</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
 

@@ -636,6 +636,13 @@
       "identifierPlaceholder": "E.g. 862345061234567",
       "label": "Label (optional)",
       "labelPlaceholder": "E.g. Teltonika FMC125 device"
+    },
+    "ingest": {
+      "action": "Ingest secret",
+      "title": "GPS ingest secret",
+      "description": "Use this to connect a device (or a manual test) to this organization — the same for all devices, never share it publicly.",
+      "warning": "Anyone with this secret can send positions for this organization. Regenerate it if you suspect it leaked — devices already configured with the old secret will then stop working.",
+      "regenerate": "Regenerate secret"
     }
   },
   "shiftsScreen": {
