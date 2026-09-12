@@ -611,7 +611,18 @@
       "loadingRoute": "Chargement du trajet…",
       "stopsCount": "{count, plural, =0 {Aucun arrêt} one {# arrêt} other {# arrêts}} sur les 24 dernières heures",
       "stopDuration": "Arrêt de {minutes} min",
-      "stopOngoing": "Arrêt en cours depuis {minutes} min"
+      "stopOngoing": "Arrêt en cours depuis {minutes} min",
+      "enterFullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran",
+      "searchTrucks": "Rechercher un camion…",
+      "noTruckMatch": "Aucun camion ne correspond.",
+      "online": "En ligne",
+      "neverSeen": "Aucune position reçue",
+      "lastSeenMinutes": "il y a {minutes} min",
+      "lastSeenHours": "il y a {hours} h",
+      "alerts": "Alertes",
+      "noActiveStop": "Aucun arrêt en cours.",
+      "stoppedNow": "arrêt en cours"
     },
     "form": {
       "createTitle": "Nouveau camion",

@@ -611,7 +611,18 @@
       "loadingRoute": "Loading route…",
       "stopsCount": "{count, plural, =0 {No stop} one {# stop} other {# stops}} over the last 24 hours",
       "stopDuration": "Stop of {minutes} min",
-      "stopOngoing": "Ongoing stop for {minutes} min"
+      "stopOngoing": "Ongoing stop for {minutes} min",
+      "enterFullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "searchTrucks": "Search a truck…",
+      "noTruckMatch": "No truck matches.",
+      "online": "Online",
+      "neverSeen": "No position received",
+      "lastSeenMinutes": "{minutes} min ago",
+      "lastSeenHours": "{hours} h ago",
+      "alerts": "Alerts",
+      "noActiveStop": "No stop in progress.",
+      "stoppedNow": "stop in progress"
     },
     "form": {
       "createTitle": "New truck",

@@ -1,10 +1,34 @@
 "use client";
 
+import { Layers } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type TruckMapStatus = "moving" | "stopped" | "unknown";
+
+export interface MapStyleOption {
+  id: string;
+  label: string;
+  url: string;
+}
+
+/** Styles Mapbox proposés au sélecteur de couches (mission « tracking »,
+ * étape 1 — demande explicite du commanditaire : « il faut proposer
+ * plusieurs mode, tout les mode que notre fournisseur propose »). Liste
+ * des styles standards publiés par Mapbox — jamais un style inventé. */
+export const MAPBOX_STYLE_OPTIONS: MapStyleOption[] = [
+  { id: "streets", label: "Rues", url: "mapbox://styles/mapbox/streets-v12" },
+  { id: "outdoors", label: "Plein air", url: "mapbox://styles/mapbox/outdoors-v12" },
+  { id: "light", label: "Clair", url: "mapbox://styles/mapbox/light-v11" },
+  { id: "dark", label: "Sombre", url: "mapbox://styles/mapbox/dark-v11" },
+  { id: "satellite", label: "Satellite", url: "mapbox://styles/mapbox/satellite-v9" },
+  { id: "satellite-streets", label: "Satellite + rues", url: "mapbox://styles/mapbox/satellite-streets-v12" },
+  { id: "nav-day", label: "Navigation (jour)", url: "mapbox://styles/mapbox/navigation-day-v1" },
+  { id: "nav-night", label: "Navigation (nuit)", url: "mapbox://styles/mapbox/navigation-night-v1" },
+];
+
+const DEFAULT_STYLE = MAPBOX_STYLE_OPTIONS[2]!;
 
 export interface TruckMapPoint {
   id: string;
@@ -52,7 +76,7 @@ export function TrucksMap({
    * chronologiquement, ou absent/vide si aucun camion sélectionné. */
   route?: [number, number][];
   stops?: TruckMapStop[];
-  height?: number;
+  height?: number | string;
   selectedTruckId?: string | null;
   onTruckClick?: (truckId: string) => void;
 }) {
@@ -62,23 +86,33 @@ export function TrucksMap({
   const popupsRef = useRef<mapboxgl.Popup[]>([]);
   const stopMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const [styleOption, setStyleOption] = useState<MapStyleOption>(DEFAULT_STYLE);
+  const [styleMenuOpen, setStyleMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !token) return;
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: DEFAULT_STYLE.url,
       center: [9.7, 4.05],
       zoom: 5,
     });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), "top-right");
     mapRef.current = map;
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, [token]);
+
+  const appliedStyleIdRef = useRef<string>(DEFAULT_STYLE.id);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || appliedStyleIdRef.current === styleOption.id) return;
+    appliedStyleIdRef.current = styleOption.id;
+    map.setStyle(styleOption.url);
+  }, [styleOption]);
 
   useEffect(() => {
     const maybeMap = mapRef.current;
@@ -174,7 +208,22 @@ export function TrucksMap({
 
     if (map.loaded()) placeAll();
     else map.once("load", placeAll);
+    // Un changement de style (sélecteur de couches) recharge le style
+    // Mapbox et efface sources/couches/marqueurs — il faut tout replacer.
+    map.on("style.load", placeAll);
+    return () => {
+      map.off("style.load", placeAll);
+    };
   }, [trucks, route, stops, selectedTruckId, token, onTruckClick]);
+
+  function recenter() {
+    const map = mapRef.current;
+    if (!map) return;
+    const points = trucks.length ? trucks.map((t) => [t.longitude, t.latitude] as [number, number]) : route;
+    if (!points || points.length === 0) return;
+    const bounds = points.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(points[0], points[0]));
+    map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 300 });
+  }
 
   if (!token) {
     return (
@@ -184,5 +233,69 @@ export function TrucksMap({
     );
   }
 
-  return <div ref={containerRef} style={{ height, borderRadius: "var(--radius-card, 8px)", overflow: "hidden" }} />;
+  return (
+    <div style={{ position: "relative", height }}>
+      <div ref={containerRef} style={{ height: "100%", borderRadius: "var(--radius-card, 8px)", overflow: "hidden" }} />
+
+      <button
+        type="button"
+        onClick={recenter}
+        title="Recentrer"
+        aria-label="Recentrer la carte"
+        style={{
+          position: "absolute", top: 84, right: 10, width: 29, height: 29, borderRadius: 4,
+          background: "#fff", border: "none", boxShadow: "0 0 0 2px rgba(0,0,0,.1)",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <div style={{ position: "absolute", top: 122, right: 10 }}>
+        <button
+          type="button"
+          onClick={() => setStyleMenuOpen((v) => !v)}
+          title="Fond de carte"
+          aria-label="Choisir le fond de carte"
+          style={{
+            width: 29, height: 29, borderRadius: 4, background: "#fff", border: "none",
+            boxShadow: "0 0 0 2px rgba(0,0,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+          }}
+        >
+          <Layers size={15} color="#333" />
+        </button>
+        {styleMenuOpen && (
+          <div
+            style={{
+              position: "absolute", top: 34, right: 0, background: "#fff", borderRadius: 8,
+              boxShadow: "0 4px 16px rgba(0,0,0,.18)", padding: 6, minWidth: 168, zIndex: 20,
+            }}
+          >
+            {MAPBOX_STYLE_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setStyleOption(opt);
+                  setStyleMenuOpen(false);
+                }}
+                style={{
+                  display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6,
+                  fontSize: 13, border: "none", cursor: "pointer",
+                  background: opt.id === styleOption.id ? "rgba(29,78,216,.1)" : "transparent",
+                  color: opt.id === styleOption.id ? "#1D4ED8" : "#1f2937",
+                  fontWeight: opt.id === styleOption.id ? 600 : 400,
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

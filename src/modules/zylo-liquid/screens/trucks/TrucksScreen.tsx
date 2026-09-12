@@ -1,12 +1,12 @@
 "use client";
 
-import { Plus, Truck as TruckIcon } from "lucide-react";
+import { Bell, Maximize2, Minimize2, Plus, Search, Truck as TruckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { TrucksMap, type TruckMapPoint, type TruckMapStatus, type TruckMapStop } from "@/modules/zylo-liquid/components/TrucksMap";
-import type { GpsDevice, Truck, TruckPositionPing, TruckStopEvent } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import type { GpsDevice, Truck, TruckCurrentPosition, TruckPositionPing, TruckStopEvent } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import {
   Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, PageHeader, SearchableSelect, Tabs,
   Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow,
@@ -215,12 +215,102 @@ function TrucksListTab({
   );
 }
 
+/** Statut de connectivité d'un boîtier tel qu'affiché dans la barre
+ * latérale en plein écran (calqué sur l'interface Traccar montrée par le
+ * commanditaire : point vert « En ligne » / point rouge « il y a X
+ * heures »). Dérivé de la fraîcheur de la dernière position reçue, même
+ * seuil que le statut affiché sur la carte (`STALE_POSITION_MINUTES`). */
+function deviceConnectivityLabel(recordedAt: string | null, t: ReturnType<typeof useTranslations>): { label: string; online: boolean } {
+  if (!recordedAt) return { label: t("neverSeen"), online: false };
+  const ms = Date.now() - new Date(recordedAt).getTime();
+  if (ms <= STALE_POSITION_MINUTES * 60 * 1000) return { label: t("online"), online: true };
+  const hours = Math.round(ms / (60 * 60 * 1000));
+  if (hours < 1) return { label: t("lastSeenMinutes", { minutes: Math.max(1, Math.round(ms / 60000)) }), online: false };
+  return { label: t("lastSeenHours", { hours }), online: false };
+}
+
+function TruckSidebar({
+  trucks,
+  currentPositions,
+  selectedTruckId,
+  onSelect,
+  t,
+}: {
+  trucks: Truck[];
+  currentPositions: TruckCurrentPosition[];
+  selectedTruckId: string | null;
+  onSelect: (id: string) => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = trucks.filter((tr) => tr.plateNumber.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="flex h-full w-72 shrink-0 flex-col border-r border-border-subtle bg-surface">
+      <div className="flex items-center gap-2 border-b border-border-subtle p-3">
+        <Search className="size-4 text-text-muted" aria-hidden />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("searchTrucks")}
+          className="w-full bg-transparent text-body-sm text-text outline-none placeholder:text-text-muted"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {filtered.length === 0 && <p className="p-4 text-body-sm text-text-muted">{t("noTruckMatch")}</p>}
+        {filtered.map((truck) => {
+          const pos = currentPositions.find((p) => p.truckId === truck.id);
+          const { label, online } = deviceConnectivityLabel(pos?.recordedAt ?? null, t);
+          const selected = truck.id === selectedTruckId;
+          return (
+            <button
+              key={truck.id}
+              type="button"
+              onClick={() => onSelect(truck.id)}
+              className={`flex w-full items-start gap-2 border-b border-border-subtle px-3 py-2.5 text-left transition-colors ${selected ? "bg-primary-muted" : "hover:bg-surface-muted"}`}
+            >
+              <span
+                className="mt-1.5 size-2 shrink-0 rounded-full"
+                style={{ background: online ? "#1F9D55" : "#DC2626" }}
+                aria-hidden
+              />
+              <span className="flex flex-col">
+                <span className="text-body-sm font-medium text-text">{truck.plateNumber}</span>
+                <span className="text-body-xs" style={{ color: online ? "#1F9D55" : "#DC2626" }}>{label}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function TrucksMapTab({ data }: { data: ReturnType<typeof useTrucks> }) {
   const t = useTranslations("zyloLiquid.trucks.map");
   const [selectedTruckId, setSelectedTruckId] = useState<string | null>(null);
   const [positions, setPositions] = useState<TruckPositionPing[]>([]);
   const [stops, setStops] = useState<TruckStopEvent[]>([]);
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(document.fullscreenElement === fullscreenRef.current);
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void fullscreenRef.current?.requestFullscreen();
+    }
+  }
 
   useEffect(() => {
     if (!selectedTruckId) {
@@ -266,38 +356,115 @@ function TrucksMapTab({ data }: { data: ReturnType<typeof useTrucks> }) {
   }));
 
   const selectedTruck = selectedTruckId ? data.trucks.find((tk) => tk.id === selectedTruckId) : null;
+  const stoppedTrucks = data.currentPositions.filter((p) => p.currentStop !== null);
 
   return (
-    <div className="flex flex-col gap-4 pt-4 lg:flex-row">
-      <div className="flex-1">
-        <TrucksMap trucks={truckPoints} route={route} stops={mapStops} selectedTruckId={selectedTruckId} onTruckClick={setSelectedTruckId} height={520} />
-      </div>
-      <Card padding="none" className="lg:w-80">
-        <div className="p-4">
-          {!selectedTruck ? (
-            <p className="text-body-sm text-text-muted">{t("selectHint")}</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <p className="text-body-md font-semibold text-text">{selectedTruck.plateNumber}</p>
-              {loadingRoute ? (
-                <p className="text-body-sm text-text-muted">{t("loadingRoute")}</p>
-              ) : (
-                <>
-                  <p className="text-body-sm text-text-muted">{t("stopsCount", { count: stops.length })}</p>
-                  <ul className="flex flex-col gap-2">
-                    {stops.map((s) => (
-                      <li key={s.id} className="rounded-card border border-border-subtle px-3 py-2 text-body-sm">
-                        <div className="text-text">{new Date(s.startAt).toLocaleString()}</div>
-                        <div className="text-text-muted">{formatStopDuration(s, t)}</div>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+    <div
+      ref={fullscreenRef}
+      className={isFullscreen ? "flex h-screen w-screen flex-row bg-surface" : "flex flex-col gap-4 pt-4 lg:flex-row"}
+    >
+      {isFullscreen && (
+        <TruckSidebar trucks={data.trucks} currentPositions={data.currentPositions} selectedTruckId={selectedTruckId} onSelect={setSelectedTruckId} t={t} />
+      )}
+
+      <div className={isFullscreen ? "relative flex-1" : "relative flex-1"}>
+        <TrucksMap
+          trucks={truckPoints}
+          route={route}
+          stops={mapStops}
+          selectedTruckId={selectedTruckId}
+          onTruckClick={setSelectedTruckId}
+          height={isFullscreen ? "100vh" : 520}
+        />
+
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? t("exitFullscreen") : t("enterFullscreen")}
+          aria-label={isFullscreen ? t("exitFullscreen") : t("enterFullscreen")}
+          className="absolute top-2.5 left-2.5 z-10 flex size-[29px] items-center justify-center rounded border-none bg-white shadow-[0_0_0_2px_rgba(0,0,0,.1)]"
+        >
+          {isFullscreen ? <Minimize2 size={15} color="#333" /> : <Maximize2 size={15} color="#333" />}
+        </button>
+
+        {isFullscreen && (
+          <div className="absolute top-2.5 right-2.5 z-10">
+            <button
+              type="button"
+              onClick={() => setAlertsOpen((v) => !v)}
+              title={t("alerts")}
+              aria-label={t("alerts")}
+              className="relative flex size-[29px] items-center justify-center rounded border-none bg-white shadow-[0_0_0_2px_rgba(0,0,0,.1)]"
+            >
+              <Bell size={15} color="#333" />
+              {stoppedTrucks.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-warning text-[10px] font-semibold text-white">
+                  {stoppedTrucks.length}
+                </span>
               )}
-            </div>
-          )}
-        </div>
-      </Card>
+            </button>
+            {alertsOpen && (
+              <div className="absolute top-9 right-0 min-w-[220px] rounded-card bg-white p-2 shadow-lg">
+                {stoppedTrucks.length === 0 ? (
+                  <p className="p-2 text-body-sm text-text-muted">{t("noActiveStop")}</p>
+                ) : (
+                  stoppedTrucks.map((p) => {
+                    const truck = data.trucks.find((tk) => tk.id === p.truckId);
+                    return (
+                      <button
+                        key={p.truckId}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTruckId(p.truckId);
+                          setAlertsOpen(false);
+                        }}
+                        className="block w-full rounded px-2 py-1.5 text-left text-body-sm text-text hover:bg-surface-muted"
+                      >
+                        {truck?.plateNumber ?? p.truckId} — {t("stoppedNow")}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isFullscreen && selectedTruck && (
+          <div className="absolute bottom-2.5 left-1/2 z-10 -translate-x-1/2 rounded-card bg-white px-3 py-1.5 text-body-sm text-text shadow-[0_0_0_2px_rgba(0,0,0,.1)]">
+            {loadingRoute ? t("loadingRoute") : t("stopsCount", { count: stops.length })}
+          </div>
+        )}
+      </div>
+
+      {!isFullscreen && (
+        <Card padding="none" className="lg:w-80">
+          <div className="p-4">
+            {!selectedTruck ? (
+              <p className="text-body-sm text-text-muted">{t("selectHint")}</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-body-md font-semibold text-text">{selectedTruck.plateNumber}</p>
+                {loadingRoute ? (
+                  <p className="text-body-sm text-text-muted">{t("loadingRoute")}</p>
+                ) : (
+                  <>
+                    <p className="text-body-sm text-text-muted">{t("stopsCount", { count: stops.length })}</p>
+                    <ul className="flex flex-col gap-2">
+                      {stops.map((s) => (
+                        <li key={s.id} className="rounded-card border border-border-subtle px-3 py-2 text-body-sm">
+                          <div className="text-text">{new Date(s.startAt).toLocaleString()}</div>
+                          <div className="text-text-muted">{formatStopDuration(s, t)}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
