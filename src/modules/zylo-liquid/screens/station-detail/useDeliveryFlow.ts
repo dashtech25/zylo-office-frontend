@@ -12,10 +12,12 @@ import {
   getDocumentDownloadUrl,
   getStationCurrentState,
   listAlerts,
+  listDeliveries,
   listDeliveryDeclarations,
   listDocumentsByEntity,
   listFuelProducts,
   listPurchaseOrders,
+  listReconciliationRecords,
   listStationSuppliers,
   listSuppliers,
   listTanks,
@@ -27,6 +29,7 @@ import {
   type DeliveryDeclaration,
   type FuelProduct,
   type PurchaseOrder,
+  type ReconciliationRecord,
   type Supplier,
   type Tank,
   type TankCurrentState,
@@ -35,13 +38,46 @@ import {
 
 const DELIVERY_DECLARATION_ENTITY_TYPE = "DeliveryDeclaration";
 
+/** Récupère, pour chaque déclaration, son dernier enregistrement de
+ * rapprochement (même appel que celui déjà fait à la demande dans
+ * `DeliveryDetailModal`, ici généralisé à toutes les déclarations en une
+ * passe). Un enregistrement dont le `counterpartType` est
+ * `"DeliveryDetected"` est la SEULE source de statut pour la livraison
+ * détectée correspondante — il n'existe pas d'enregistrement de
+ * rapprochement indépendant côté détecté (le mécanisme backend n'en crée
+ * qu'un par déclaration, cf. `_evaluate_delivery_declaration_reconciliation_core`,
+ * réutilisé par le rapprochement inverse). Best-effort par déclaration :
+ * une déclaration dont le rapprochement échoue à charger ne doit pas
+ * empêcher les autres de s'afficher. */
+async function fetchReconciliationMaps(organizationId: string, declarations: DeliveryDeclaration[]) {
+  const byDeclarationId = new Map<string, ReconciliationRecord>();
+  const byDetectedId = new Map<string, ReconciliationRecord>();
+  await Promise.all(
+    declarations.map(async (declaration) => {
+      try {
+        const page = await listReconciliationRecords(organizationId, { subjectType: "DeliveryDeclaration", subjectId: declaration.id, limit: 1 });
+        const record = page.data[0];
+        if (!record) return;
+        byDeclarationId.set(declaration.id, record);
+        if (record.counterpartType === "DeliveryDetected" && record.counterpartId) {
+          byDetectedId.set(record.counterpartId, record);
+        }
+      } catch {
+        // best-effort — cf. commentaire ci-dessus
+      }
+    })
+  );
+  return { byDeclarationId, byDetectedId };
+}
+
 async function fetchDeliveryFlow(organizationId: string, stationId: string) {
-  const [tanksPage, suppliersPage, linksPage, ordersPage, declarationsPage, alertsPage, fuelProductsPage, currentState] = await Promise.all([
+  const [tanksPage, suppliersPage, linksPage, ordersPage, declarationsPage, deliveriesPage, alertsPage, fuelProductsPage, currentState] = await Promise.all([
     listTanks(organizationId, 100, stationId),
     listSuppliers(organizationId, { limit: 100 }),
     listStationSuppliers(organizationId, { stationId, limit: 100 }),
     listPurchaseOrders(organizationId, { stationId, limit: 100 }),
     listDeliveryDeclarations(organizationId, { stationId, limit: 100 }),
+    listDeliveries(organizationId, { stationId, limit: 100 }),
     listAlerts(organizationId, { stationId, limit: 100 }),
     listFuelProducts(organizationId, 100),
     // Un seul appel pour la capacité/espace disponible de toutes les cuves
@@ -55,6 +91,7 @@ async function fetchDeliveryFlow(organizationId: string, stationId: string) {
   const usedFuelProductIds = new Set(tanksPage.data.map((tk) => tk.fuelProductId));
   const fuelProducts = fuelProductsPage.data.filter((fp) => usedFuelProductIds.has(fp.id));
   const tankStateById = new Map(currentState.tanks.map((ts) => [ts.tankId, ts]));
+  const { byDeclarationId: reconciliationByDeclarationId, byDetectedId: reconciliationByDetectedId } = await fetchReconciliationMaps(organizationId, declarationsPage.data);
   return {
     tanks: tanksPage.data,
     tankStateById,
@@ -62,7 +99,10 @@ async function fetchDeliveryFlow(organizationId: string, stationId: string) {
     stationSuppliers,
     purchaseOrders: ordersPage.data,
     declarations: declarationsPage.data,
+    deliveries: deliveriesPage.data,
     alerts: alertsPage.data,
+    reconciliationByDeclarationId,
+    reconciliationByDetectedId,
   };
 }
 
@@ -173,7 +213,10 @@ export function useDeliveryFlow(organizationId: string | null, stationId: string
     stationSuppliers,
     purchaseOrders: query.data?.purchaseOrders ?? [],
     declarations: query.data?.declarations ?? [],
+    deliveries: query.data?.deliveries ?? [],
     alerts: query.data?.alerts ?? [],
+    reconciliationByDeclarationId: query.data?.reconciliationByDeclarationId ?? new Map<string, ReconciliationRecord>(),
+    reconciliationByDetectedId: query.data?.reconciliationByDetectedId ?? new Map<string, ReconciliationRecord>(),
     addPurchaseOrder,
     declareDelivery,
     reevaluateReconciliation,

@@ -12,6 +12,7 @@ import {
   Shield,
   ShoppingBag,
   ShoppingCart,
+  Store,
   Truck as TruckIcon,
   Users,
   Wrench,
@@ -34,6 +35,7 @@ import { OperationsSection } from "./OperationsSection";
 import { OrdersSection } from "./OrdersSection";
 import { PersonnelSection } from "./PersonnelSection";
 import { SecuritySection } from "./SecuritySection";
+import { ShopSection } from "./ShopSection";
 import { StationAlertsSection } from "./StationAlertsSection";
 import { RegulationTab } from "../station-detail/RegulationTab";
 import { SuppliersSection } from "./SuppliersSection";
@@ -52,6 +54,7 @@ type SectionKey =
   | "personnel"
   | "security"
   | "suppliers"
+  | "shop"
   | "financial"
   | "history";
 
@@ -96,6 +99,7 @@ export function StationAdminCenter({
     { key: "personnel", label: t("sections.personnel"), icon: Users },
     { key: "security", label: t("sections.security"), icon: Shield },
     { key: "suppliers", label: t("sections.suppliers"), icon: TruckIcon },
+    { key: "shop", label: t("sections.shop"), icon: Store },
     { key: "financial", label: t("sections.financial"), icon: Landmark },
     { key: "history", label: t("sections.history"), icon: History },
   ];
@@ -159,6 +163,7 @@ export function StationAdminCenter({
         {section === "personnel" && <PersonnelSection organizationId={organizationId} stationId={stationId} stationName={station.name} />}
         {section === "security" && <SecuritySection organizationId={organizationId} stationId={stationId} />}
         {section === "suppliers" && <SuppliersSection organizationId={organizationId} stationId={stationId} />}
+        {section === "shop" && <ShopSection organizationId={organizationId} station={station} />}
         {section === "financial" && <FinancialSection organizationId={organizationId} stationId={stationId} />}
         {section === "history" && <HistorySection organizationId={organizationId} stationId={stationId} />}
       </div>

@@ -2171,6 +2171,17 @@
       "declareDelivery": "Déclarer une livraison",
       "noOpenOrderHint": "Aucune commande ouverte — créez d'abord une commande dans l'onglet Commande.",
       "empty": "Aucune livraison déclarée pour cette station.",
+      "emptyDetected": "Aucune livraison détectée automatiquement pour cette station.",
+      "tabs": {
+        "declared": "Déclarées",
+        "detected": "Détectées"
+      },
+      "detectedTable": {
+        "startTime": "Début",
+        "endTime": "Fin",
+        "volume": "Volume détecté",
+        "status": "Statut"
+      },
       "table": {
         "eventAt": "Date de réception",
         "order": "Commande",
@@ -2209,9 +2220,18 @@
           "matched": "Rapprochée",
           "discrepancy": "Écart détecté",
           "pending": "En attente de détection",
-          "insufficient_data": "Donnée insuffisante"
+          "insufficient_data": "Donnée insuffisante",
+          "not_reconciled": "Non rapprochée"
         },
-        "discrepancy": "Écart de {value} L (tolérance {tolerance} L)"
+        "discrepancy": "Écart de {value} L (tolérance {tolerance} L)",
+        "detectedTitle": "Détail de la livraison détectée",
+        "detectedStartTime": "Début de la hausse",
+        "detectedEndTime": "Fin (stabilisée)",
+        "detectedStartHeight": "Hauteur avant",
+        "detectedEndHeight": "Hauteur après",
+        "detectedVolume": "Volume détecté",
+        "detectedLinkedDeclaration": "Voir la déclaration correspondante ({reference})",
+        "detectedNoDeclaration": "Aucune déclaration ne correspond à cette livraison pour l'instant."
       }
     },
     "stationAlerts": {
