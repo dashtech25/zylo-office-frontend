@@ -2171,6 +2171,17 @@
       "declareDelivery": "Declare a delivery",
       "noOpenOrderHint": "No open order — create an order in the Order tab first.",
       "empty": "No delivery declared for this station.",
+      "emptyDetected": "No automatically detected delivery for this station.",
+      "tabs": {
+        "declared": "Declared",
+        "detected": "Detected"
+      },
+      "detectedTable": {
+        "startTime": "Start",
+        "endTime": "End",
+        "volume": "Detected volume",
+        "status": "Status"
+      },
       "table": {
         "eventAt": "Received on",
         "order": "Order",
@@ -2209,9 +2220,18 @@
           "matched": "Matched",
           "discrepancy": "Discrepancy detected",
           "pending": "Awaiting detection",
-          "insufficient_data": "Insufficient data"
+          "insufficient_data": "Insufficient data",
+          "not_reconciled": "Not reconciled"
         },
-        "discrepancy": "Discrepancy of {value} L (tolerance {tolerance} L)"
+        "discrepancy": "Discrepancy of {value} L (tolerance {tolerance} L)",
+        "detectedTitle": "Detected delivery detail",
+        "detectedStartTime": "Rise start",
+        "detectedEndTime": "End (stabilized)",
+        "detectedStartHeight": "Height before",
+        "detectedEndHeight": "Height after",
+        "detectedVolume": "Detected volume",
+        "detectedLinkedDeclaration": "View matching declaration ({reference})",
+        "detectedNoDeclaration": "No declaration matches this delivery yet."
       }
     },
     "stationAlerts": {

@@ -4,13 +4,18 @@ import { File as FileIcon, Paperclip, Plus, Truck, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
-import { listReconciliationRecords, type ReconciliationRecord, type Station, type ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { listReconciliationRecords, type Delivery, type ReconciliationRecord, type Station, type ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
+import { Tabs } from "@/shared/ui/Tabs";
 
 import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
 
-const RECONCILIATION_TONE = { matched: "success", discrepancy: "error", pending: "warning", insufficient_data: "neutral" } as const;
+// "not_reconciled" : une livraison détectée sans aucun enregistrement de
+// rapprochement pointant vers elle (aucune déclaration trouvée dans la
+// fenêtre — ne préjuge pas d'une alerte `delivery_undeclared`, c'est un
+// statut d'affichage honnête, pas une garantie qu'une alerte existe).
+const RECONCILIATION_TONE = { matched: "success", discrepancy: "error", pending: "warning", insufficient_data: "neutral", not_reconciled: "neutral" } as const;
 
 /** Onglet « Livraison » (mission « flux de livraison station », 2026-09-10)
  * — étape 2 du flux : la personne habilitée à réceptionner
@@ -26,7 +31,9 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
   const data = useDeliveryFlow(organizationId, station.id);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedDeclarationId, setSelectedDeclarationId] = useState<string | null>(null);
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
   const selectedDeclaration = data.declarations.find((d) => d.id === selectedDeclarationId) ?? null;
+  const selectedDelivery = data.deliveries.find((d) => d.id === selectedDeliveryId) ?? null;
 
   const openOrders = data.purchaseOrders.filter((o) => o.status === "open");
 
@@ -75,41 +82,95 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
 
       {openOrders.length === 0 && <Alert tone="warning">{t("noOpenOrderHint")}</Alert>}
 
-      <Card padding="none">
-        <div className="p-5">
-          {data.declarations.length === 0 ? (
-            <EmptyState icon={Truck} title={t("empty")} />
-          ) : (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>{t("table.eventAt")}</TableHeaderCell>
-                  <TableHeaderCell>{t("table.order")}</TableHeaderCell>
-                  <TableHeaderCell>{t("table.volume")}</TableHeaderCell>
-                  <TableHeaderCell>{t("table.noteReference")}</TableHeaderCell>
-                  <TableHeaderCell>{t("table.status")}</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {data.declarations.map((declaration) => {
-                  const order = data.purchaseOrders.find((o) => o.id === declaration.purchaseOrderId);
-                  return (
-                    <TableRow key={declaration.id} clickable onClick={() => setSelectedDeclarationId(declaration.id)}>
-                      <TableCell className="text-text-muted underline decoration-dotted">{new Date(declaration.eventAt).toLocaleString()}</TableCell>
-                      <TableCell className="font-medium text-text">{order?.orderReference ?? "—"}</TableCell>
-                      <TableCell className="tabular-nums">{declaration.declaredVolumeLiters.toLocaleString()} L</TableCell>
-                      <TableCell>{declaration.deliveryNoteReference ?? "—"}</TableCell>
-                      <TableCell>
-                        <Badge tone={declaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{t(`lifecycle.${declaration.lifecycleStatus}`)}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      </Card>
+      <Tabs
+        items={[
+          {
+            value: "declared",
+            label: t("tabs.declared"),
+            content: (
+              <Card padding="none">
+                <div className="p-5">
+                  {data.declarations.length === 0 ? (
+                    <EmptyState icon={Truck} title={t("empty")} />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>{t("table.eventAt")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.order")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.volume")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.noteReference")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.declarations.map((declaration) => {
+                          const order = data.purchaseOrders.find((o) => o.id === declaration.purchaseOrderId);
+                          const reconciliation = data.reconciliationByDeclarationId.get(declaration.id);
+                          const reconciliationStatus = reconciliation?.status ?? "pending";
+                          return (
+                            <TableRow key={declaration.id} clickable onClick={() => setSelectedDeclarationId(declaration.id)}>
+                              <TableCell className="text-text-muted underline decoration-dotted">{new Date(declaration.eventAt).toLocaleString()}</TableCell>
+                              <TableCell className="font-medium text-text">{order?.orderReference ?? "—"}</TableCell>
+                              <TableCell className="tabular-nums">{declaration.declaredVolumeLiters.toLocaleString()} L</TableCell>
+                              <TableCell>{declaration.deliveryNoteReference ?? "—"}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1.5">
+                                  <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`detail.reconciliation.${reconciliationStatus}`)}</Badge>
+                                  <Badge tone={declaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{t(`lifecycle.${declaration.lifecycleStatus}`)}</Badge>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </Card>
+            ),
+          },
+          {
+            value: "detected",
+            label: t("tabs.detected"),
+            content: (
+              <Card padding="none">
+                <div className="p-5">
+                  {data.deliveries.length === 0 ? (
+                    <EmptyState icon={Truck} title={t("emptyDetected")} />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>{t("detectedTable.startTime")}</TableHeaderCell>
+                          <TableHeaderCell>{t("detectedTable.endTime")}</TableHeaderCell>
+                          <TableHeaderCell>{t("detectedTable.volume")}</TableHeaderCell>
+                          <TableHeaderCell>{t("detectedTable.status")}</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.deliveries.map((delivery) => {
+                          const reconciliationStatus = data.reconciliationByDetectedId.get(delivery.id)?.status ?? "not_reconciled";
+                          return (
+                            <TableRow key={delivery.id} clickable onClick={() => setSelectedDeliveryId(delivery.id)}>
+                              <TableCell className="text-text-muted underline decoration-dotted">{new Date(delivery.startTime).toLocaleString()}</TableCell>
+                              <TableCell className="text-text-muted">{new Date(delivery.endTime).toLocaleString()}</TableCell>
+                              <TableCell className="tabular-nums">{delivery.volumeLiters !== null ? `${delivery.volumeLiters.toLocaleString()} L` : "—"}</TableCell>
+                              <TableCell>
+                                <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`detail.reconciliation.${reconciliationStatus}`)}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </Card>
+            ),
+          },
+        ]}
+      />
 
       <DeliveryFormModal data={data} openOrders={openOrders} open={formOpen} onOpenChange={setFormOpen} />
       <DeliveryDetailModal
@@ -117,6 +178,16 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
         declaration={selectedDeclaration}
         open={selectedDeclaration !== null}
         onOpenChange={(next) => { if (!next) setSelectedDeclarationId(null); }}
+      />
+      <DetectedDeliveryDetailModal
+        data={data}
+        delivery={selectedDelivery}
+        open={selectedDelivery !== null}
+        onOpenChange={(next) => { if (!next) setSelectedDeliveryId(null); }}
+        onOpenDeclaration={(declarationId) => {
+          setSelectedDeliveryId(null);
+          setSelectedDeclarationId(declarationId);
+        }}
       />
     </div>
   );
@@ -222,6 +293,72 @@ function DeliveryDetailModal({
             </div>
           )}
         </div>
+
+        <div className="flex justify-end border-t border-border-subtle pt-4">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.close")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** Détail d'une livraison DÉTECTÉE (télémétrie) — jamais fusionnée avec la
+ * modale des livraisons déclarées ci-dessus (correction explicite : les deux
+ * flux restent visuellement et fonctionnellement séparés). Si un
+ * rapprochement existe et pointe vers une déclaration, un lien permet de
+ * rouvrir directement cette déclaration dans son propre détail. */
+function DetectedDeliveryDetailModal({
+  data,
+  delivery,
+  open,
+  onOpenChange,
+  onOpenDeclaration,
+}: {
+  data: ReturnType<typeof useDeliveryFlow>;
+  delivery: Delivery | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenDeclaration: (declarationId: string) => void;
+}) {
+  const t = useTranslations("zyloLiquid.stationAdmin.deliveries.detail");
+  const tCommon = useTranslations("common");
+
+  if (!delivery) return null;
+
+  const reconciliation = data.reconciliationByDetectedId.get(delivery.id) ?? null;
+  const reconciliationStatus = reconciliation?.status ?? "not_reconciled";
+  const linkedDeclaration = reconciliation && reconciliation.subjectType === "DeliveryDeclaration" ? data.declarations.find((d) => d.id === reconciliation.subjectId) : undefined;
+
+  return (
+    <Modal open={open} onOpenChange={onOpenChange} title={t("detectedTitle")} closeLabel={tCommon("actions.close")} size="lg">
+      <div className="flex flex-col gap-5">
+        <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`reconciliation.${reconciliationStatus}`)}</Badge>
+
+        <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
+          <div><dt className="text-text-muted">{t("detectedStartTime")}</dt><dd className="text-text">{new Date(delivery.startTime).toLocaleString()}</dd></div>
+          <div><dt className="text-text-muted">{t("detectedEndTime")}</dt><dd className="text-text">{new Date(delivery.endTime).toLocaleString()}</dd></div>
+          <div><dt className="text-text-muted">{t("detectedStartHeight")}</dt><dd className="tabular-nums text-text">{delivery.startHeightMm.toLocaleString()} mm</dd></div>
+          <div><dt className="text-text-muted">{t("detectedEndHeight")}</dt><dd className="tabular-nums text-text">{delivery.endHeightMm.toLocaleString()} mm</dd></div>
+          <div><dt className="text-text-muted">{t("detectedVolume")}</dt><dd className="tabular-nums text-text">{delivery.volumeLiters !== null ? `${delivery.volumeLiters.toLocaleString()} L` : "—"}</dd></div>
+        </dl>
+
+        {reconciliation && reconciliation.discrepancyValue !== null && (
+          <p className="text-caption text-text-muted">
+            {t("discrepancy", { value: Math.round(reconciliation.discrepancyValue).toLocaleString(), tolerance: reconciliation.toleranceApplied !== null ? Math.round(reconciliation.toleranceApplied).toLocaleString() : "—" })}
+          </p>
+        )}
+
+        {linkedDeclaration ? (
+          <button
+            type="button"
+            onClick={() => onOpenDeclaration(linkedDeclaration.id)}
+            className="self-start text-body-sm font-medium text-primary underline decoration-dotted hover:opacity-80"
+          >
+            {t("detectedLinkedDeclaration", { reference: linkedDeclaration.deliveryNoteReference ?? new Date(linkedDeclaration.eventAt).toLocaleDateString() })}
+          </button>
+        ) : (
+          <p className="text-body-sm text-text-muted">{t("detectedNoDeclaration")}</p>
+        )}
 
         <div className="flex justify-end border-t border-border-subtle pt-4">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.close")}</Button>
