@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -58,9 +59,6 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const [closedWeekdays, setClosedWeekdays] = useState<number[]>([]);
   const [notes, setNotes] = useState("");
   const [currencyOverrideId, setCurrencyOverrideId] = useState("");
-  const [cities, setCities] = useState<City[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
   const [tanks, setTanks] = useState<TankFieldsState[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,18 +83,35 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     }
   }, [open, station]);
 
-  useEffect(() => {
-    if (!open) return;
-    listCities(organizationId, { limit: 100 })
-      .then((page) => setCities(page.data))
-      .catch(() => setCities([]));
-    listFuelProducts(organizationId)
-      .then((page) => setFuelProducts(page.data.filter((p) => p.active !== false)))
-      .catch(() => setFuelProducts([]));
-    listCurrencies(organizationId, 100)
-      .then((page) => setCurrencies(page.data))
-      .catch(() => setCurrencies([]));
-  }, [open, organizationId]);
+  // Référentiels quasi statiques (villes/devises/produits) — le backend les
+  // met déjà en cache 60s côté serveur (`currency_list_cache`,
+  // `_city_list_cache`, `fuel_product_list_cache`), donc ce staleTime de 5
+  // minutes côté client évite en plus de refaire l'aller-retour réseau à
+  // chaque réouverture de la modale dans la même session, sans risquer de
+  // données périmées au-delà d'une durée raisonnable. `enabled: open` :
+  // inutile de fetcher tant que la modale n'est pas affichée.
+  const citiesQuery = useQuery({
+    queryKey: ["zylo-liquid", "cities", organizationId],
+    queryFn: () => listCities(organizationId, { limit: 100 }),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+  const fuelProductsQuery = useQuery({
+    queryKey: ["zylo-liquid", "fuel-products", organizationId],
+    queryFn: () => listFuelProducts(organizationId),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+  const currenciesQuery = useQuery({
+    queryKey: ["zylo-liquid", "currencies", organizationId],
+    queryFn: () => listCurrencies(organizationId, 100),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const cities: City[] = citiesQuery.data?.data ?? [];
+  const fuelProducts: FuelProduct[] = (fuelProductsQuery.data?.data ?? []).filter((p) => p.active !== false);
+  const currencies: Currency[] = currenciesQuery.data?.data ?? [];
 
   function reset() {
     setName("");

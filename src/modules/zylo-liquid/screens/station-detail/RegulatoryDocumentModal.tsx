@@ -2,11 +2,12 @@
 
 import { File, FileImage, FileText, Trash2, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import type { OrganizationMember } from "@/core/api/rbac";
 import type { RegulatoryDocument, UpdateRegulatoryDocumentInput, ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, FormField, Input, Modal, Select, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, FormField, Input, Modal, Select, Skeleton, Textarea } from "@/shared/ui";
 
 const STATUS_TONE = { valid: "success", renew_soon: "warning", expired: "error", unknown: "neutral" } as const;
 const CERTAINTY_TONE = { high: "success", medium: "warning", low: "neutral" } as const;
@@ -57,8 +58,6 @@ export function RegulatoryDocumentModal({
   const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [files, setFiles] = useState<ZyloDocument[]>([]);
-  const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -71,19 +70,22 @@ export function RegulatoryDocumentModal({
   const [renewExpiresAt, setRenewExpiresAt] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
-  const reloadFiles = useCallback(async () => {
-    if (!doc) return;
-    setLoadingFiles(true);
-    try {
-      setFiles(await listFiles(doc.id));
-    } finally {
-      setLoadingFiles(false);
-    }
-  }, [doc, listFiles]);
+  // Migré vers React Query : ce composant reste monté en permanence côté
+  // parent (`RegulationTab.tsx`, hors périmètre de cette migration), seul
+  // `open` pilote sa visibilité — `enabled: open && !!doc` (même principe
+  // que `usePartData`, qui lui ne charge qu'au montage d'un onglet Radix)
+  // évite un appel réseau tant que la modale n'a jamais été ouverte pour ce
+  // document.
+  const filesQuery = useQuery({
+    queryKey: ["zylo-liquid", "station-detail", "regulatory-document-files", doc?.id ?? null],
+    queryFn: () => listFiles((doc as RegulatoryDocument).id),
+    enabled: open && !!doc,
+  });
+  const files = filesQuery.data ?? [];
+  const loadingFiles = open && !!doc && filesQuery.isPending;
 
   useEffect(() => {
     if (!open || !doc) return;
-    reloadFiles();
     setEditing(false);
     setEditAuthority(doc.authority ?? "");
     setEditSourceReference(doc.sourceReference ?? "");
@@ -92,7 +94,7 @@ export function RegulatoryDocumentModal({
     setRenewing(false);
     setRenewExpiresAt("");
     setError(null);
-  }, [open, doc, reloadFiles]);
+  }, [open, doc]);
 
   if (!doc) return null;
 
@@ -103,7 +105,7 @@ export function RegulatoryDocumentModal({
     setError(null);
     try {
       await attachFiles(doc.id, list);
-      await reloadFiles();
+      await filesQuery.refetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -115,7 +117,7 @@ export function RegulatoryDocumentModal({
   async function handleRemoveFile(fileId: string) {
     if (!doc) return;
     await removeFile(doc.id, fileId);
-    await reloadFiles();
+    await filesQuery.refetch();
   }
 
   async function handleDownload(fileId: string) {
@@ -200,6 +202,9 @@ export function RegulatoryDocumentModal({
       }
     >
       {error && <Alert tone="error">{error}</Alert>}
+      {filesQuery.isError && !error && (
+        <Alert tone="error">{filesQuery.error instanceof Error ? filesQuery.error.message : tCommon("states.error")}</Alert>
+      )}
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && handleFiles(e.target.files)} />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -299,7 +304,14 @@ export function RegulatoryDocumentModal({
           </div>
 
           {loadingFiles ? (
-            <p className="text-body-sm text-text-muted">{tCommon("states.loading")}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 rounded-card border border-border-subtle p-2">
+                  <Skeleton variant="circular" className="size-8" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              ))}
+            </div>
           ) : files.length === 0 ? (
             <p className="text-body-sm text-text-muted">{t("modal.noFiles")}</p>
           ) : (

@@ -7,8 +7,8 @@ import { ArrowLeft, Truck } from "lucide-react";
 import { DeliveryDetailContent } from "@/modules/zylo-liquid/screens/deliveries/DeliveryDetailContent";
 import { DeliveriesTable } from "@/modules/zylo-liquid/screens/deliveries/DeliveriesTable";
 import { useDeliveriesList, type DeliveryRow } from "@/modules/zylo-liquid/screens/deliveries/useDeliveriesList";
-import { Button, EmptyState, Input, Modal, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Button, EmptyState, Input, Modal, Stack, Table, TableBody, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 /** Modale maître/détail des livraisons d'une station OU d'une cuve (l'un ou
  * l'autre, jamais les deux) — ouverte depuis `StationDetailScreen` et
@@ -100,7 +100,24 @@ export function DeliveriesBrowserModal({
           </div>
 
           {data.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.heightBefore")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.heightAfter")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.received")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.value")}</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={7} />
+                ))}
+              </TableBody>
+            </Table>
           ) : data.rows.length === 0 ? (
             <EmptyState icon={Truck} title={t("empty")} />
           ) : (

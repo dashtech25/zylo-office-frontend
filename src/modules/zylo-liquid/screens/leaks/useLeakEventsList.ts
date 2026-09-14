@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   listFuelProducts,
@@ -20,42 +20,42 @@ export interface LeakEventRow {
   fuelProduct: FuelProduct | null;
 }
 
+interface LeakEventsListData {
+  leaks: LeakEvent[];
+  tanks: Tank[];
+  stations: Station[];
+  fuelProducts: FuelProduct[];
+}
+
+async function fetchLeakEventsList(organizationId: string, stationId: string | undefined, tankId: string | undefined): Promise<LeakEventsListData> {
+  const [leaksPage, tanksPage, stationsPage, fuelProductsPage] = await Promise.all([
+    listLeakEvents(organizationId, { stationId, tankId, limit: 100 }),
+    listTanks(organizationId),
+    listStations(organizationId),
+    listFuelProducts(organizationId),
+  ]);
+  return { leaks: leaksPage.data, tanks: tanksPage.data, stations: stationsPage.data, fuelProducts: fuelProductsPage.data };
+}
+
+/** Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * revenir sur cette liste après l'avoir quittée affiche instantanément la
+ * dernière donnée connue au lieu de tout recharger. Utilisé aussi bien par
+ * la page globale que par `LeaksBrowserModal` (scope station/cuve) —
+ * `stationId`/`tankId` font entièrement partie de la clé de requête pour ne
+ * jamais partager le cache entre deux scopes différents. */
 export function useLeakEventsList(organizationId: string | null, stationId?: string, tankId?: string) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [leaks, setLeaks] = useState<LeakEvent[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "leak-events-list", organizationId, stationId, tankId],
+    queryFn: () => fetchLeakEventsList(organizationId as string, stationId, tankId),
+    enabled: !!organizationId,
+  });
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [leaksPage, tanksPage, stationsPage, fuelProductsPage] = await Promise.all([
-        listLeakEvents(organizationId, { stationId, tankId, limit: 100 }),
-        listTanks(organizationId),
-        listStations(organizationId),
-        listFuelProducts(organizationId),
-      ]);
-      setLeaks(leaksPage.data);
-      setTanks(tanksPage.data);
-      setStations(stationsPage.data);
-      setFuelProducts(fuelProductsPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId, stationId, tankId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const leaks = query.data?.leaks ?? [];
+  const tanks = query.data?.tanks ?? [];
+  const stations = query.data?.stations ?? [];
+  const fuelProducts = query.data?.fuelProducts ?? [];
+  const loading = !!organizationId && query.isPending;
+  const error = query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null;
 
   const tankById = new Map(tanks.map((t) => [t.id, t]));
   const stationById = new Map(stations.map((s) => [s.id, s]));
@@ -75,5 +75,13 @@ export function useLeakEventsList(organizationId: string | null, stationId?: str
 
   const anomalyCount = leaks.filter((l) => l.result === "anomaly").length;
 
-  return { loading, error, rows, anomalyCount, reload: load };
+  return {
+    loading,
+    error,
+    rows,
+    anomalyCount,
+    reload: async () => {
+      await query.refetch();
+    },
+  };
 }

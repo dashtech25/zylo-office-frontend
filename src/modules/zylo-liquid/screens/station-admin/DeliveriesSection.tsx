@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { listReconciliationRecords, type ReconciliationRecord, type Station, type ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
 
@@ -23,7 +23,6 @@ const RECONCILIATION_TONE = { matched: "success", discrepancy: "error", pending:
  * rien à faire ici pour ça. */
 export function DeliveriesSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.deliveries");
-  const tCommon = useTranslations("common");
   const data = useDeliveryFlow(organizationId, station.id);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedDeclarationId, setSelectedDeclarationId] = useState<string | null>(null);
@@ -31,7 +30,33 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
 
   const openOrders = data.purchaseOrders.filter((o) => o.status === "open");
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette de tableau plutôt qu'un spinner plein écran — cette section
+  // est démontée/remontée à chaque bascule du Centre administratif (cf.
+  // `StationAdminCenter.tsx`), donc rechargée à chaque ouverture même avec
+  // le cache React Query de `useDeliveryFlow`.
+  if (data.loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-h4 font-semibold text-text">{t("pageTitle")}</h2>
+            <p className="text-body-sm text-text-muted">{t("pageSubtitle")}</p>
+          </div>
+        </div>
+        <Card padding="none">
+          <div className="p-5">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={5} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -175,7 +200,10 @@ function DeliveryDetailModal({
         <div>
           <p className="mb-2 text-body-sm font-semibold text-text">{t("attachments")}</p>
           {loadingExtra ? (
-            <p className="text-body-sm text-text-muted">{tCommon("states.loading")}</p>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-32" variant="rectangular" />
+              <Skeleton className="h-9 w-32" variant="rectangular" />
+            </div>
           ) : files.length === 0 ? (
             <p className="text-body-sm text-text-muted">{t("noAttachment")}</p>
           ) : (

@@ -6,13 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { resolveStorageUrl } from "@/core/api/storage";
 import {
-  generatePurchaseOrderDocument, getDocumentDownloadUrl, listDocumentsByEntity, type ZyloDocument, type Station,
+  assignTruckToPurchaseOrder, generatePurchaseOrderDocument, getDocumentDownloadUrl, listDocumentsByEntity, listTrucks, listTrucksForPurchaseOrder,
+  unassignTruckFromPurchaseOrder, type Truck, type TruckOrderAssignment, type ZyloDocument, type Station,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import {
   Alert, Badge, Button, Card, EmptyState, FilePreviewModal, FormField, Input, Modal, SearchableSelect, ShareButton,
   Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow,
 } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
 
@@ -29,13 +30,38 @@ const STATUS_TONE = { open: "warning", received: "success" } as const;
  * de la cuve choisie (jamais un second champ, même règle que le backend). */
 export function OrdersSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.orders");
-  const tCommon = useTranslations("common");
   const data = useDeliveryFlow(organizationId, station.id);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const selectedOrder = data.purchaseOrders.find((o) => o.id === selectedOrderId) ?? null;
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette de tableau plutôt qu'un spinner plein écran — cette section
+  // est démontée/remontée à chaque bascule du Centre administratif (cf.
+  // `StationAdminCenter.tsx`), donc rechargée à chaque ouverture même avec
+  // le cache React Query de `useDeliveryFlow`.
+  if (data.loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-h4 font-semibold text-text">{t("pageTitle")}</h2>
+            <p className="text-body-sm text-text-muted">{t("pageSubtitle")}</p>
+          </div>
+        </div>
+        <Card padding="none">
+          <div className="p-5">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={7} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,12 +155,22 @@ function OrderDetailModal({
   const [generating, setGenerating] = useState<"pdf" | "docx" | null>(null);
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
 
+  // Rattachement camion<->commande (mission « tracking », étape 2 —
+  // scénario 8, validé avec le commanditaire) — plusieurs-à-plusieurs,
+  // toujours optionnel, jamais requis pour créer/suivre une commande.
+  const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [truckAssignments, setTruckAssignments] = useState<TruckOrderAssignment[]>([]);
+  const [addingTruckId, setAddingTruckId] = useState("");
+  const [truckActionBusy, setTruckActionBusy] = useState<string | null>(null);
+
   const organizationId = data.organizationId;
 
   useEffect(() => {
     if (!open || !order || !organizationId) {
       setDocuments([]);
       setDocUrls({});
+      setTrucks([]);
+      setTruckAssignments([]);
       return;
     }
     let cancelled = false;
@@ -149,12 +185,49 @@ function OrderDetailModal({
         })
       );
       if (!cancelled) setDocUrls(Object.fromEntries(entries));
+
+      const [trucksPage, assignments] = await Promise.all([
+        listTrucks(organizationId, { limit: 100 }),
+        listTrucksForPurchaseOrder(organizationId, order.id),
+      ]);
+      if (!cancelled) {
+        setTrucks(trucksPage.data);
+        setTruckAssignments(assignments);
+      }
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, order?.id, organizationId]);
+
+  async function reloadTruckAssignments() {
+    if (!organizationId || !order) return;
+    setTruckAssignments(await listTrucksForPurchaseOrder(organizationId, order.id));
+  }
+
+  async function handleAssignTruck() {
+    if (!organizationId || !order || !addingTruckId) return;
+    setTruckActionBusy(addingTruckId);
+    try {
+      await assignTruckToPurchaseOrder(organizationId, order.id, addingTruckId);
+      setAddingTruckId("");
+      await reloadTruckAssignments();
+    } finally {
+      setTruckActionBusy(null);
+    }
+  }
+
+  async function handleUnassignTruck(truckId: string) {
+    if (!organizationId || !order) return;
+    setTruckActionBusy(truckId);
+    try {
+      await unassignTruckFromPurchaseOrder(organizationId, order.id, truckId);
+      await reloadTruckAssignments();
+    } finally {
+      setTruckActionBusy(null);
+    }
+  }
 
   if (!order) return null;
 
@@ -217,6 +290,43 @@ function OrderDetailModal({
               ))}
             </ul>
           )}
+        </div>
+
+        <div>
+          <p className="mb-2 text-body-sm font-semibold text-text">{t("assignedTrucks")}</p>
+          {truckAssignments.filter((a) => a.active).length === 0 ? (
+            <p className="text-body-sm text-text-muted">{t("noAssignedTruck")}</p>
+          ) : (
+            <ul className="mb-2 flex flex-col gap-2">
+              {truckAssignments.filter((a) => a.active).map((assignment) => {
+                const truck = trucks.find((tk) => tk.id === assignment.truckId);
+                return (
+                  <li key={assignment.id} className="flex items-center justify-between rounded-card border border-border-subtle px-3 py-2 text-body-sm">
+                    <span className="text-text">{truck?.plateNumber ?? assignment.truckId}</span>
+                    <Button variant="ghost" size="sm" loading={truckActionBusy === assignment.truckId} onClick={() => handleUnassignTruck(assignment.truckId)}>
+                      {t("unassignTruck")}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className="flex gap-2">
+            <SearchableSelect
+              aria-label={t("assignedTrucks")}
+              value={addingTruckId || undefined}
+              onValueChange={setAddingTruckId}
+              placeholder={t("selectTruckToAssign")}
+              searchPlaceholder={tCommon("actions.search")}
+              emptyLabel={tCommon("states.empty")}
+              options={trucks
+                .filter((tk) => !truckAssignments.some((a) => a.active && a.truckId === tk.id))
+                .map((tk) => ({ value: tk.id, label: tk.plateNumber }))}
+            />
+            <Button variant="outline" size="sm" disabled={!addingTruckId} loading={truckActionBusy === addingTruckId} onClick={handleAssignTruck}>
+              {t("assignTruck")}
+            </Button>
+          </div>
         </div>
 
         <div>

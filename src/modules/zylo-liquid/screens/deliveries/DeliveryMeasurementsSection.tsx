@@ -4,7 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { EmptyState, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import type { TankMeasurement } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
@@ -13,7 +13,6 @@ import type { TankMeasurement } from "@/modules/zylo-liquid/services/zyloLiquidA
  * colonnes, même source : `TankMeasurement`). */
 export function DeliveryMeasurementsSection({ loading, measurements }: { loading: boolean; measurements: TankMeasurement[] }) {
   const t = useTranslations("zyloLiquid.deliveries");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
 
   function formatDateTime(iso: string): string {
@@ -26,7 +25,20 @@ export function DeliveryMeasurementsSection({ loading, measurements }: { loading
       <p className="text-body-sm text-text-muted">{t("detail.measurementsSubtitle")}</p>
       <div className="mt-3">
         {loading ? (
-          <PageSpinner label={tCommon("states.loading")} />
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("detail.measurementsColumns.date")}</TableHeaderCell>
+                <TableHeaderCell className="text-right">{t("detail.measurementsColumns.height")}</TableHeaderCell>
+                <TableHeaderCell className="text-right">{t("detail.measurementsColumns.volume")}</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={3} />
+              ))}
+            </TableBody>
+          </Table>
         ) : measurements.length === 0 ? (
           <EmptyState title={t("detail.measurementsEmpty")} />
         ) : (

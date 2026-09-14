@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { listPrices, type PriceHistoryEntry, type Station, type StationFuelProductOverview } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, FormField, Input, Modal, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, FormField, Input, ListSkeleton, Modal, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "./PartState";
 import type { useExploitation } from "./useExploitation";
@@ -140,7 +140,7 @@ export function ProductDetailModal({
           </div>
         )}
 
-        {tab === "history" && <ProductHistoryList data={data} entityId={product.id} />}
+        {tab === "history" && <ProductHistoryList data={data} organizationId={organizationId} stationId={station.id} entityId={product.id} />}
 
         <div className="flex justify-end border-t border-border-subtle pt-4">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.close")}</Button>
@@ -150,22 +150,30 @@ export function ProductDetailModal({
   );
 }
 
-function ProductHistoryList({ data, entityId }: { data: ReturnType<typeof useExploitation>; entityId: string }) {
+/** Migré vers React Query via `usePartData` (même convention que
+ * `pricesState` ci-dessus) — ne se monte que lorsque l'onglet Historique est
+ * sélectionné (`tab === "history" &&`, jamais un onglet Radix ici mais le
+ * même principe de montage à la demande). */
+function ProductHistoryList({
+  data,
+  organizationId,
+  stationId,
+  entityId,
+}: {
+  data: ReturnType<typeof useExploitation>;
+  organizationId: string;
+  stationId: string;
+  entityId: string;
+}) {
   const t = useTranslations("zyloLiquid.stationAdmin.operations.productModal");
-  const [entries, setEntries] = useState<Awaited<ReturnType<typeof data.listHistory>> | null>(null);
+  const loadHistory = useCallback(() => data.listHistory().then((rows) => rows.filter((r) => r.entityId === entityId)), [data, entityId]);
+  const historyState = usePartData(["zylo-liquid", "station-detail", "product-history", organizationId, stationId, entityId], loadHistory);
 
-  useEffect(() => {
-    let cancelled = false;
-    data.listHistory().then((rows) => {
-      if (!cancelled) setEntries(rows.filter((r) => r.entityId === entityId));
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId]);
+  if (historyState.status === "loading") return <ListSkeleton rows={3} />;
+  if (historyState.status === "denied") return <p className="text-body-sm text-text-muted">{t("noHistory")}</p>;
+  if (historyState.status === "error") return <Alert tone="error">{historyState.error}</Alert>;
 
-  if (entries === null) return null;
+  const entries = historyState.data;
   if (entries.length === 0) return <p className="text-body-sm text-text-muted">{t("noHistory")}</p>;
 
   return (

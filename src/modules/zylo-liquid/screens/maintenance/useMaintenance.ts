@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   assignIntervention,
@@ -20,76 +20,94 @@ import {
   type Technician,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
+interface MaintenanceData {
+  stations: Station[];
+  equipment: Equipment[];
+  interventions: Intervention[];
+  technicians: Technician[];
+}
+
+async function fetchMaintenance(organizationId: string): Promise<MaintenanceData> {
+  const [stationsPage, equipmentPage, interventionsPage, techniciansPage] = await Promise.all([
+    listStations(organizationId),
+    listEquipment(organizationId, { limit: 100 }),
+    listInterventions(organizationId, { limit: 100 }),
+    listTechnicians(organizationId, { limit: 100 }),
+  ]);
+  return {
+    stations: stationsPage.data,
+    equipment: equipmentPage.data,
+    interventions: interventionsPage.data,
+    technicians: techniciansPage.data,
+  };
+}
+
 /** Équipements et interventions d'une station (Bloc 6 de la mission
  * « vente-maintenant-reglementation ») — hiérarchie Station -> Equipment ->
  * Intervention, réutilise le système d'alertes existant via
- * `linkedAlertId` (jamais un second mécanisme). */
+ * `linkedAlertId` (jamais un second mécanisme).
+ *
+ * Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * revenir sur cet écran affiche instantanément la dernière donnée connue
+ * au lieu de tout recharger. */
 export function useMaintenance(organizationId: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [interventions, setInterventions] = useState<Intervention[]>([]);
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "maintenance", organizationId],
+    queryFn: () => fetchMaintenance(organizationId as string),
+    enabled: !!organizationId,
+  });
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [stationsPage, equipmentPage, interventionsPage, techniciansPage] = await Promise.all([
-        listStations(organizationId),
-        listEquipment(organizationId, { limit: 100 }),
-        listInterventions(organizationId, { limit: 100 }),
-        listTechnicians(organizationId, { limit: 100 }),
-      ]);
-      setStations(stationsPage.data);
-      setEquipment(equipmentPage.data);
-      setInterventions(interventionsPage.data);
-      setTechnicians(techniciansPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const stations = query.data?.stations ?? [];
+  const equipment = query.data?.equipment ?? [];
+  const interventions = query.data?.interventions ?? [];
+  const technicians = query.data?.technicians ?? [];
+  const loading = !!organizationId && query.isPending;
+  const error = query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null;
 
   async function addEquipment(data: CreateEquipmentInput) {
     if (!organizationId) return;
     await createEquipment(organizationId, data);
-    await load();
+    await query.refetch();
   }
 
   async function reportIntervention(data: CreateInterventionInput) {
     if (!organizationId) return;
     await createIntervention(organizationId, data);
-    await load();
+    await query.refetch();
   }
 
   async function assign(interventionId: string, technicianId: string) {
     if (!organizationId) return;
     await assignIntervention(organizationId, interventionId, technicianId);
-    await load();
+    await query.refetch();
   }
 
   async function close(interventionId: string, data: { diagnosis?: string; actionTaken?: string; cost?: number }) {
     if (!organizationId) return;
     await closeIntervention(organizationId, interventionId, data);
-    await load();
+    await query.refetch();
   }
 
   async function addTechnician(name: string) {
     if (!organizationId) return;
     await createTechnician(organizationId, { name });
-    await load();
+    await query.refetch();
   }
 
-  return { loading, error, stations, equipment, interventions, technicians, addEquipment, reportIntervention, assign, close, addTechnician, reload: load };
+  return {
+    loading,
+    error,
+    stations,
+    equipment,
+    interventions,
+    technicians,
+    addEquipment,
+    reportIntervention,
+    assign,
+    close,
+    addTechnician,
+    reload: async () => {
+      await query.refetch();
+    },
+  };
 }

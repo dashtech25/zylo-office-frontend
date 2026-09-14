@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/core/api/client";
 import { listTankCalibrationPoints, replaceTankCalibrationPoints, type CalibrationPoint, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Button, Modal } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Button, Modal, Skeleton } from "@/shared/ui";
 
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 
@@ -38,19 +38,25 @@ export function CalibrationModal({ organizationId, tank, open, onOpenChange, onU
   const t = useTranslations("zyloLiquid.stationDetail.calibrationModal");
   const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [points, setPoints] = useState<CalibrationPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    listTankCalibrationPoints(organizationId, tank.id)
-      .then(setPoints)
-      .catch((err) => setError(err instanceof ApiError ? err.message : tCommon("states.error")))
-      .finally(() => setLoading(false));
-  }, [open, organizationId, tank.id, tCommon]);
+  // Migré vers React Query : ce composant reste monté en permanence côté
+  // parent (`TankDetailScreen.tsx`), seul `open` pilote sa visibilité —
+  // `enabled: open` (même principe que `usePartData`, qui lui ne charge
+  // qu'au montage d'un onglet Radix) évite un appel réseau tant que la
+  // modale n'a jamais été ouverte, et le cache réutilise la dernière
+  // calibration connue en cas de réouverture.
+  const queryKey = ["zylo-liquid", "tank-detail", "calibration", organizationId, tank.id];
+  const query = useQuery({
+    queryKey,
+    queryFn: () => listTankCalibrationPoints(organizationId, tank.id),
+    enabled: open,
+  });
+  const loading = open && query.isPending;
+  const points = query.data ?? [];
+  const fetchError = query.error ? (query.error instanceof ApiError ? query.error.message : tCommon("states.error")) : null;
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -62,7 +68,7 @@ export function CalibrationModal({ organizationId, tank, open, onOpenChange, onU
     setError(null);
     try {
       await replaceTankCalibrationPoints(organizationId, tank.id, parsed);
-      setPoints(parsed);
+      queryClient.setQueryData(queryKey, parsed);
       onUpdated();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : tCommon("states.error"));
@@ -75,9 +81,19 @@ export function CalibrationModal({ organizationId, tank, open, onOpenChange, onU
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={t("title", { tank: tank.displayName })} closeLabel={tCommon("actions.close")}>
-      {error && <Alert tone="error">{error}</Alert>}
+      {(error || fetchError) && <Alert tone="error">{error ?? fetchError}</Alert>}
       {loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-12 justify-self-end" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-12 justify-self-end" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-12 justify-self-end" />
+          </div>
+          <Skeleton className="h-32 w-full rounded-card" />
+        </div>
       ) : points.length === 0 ? (
         <div className="flex flex-col gap-3">
           <p className="text-body-sm text-text-muted">{t("empty")}</p>

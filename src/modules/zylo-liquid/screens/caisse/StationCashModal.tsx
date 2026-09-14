@@ -7,7 +7,7 @@ import type { CashMode } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { Alert, Button, Modal } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { CashConfidenceBadge } from "./CashConfidenceBadge";
 import { CashReasonNote } from "./CashReasonNote";
@@ -54,7 +54,22 @@ export function StationCashModal({
           </Button>
         }
       >
-        {loading && <PageSpinner label={tCommon("states.loading")} />}
+        {loading && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <KpiSkeleton />
+              <KpiSkeleton />
+              <Skeleton className="h-6 w-24 rounded-pill" />
+            </div>
+            <table className="w-full border-collapse text-body-sm">
+              <tbody>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={4} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {error && <Alert tone="error">{error}</Alert>}
         {data && (
           <div className="flex flex-col gap-4">

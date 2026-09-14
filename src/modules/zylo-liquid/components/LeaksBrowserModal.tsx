@@ -7,7 +7,7 @@ import { ArrowLeft, Droplet } from "lucide-react";
 import { LeakDetailContent } from "@/modules/zylo-liquid/screens/leaks/LeakDetailContent";
 import { useLeakEventsList, type LeakEventRow } from "@/modules/zylo-liquid/screens/leaks/useLeakEventsList";
 import { Badge, Button, EmptyState, Modal, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 /** Modale maître/détail des tests de fuite d'une station OU d'une cuve —
  * ouverte depuis `StationDetailScreen` et `TankDetailScreen`. Réutilise
@@ -67,7 +67,21 @@ export function LeaksBrowserModal({
           <LeakDetailContent row={selected} />
         </Stack>
       ) : data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.rate")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.result")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={4} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.rows.length === 0 ? (
         <EmptyState icon={Droplet} title={t("empty")} />
       ) : (

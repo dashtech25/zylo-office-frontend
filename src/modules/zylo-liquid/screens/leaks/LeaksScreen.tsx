@@ -7,7 +7,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Card, EmptyState, PageHeader, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useLeakEventsList } from "./useLeakEventsList";
 
@@ -17,7 +17,6 @@ import { useLeakEventsList } from "./useLeakEventsList";
  * stations ("Voir les fuites"). */
 export default function LeaksScreen() {
   const t = useTranslations("zyloLiquid.leaks");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
   const searchParams = useSearchParams();
@@ -37,7 +36,26 @@ export default function LeaksScreen() {
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Card padding="none">
+          <div className="p-5">
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.rate")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.result")}</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={5} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       ) : data.rows.length === 0 ? (
         <EmptyState icon={AlertTriangle} title={t("empty")} />
       ) : (

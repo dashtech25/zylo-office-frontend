@@ -7,7 +7,7 @@ import { type ReactNode } from "react";
 
 import { ApiError } from "@/core/api/client";
 import { Alert, EmptyState } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { CardSkeleton } from "@/shared/ui/Skeleton";
 
 /** État d'une partie scopée du détail station (un onglet) : en cours de
  * chargement, refusée par RBAC (403 — le rôle n'a pas la permission de ce
@@ -53,17 +53,22 @@ export function usePartData<T>(queryKey: readonly unknown[], load: () => Promise
 
 /** Rendu commun des états chargement / refus (403) / erreur d'une partie.
  * Le refus s'affiche « non visible pour votre rôle » — jamais comme une
- * erreur bloquante de la page entière. */
-export function PartStateBox({ state, children }: { state: PartState<unknown>; children: ReactNode }) {
+ * erreur bloquante de la page entière.
+ *
+ * L'état de chargement rend une silhouette (skeleton) qui approche la forme
+ * réelle du contenu plutôt qu'un spinner plein écran — un onglet Radix est
+ * démonté à la fermeture donc remonté (et donc rechargé, même avec le cache
+ * React Query) à chaque réouverture ; un skeleton évite l'impression de
+ * page qui « recharge tout » à chaque clic (symptôme signalé sur l'onglet
+ * Configuration). `skeleton` permet à l'appelant de fournir une silhouette
+ * qui correspond mieux à son propre contenu (tableau, liste, KPI...) ; sans
+ * cette prop, une `CardSkeleton` générique reste un raisonnable défaut —
+ * jamais un écran vide. */
+export function PartStateBox({ state, skeleton, children }: { state: PartState<unknown>; skeleton?: ReactNode; children: ReactNode }) {
   const t = useTranslations("zyloLiquid.stationDetail.parts");
-  const tCommon = useTranslations("common");
 
   if (state.status === "loading") {
-    return (
-      <div className="flex justify-center py-12">
-        <PageSpinner label={tCommon("states.loading")} />
-      </div>
-    );
+    return <>{skeleton ?? <CardSkeleton />}</>;
   }
   if (state.status === "denied") {
     return <EmptyState icon={Lock} title={t("unavailable.title")} description={t("unavailable.description")} />;

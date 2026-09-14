@@ -93,7 +93,10 @@ const CHART_SPAN_MS: Record<Exclude<Period, "custom">, number> = {
   "30d": 30 * 24 * 60 * 60 * 1000,
 };
 
-function stationName(stations: Station[], stationId: string): string {
+function stationName(stations: Station[], stationId: string | null): string {
+  // Étape 2 tracking — une alerte de camion n'a pas de station (stationId
+  // null), jamais un identifiant à afficher tel quel dans ce cas.
+  if (stationId === null) return "";
   return stations.find((s) => s.id === stationId)?.name ?? stationId;
 }
 

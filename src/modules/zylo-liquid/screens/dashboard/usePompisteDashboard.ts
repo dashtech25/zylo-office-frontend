@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 import {
   lockShiftCashDeclaration,
@@ -17,48 +17,68 @@ import {
  * filtre déjà les déclarations à l'auteur (voir
  * `_list_declarations(restrict_to_own_author_unless_permission=STATION_READ)`)
  * — ce hook ne fait qu'afficher ce que le serveur a déjà restreint,
- * jamais un second filtrage côté client qui serait une fausse sécurité. */
+ * jamais un second filtrage côté client qui serait une fausse sécurité.
+ *
+ * Migré vers React Query (même traitement que `useNetworkDashboard`) — 2
+ * requêtes indépendantes (shifts / alertes) pour que l'écran puisse
+ * dégrader chaque section séparément plutôt que bloquer tout derrière un
+ * seul spinner, et pour bénéficier du cache au retour sur l'écran. */
 export function usePompisteDashboard(organizationId: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [shifts, setShifts] = useState<ShiftCashDeclaration[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [shiftsPage, alertsPage] = await Promise.all([
-        listShiftCashDeclarations(organizationId, { limit: 20 }),
-        listAlerts(organizationId, { limit: 20, status: "active" }).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
-      ]);
-      setShifts(shiftsPage.data);
-      setAlerts(alertsPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
+  const shiftsQuery = useQuery({
+    queryKey: ["zylo-liquid", "pompiste-dashboard", "shifts", organizationId],
+    queryFn: () => listShiftCashDeclarations(organizationId as string, { limit: 20 }),
+    enabled: !!organizationId,
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const alertsQuery = useQuery({
+    queryKey: ["zylo-liquid", "pompiste-dashboard", "alerts", organizationId],
+    queryFn: () =>
+      listAlerts(organizationId as string, { limit: 20, status: "active" }).catch(() => ({
+        data: [] as Alert[],
+        meta: { total: 0, limit: 0, offset: 0 },
+      })),
+    enabled: !!organizationId,
+  });
+
+  const shifts = shiftsQuery.data?.data ?? [];
+  const alerts = alertsQuery.data?.data ?? [];
+  const shiftsLoading = !!organizationId && shiftsQuery.isPending;
+  const alertsLoading = !!organizationId && alertsQuery.isPending;
+  const loading = shiftsLoading;
+  const error = shiftsQuery.error
+    ? shiftsQuery.error instanceof Error
+      ? shiftsQuery.error.message
+      : String(shiftsQuery.error)
+    : null;
 
   const currentShift =
     shifts.find((s) => s.lifecycleStatus === "declared") ??
     [...shifts].sort((a, b) => new Date(b.shiftStart).getTime() - new Date(a.shiftStart).getTime())[0] ??
     null;
 
+  async function reload() {
+    await Promise.all([shiftsQuery.refetch(), alertsQuery.refetch()]);
+  }
+
   async function closeCurrentShift() {
     if (!organizationId || !currentShift) return;
     await lockShiftCashDeclaration(organizationId, currentShift.id);
-    await load();
+    await queryClient.invalidateQueries({ queryKey: ["zylo-liquid", "pompiste-dashboard", "shifts", organizationId] });
   }
 
-  return { loading, error, shifts, alerts, currentShift, closeCurrentShift, reload: load };
+  return {
+    loading,
+    shiftsLoading,
+    alertsLoading,
+    error,
+    shifts,
+    alerts: alerts as Alert[],
+    currentShift,
+    closeCurrentShift,
+    reload,
+  };
 }
+
+export type { ShiftCashDeclaration };

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { AlertType } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Button, Card, EmptyState, Kpi, PageHeader, Select, Stack, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { ListSkeleton } from "@/shared/ui/Skeleton";
 
 import { AlertRow } from "./AlertRow";
 import { StationAlertGroup } from "./StationAlertGroup";
@@ -35,7 +35,6 @@ const COUNTABLE_TYPES: AlertType[] = ["leak", "level_low", "level_high", "water"
  * (item #16, "catalogue de traitement" classé PRÉSENTER MAIS DÉSACTIVER). */
 export default function AlertsScreen() {
   const t = useTranslations("zyloLiquid.alerts");
-  const tCommon = useTranslations("common");
   const { currentOrganization } = useOrganization();
   const [statusFilter, setStatusFilter] = useState<AlertStatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<AlertType | null>(null);
@@ -72,6 +71,7 @@ export default function AlertsScreen() {
     price_missing: DollarSign,
     sensor_mapping_missing: Gauge,
     calibration_missing: Ruler,
+    truck_stop_unqualified: Truck,
   };
   const typeTone: Record<AlertType, "error" | "warning" | "info" | "neutral"> = {
     leak: "error",
@@ -88,6 +88,7 @@ export default function AlertsScreen() {
     price_missing: "warning",
     sensor_mapping_missing: "warning",
     calibration_missing: "warning",
+    truck_stop_unqualified: "warning",
   };
 
   return (
@@ -137,7 +138,7 @@ export default function AlertsScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <ListSkeleton rows={6} />
       ) : data.rows.length === 0 ? (
         <EmptyState icon={AlertTriangle} title={t("empty")} />
       ) : (

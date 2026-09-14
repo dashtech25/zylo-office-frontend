@@ -1,54 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 
 import { getRole, listPermissionsCatalog, updateRolePermissions, type Permission, type RoleDetail } from "@/core/api/rbac";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { Alert, Button, Card, Checkbox, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Button, Card, Checkbox, Skeleton, Stack } from "@/shared/ui";
 
 const ROLE_MANAGE = "rbac.role.manage";
+
+interface RoleDetailData {
+  role: RoleDetail;
+  catalog: Permission[];
+}
+
+async function fetchRoleDetail(organizationId: string, roleId: string): Promise<RoleDetailData> {
+  const [role, catalog] = await Promise.all([
+    getRole(organizationId, roleId),
+    listPermissionsCatalog(organizationId),
+  ]);
+  return { role, catalog };
+}
 
 export default function RoleDetailPage() {
   const params = useParams<{ roleId: string }>();
   const t = useTranslations("administration.roles");
-  const tCommon = useTranslations("common");
   const { currentOrganization } = useOrganization();
   const { can } = usePermissions();
+  const organizationId = currentOrganization?.id ?? null;
 
-  const [role, setRole] = useState<RoleDetail | null>(null);
-  const [catalog, setCatalog] = useState<Permission[]>([]);
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canManage = can(ROLE_MANAGE);
 
-  const load = useCallback(async () => {
-    if (!currentOrganization) return;
-    setLoading(true);
-    try {
-      const [roleDetail, permissionsList] = await Promise.all([
-        getRole(currentOrganization.id, params.roleId),
-        listPermissionsCatalog(currentOrganization.id),
-      ]);
-      setRole(roleDetail);
-      setCatalog(permissionsList);
-      setSelectedCodes(new Set(roleDetail.permissionCodes));
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization, params.roleId]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`).
+  const roleQuery = useQuery({
+    queryKey: ["roles", "detail", organizationId, params.roleId],
+    queryFn: () => fetchRoleDetail(organizationId as string, params.roleId),
+    enabled: !!organizationId,
+  });
+  const role = roleQuery.data?.role ?? null;
+  const catalog = roleQuery.data?.catalog ?? [];
+  const loading = !!organizationId && roleQuery.isPending;
 
+  // La sélection locale part de `role.permissionCodes` dès que la donnée
+  // arrive (ou change de rôle), puis vit indépendamment pendant l'édition.
   useEffect(() => {
-    load();
-  }, [load]);
+    if (role) setSelectedCodes(new Set(role.permissionCodes));
+  }, [role]);
 
   function toggle(code: string) {
     setSaved(false);
@@ -65,8 +71,8 @@ export default function RoleDetailPage() {
     setError(null);
     setSaving(true);
     try {
-      const updated = await updateRolePermissions(currentOrganization.id, role.id, [...selectedCodes]);
-      setRole(updated);
+      await updateRolePermissions(currentOrganization.id, role.id, [...selectedCodes]);
+      await roleQuery.refetch();
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -76,7 +82,23 @@ export default function RoleDetailPage() {
   }
 
   if (loading || !role) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <div>
+        <Skeleton className="h-4 w-32" />
+        <div className="mt-2 mb-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="mt-1 h-3 w-40" />
+        </div>
+        <Card className="mt-4">
+          <Skeleton className="mb-3 h-4 w-48" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   const isOwnerRole = role.code === "owner";

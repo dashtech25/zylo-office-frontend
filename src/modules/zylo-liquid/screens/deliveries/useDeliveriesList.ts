@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   listCurrencies,
@@ -53,6 +53,15 @@ export interface DeliveryStationGroup {
   rows: DeliveryRow[];
 }
 
+interface DeliveriesListData {
+  deliveries: Delivery[];
+  tanks: Tank[];
+  stations: Station[];
+  fuelProducts: FuelProduct[];
+  prices: PriceHistoryEntry[];
+  currencies: Currency[];
+}
+
 /** Prix de vente actuellement en vigueur pour un couple (station, produit) —
  * la ligne non future dont `effectiveFrom` est la plus récente. */
 function findCurrentPrice(prices: PriceHistoryEntry[], stationId: string, fuelProductId: string): PriceHistoryEntry | null {
@@ -61,48 +70,46 @@ function findCurrentPrice(prices: PriceHistoryEntry[], stationId: string, fuelPr
   return candidates.reduce((latest, p) => (p.effectiveFrom > latest.effectiveFrom ? p : latest));
 }
 
+async function fetchDeliveriesList(organizationId: string, filters: DeliveryFilters): Promise<DeliveriesListData> {
+  const [deliveriesPage, tanksPage, stationsPage, fuelProductsPage, pricesPage, currenciesPage] = await Promise.all([
+    listDeliveries(organizationId, { stationId: filters.stationId, tankId: filters.tankId, fromDate: filters.fromDate, toDate: filters.toDate, limit: 100 }),
+    listTanks(organizationId),
+    listStations(organizationId),
+    listFuelProducts(organizationId),
+    listPrices(organizationId, { limit: 100 }),
+    listCurrencies(organizationId),
+  ]);
+  return {
+    deliveries: deliveriesPage.data,
+    tanks: tanksPage.data,
+    stations: stationsPage.data,
+    fuelProducts: fuelProductsPage.data,
+    prices: pricesPage.data,
+    currencies: currenciesPage.data,
+  };
+}
+
+/** Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * revenir sur cette liste après l'avoir quittée affiche instantanément la
+ * dernière donnée connue au lieu de tout recharger. Utilisé aussi bien par
+ * la page globale que par `DeliveriesBrowserModal` (scope station/cuve) —
+ * `filters` (station/tank/dates) fait entièrement partie de la clé de
+ * requête pour ne jamais partager le cache entre deux scopes différents. */
 export function useDeliveriesList(organizationId: string | null, filters: DeliveryFilters) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
-  const [prices, setPrices] = useState<PriceHistoryEntry[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "deliveries-list", organizationId, filters.stationId, filters.tankId, filters.fromDate, filters.toDate],
+    queryFn: () => fetchDeliveriesList(organizationId as string, filters),
+    enabled: !!organizationId,
+  });
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [deliveriesPage, tanksPage, stationsPage, fuelProductsPage, pricesPage, currenciesPage] = await Promise.all([
-        listDeliveries(organizationId, { stationId: filters.stationId, tankId: filters.tankId, fromDate: filters.fromDate, toDate: filters.toDate, limit: 100 }),
-        listTanks(organizationId),
-        listStations(organizationId),
-        listFuelProducts(organizationId),
-        listPrices(organizationId, { limit: 100 }),
-        listCurrencies(organizationId),
-      ]);
-      setDeliveries(deliveriesPage.data);
-      setTanks(tanksPage.data);
-      setStations(stationsPage.data);
-      setFuelProducts(fuelProductsPage.data);
-      setPrices(pricesPage.data);
-      setCurrencies(currenciesPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId, filters.stationId, filters.tankId, filters.fromDate, filters.toDate]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const deliveries = query.data?.deliveries ?? [];
+  const tanks = query.data?.tanks ?? [];
+  const stations = query.data?.stations ?? [];
+  const fuelProducts = query.data?.fuelProducts ?? [];
+  const prices = query.data?.prices ?? [];
+  const currencies = query.data?.currencies ?? [];
+  const loading = !!organizationId && query.isPending;
+  const error = query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null;
 
   const tankById = new Map(tanks.map((t) => [t.id, t]));
   const stationById = new Map(stations.map((s) => [s.id, s]));
@@ -169,5 +176,18 @@ export function useDeliveriesList(organizationId: string | null, filters: Delive
     return [...byStation.values()].sort((a, b) => a.station.name.localeCompare(b.station.name));
   })();
 
-  return { loading, error, rows, stations, tanks, fuelProducts, totalVolumeLiters, productSummaries, stationGroups, reload: load };
+  return {
+    loading,
+    error,
+    rows,
+    stations,
+    tanks,
+    fuelProducts,
+    totalVolumeLiters,
+    productSummaries,
+    stationGroups,
+    reload: async () => {
+      await query.refetch();
+    },
+  };
 }

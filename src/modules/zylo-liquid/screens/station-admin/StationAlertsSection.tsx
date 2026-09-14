@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import type { Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert as AlertBanner, EmptyState, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { ListSkeleton } from "@/shared/ui/Skeleton";
 
 import { AlertRow } from "../alerts/AlertRow";
 import type { AlertRow as AlertRowData } from "../alerts/useAlertsList";
@@ -27,7 +27,6 @@ import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
  * `useDeliveryFlow`, puis délègue tout le rendu à `AlertRow`. */
 export function StationAlertsSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.stationAlerts");
-  const tCommon = useTranslations("common");
   const data = useDeliveryFlow(organizationId, station.id);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
@@ -40,7 +39,21 @@ export function StationAlertsSection({ organizationId, station }: { organization
     }
   }
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette de liste plutôt qu'un spinner plein écran — cette section est
+  // démontée/remontée à chaque bascule du Centre administratif (cf.
+  // `StationAdminCenter.tsx`), donc rechargée à chaque ouverture même avec
+  // le cache React Query de `useDeliveryFlow`.
+  if (data.loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-h4 font-semibold text-text">{t("pageTitle")}</h2>
+          <p className="text-body-sm text-text-muted">{t("pageSubtitle")}</p>
+        </div>
+        <ListSkeleton rows={4} />
+      </div>
+    );
+  }
 
   const tankById = new Map(data.tanks.map((tank) => [tank.id, tank]));
   const activeAlerts = data.alerts.filter((a) => a.status !== "resolved");

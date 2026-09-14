@@ -11,8 +11,8 @@ import { ComingSoonTabContent } from "@/modules/zylo-liquid/screens/settings/Com
 import { HolykellTab } from "@/modules/zylo-liquid/screens/settings/HolykellTab";
 import { OrganisationTab } from "@/modules/zylo-liquid/screens/settings/OrganisationTab";
 import { SystemeTab } from "@/modules/zylo-liquid/screens/settings/SystemeTab";
-import { Alert, Badge, Button, Card, ColorPicker, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TrackingTab } from "@/modules/zylo-liquid/screens/settings/TrackingTab";
+import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, FormField, Input, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, TableRowSkeleton } from "@/shared/ui";
 
 import { BulkPriceModal } from "./BulkPriceModal";
 import { MissingConfigBanner, type MissingConfigItem } from "./MissingConfigBanner";
@@ -23,7 +23,7 @@ import { useFuelCatalog } from "./useFuelCatalog";
 import { usePrices } from "./usePrices";
 import { useStationFuelProducts } from "./useStationFuelProducts";
 
-const TABS = ["prix", "carburants", "seuils", "organisation", "holykell", "systeme", "notifications", "utilisateurs", "roles"] as const;
+const TABS = ["prix", "carburants", "seuils", "organisation", "holykell", "tracking", "systeme", "notifications", "utilisateurs", "roles"] as const;
 
 /** Centre de configuration métier du réseau — fusionne désormais "Paramètres"
  * (Bloc 5 de refonte-configuration-zylo-liquid.md, Phase 4 §5, décision du
@@ -255,7 +255,12 @@ export default function ConfigurationScreen() {
       {prices.error && <Alert tone="error">{prices.error}</Alert>}
 
       {prices.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Card padding="none">
+          <div className="flex flex-col gap-3 p-5">
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-40 w-full" variant="rectangular" />
+          </div>
+        </Card>
       ) : (
         <Card padding="none">
           <div className="flex items-start justify-between gap-4 p-5 pb-0">
@@ -372,7 +377,18 @@ export default function ConfigurationScreen() {
       </Button>
 
       {showRawHistory && (prices.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Card padding="none">
+          <div className="flex flex-col gap-1 p-5">
+            <Skeleton className="mb-2 h-5 w-1/4" />
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={7} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
         <Card padding="none">
           <div className="flex flex-col gap-1 p-5 pb-0">
@@ -485,7 +501,11 @@ export default function ConfigurationScreen() {
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.products.map((product) => {
@@ -551,6 +571,21 @@ export default function ConfigurationScreen() {
     </Stack>
   );
 
+  // Squelette de formulaire générique (organisation/organisation vide en
+  // attendant `currentOrganization` — jamais un `PageSpinner` plein écran) :
+  // quelques lignes de champ empilées, forme la plus proche des onglets
+  // Organisation/Holykell/Système sans en connaître le détail exact.
+  const settingsTabSkeleton = (
+    <Card>
+      <Skeleton className="mb-4 h-5 w-1/3" />
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-2/3" />
+      </div>
+    </Card>
+  );
+
   return (
     <Stack>
       <h1 className="text-h1 font-semibold text-text">{t("pageTitle")}</h1>
@@ -570,11 +605,13 @@ export default function ConfigurationScreen() {
             ) : value === "seuils" ? (
               <ThresholdsTab organizationId={currentOrganization?.id ?? ""} stations={prices.stations} tanks={prices.tanks} fuelProducts={data.products} onUpdated={prices.reload} />
             ) : value === "organisation" ? (
-              currentOrganization ? <OrganisationTab organization={currentOrganization} onUpdated={reloadOrganization} /> : <PageSpinner label={tCommon("states.loading")} />
+              currentOrganization ? <OrganisationTab organization={currentOrganization} onUpdated={reloadOrganization} /> : settingsTabSkeleton
             ) : value === "holykell" ? (
-              currentOrganization ? <HolykellTab organizationId={currentOrganization.id} /> : <PageSpinner label={tCommon("states.loading")} />
+              currentOrganization ? <HolykellTab organizationId={currentOrganization.id} /> : settingsTabSkeleton
+            ) : value === "tracking" ? (
+              currentOrganization ? <TrackingTab organizationId={currentOrganization.id} /> : settingsTabSkeleton
             ) : value === "systeme" ? (
-              currentOrganization ? <SystemeTab organizationId={currentOrganization.id} /> : <PageSpinner label={tCommon("states.loading")} />
+              currentOrganization ? <SystemeTab organizationId={currentOrganization.id} /> : settingsTabSkeleton
             ) : value === "notifications" ? (
               <ComingSoonTabContent note={t("comingSoonNotifications")} />
             ) : value === "utilisateurs" ? (

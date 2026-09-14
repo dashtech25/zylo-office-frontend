@@ -377,7 +377,6 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { Badge, Card } from "@/shared/ui";
 import { KpiSkeleton, ListSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
-import { PageSpinner } from "@/shared/ui/Spinner";
 import { cn } from "@/shared/lib/cn";
 
 import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
@@ -407,7 +406,6 @@ export default function DashboardScreen() {
 
 function NetworkDashboardScreen() {
   const t = useTranslations("zyloLiquid");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization, loading: organizationLoading } = useOrganization();
 
@@ -438,7 +436,19 @@ function NetworkDashboardScreen() {
   }
 
   if (organizationLoading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+        <Skeleton className="h-64 w-full" variant="rectangular" />
+        <ListSkeleton rows={4} />
+      </div>
+    );
   }
 
   const fuelProductNameById = new Map(data.fuelProducts.map((p) => [p.id, p.name]));

@@ -1,15 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   getNetworkCashSummary,
   getStationCashDetail,
   getTankCash,
   type CashMode,
-  type NetworkCashSummary,
-  type StationCashDetail,
-  type TankCash,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 export type CashQuickPeriod = "today" | "yesterday" | "7d" | "30d" | "custom";
@@ -74,31 +72,25 @@ export function useCashPeriod() {
 }
 
 export function useNetworkCash(organizationId: string | null, fromDate: string, toDate: string, mode: CashMode = "calendar") {
-  const [data, setData] = useState<NetworkCashSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = ["zylo-liquid", "network-cash", organizationId, fromDate, toDate, mode];
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      setData(await getNetworkCashSummary(organizationId, fromDate, toDate, mode));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId, fromDate, toDate, mode]);
+  const query = useQuery({
+    queryKey,
+    queryFn: () => getNetworkCashSummary(organizationId as string, fromDate, toDate, mode),
+    enabled: !!organizationId,
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  async function reload() {
+    await queryClient.invalidateQueries({ queryKey });
+  }
 
-  return { data, loading, error, reload: load };
+  return {
+    data: query.data ?? null,
+    loading: !!organizationId && query.isPending,
+    error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
+    reload,
+  };
 }
 
 export function useStationCash(
@@ -108,34 +100,17 @@ export function useStationCash(
   toDate: string,
   mode: CashMode = "calendar"
 ) {
-  const [data, setData] = useState<StationCashDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "station-cash", organizationId, stationId, fromDate, toDate, mode],
+    queryFn: () => getStationCashDetail(organizationId as string, stationId as string, fromDate, toDate, mode),
+    enabled: !!organizationId && !!stationId,
+  });
 
-  useEffect(() => {
-    if (!organizationId || !stationId) {
-      setData(null);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getStationCashDetail(organizationId, stationId, fromDate, toDate, mode)
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, stationId, fromDate, toDate, mode]);
-
-  return { data, loading, error };
+  return {
+    data: query.data ?? null,
+    loading: !!organizationId && !!stationId && query.isPending,
+    error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
+  };
 }
 
 export function useTankCash(
@@ -145,32 +120,15 @@ export function useTankCash(
   toDate: string,
   mode: CashMode = "calendar"
 ) {
-  const [data, setData] = useState<TankCash | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "tank-cash", organizationId, tankId, fromDate, toDate, mode],
+    queryFn: () => getTankCash(organizationId as string, tankId as string, fromDate, toDate, mode),
+    enabled: !!organizationId && !!tankId,
+  });
 
-  useEffect(() => {
-    if (!organizationId || !tankId) {
-      setData(null);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getTankCash(organizationId, tankId, fromDate, toDate, mode)
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, tankId, fromDate, toDate, mode]);
-
-  return { data, loading, error };
+  return {
+    data: query.data ?? null,
+    loading: !!organizationId && !!tankId && query.isPending,
+    error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
+  };
 }

@@ -3,43 +3,36 @@
 import { ArrowRight, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { listOrganizationModules, type InstalledModule } from "@/core/api/modules";
+import { listOrganizationModules } from "@/core/api/modules";
 import { getModuleIcon } from "@/core/modules/moduleIcons";
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Card, EmptyState } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Card, CardSkeleton, EmptyState, Skeleton } from "@/shared/ui";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
-  const tCommon = useTranslations("common");
   const { currentOrganization, loading: organizationLoading } = useOrganization();
-  const [modules, setModules] = useState<InstalledModule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const organizationId = currentOrganization?.id ?? null;
 
-  useEffect(() => {
-    if (!currentOrganization) {
-      setModules([]);
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    listOrganizationModules(currentOrganization.id)
-      .then((result) => {
-        if (!cancelled) setModules(result);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [currentOrganization]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+  // revenir sur le tableau de bord après l'avoir quitté affiche
+  // instantanément la dernière donnée connue au lieu de tout recharger.
+  const modulesQuery = useQuery({
+    queryKey: ["dashboard", "organization-modules", organizationId],
+    queryFn: () => listOrganizationModules(organizationId as string),
+    enabled: !!organizationId,
+  });
+  const modules = modulesQuery.data ?? [];
+  const loading = !!organizationId && modulesQuery.isPending;
 
   if (organizationLoading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <div>
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-2 h-4 w-96" />
+      </div>
+    );
   }
 
   if (!currentOrganization) {
@@ -58,7 +51,13 @@ export default function DashboardPage() {
       <h2 className="mt-8 text-h2 font-semibold text-text">{t("sectionTitle")}</h2>
 
       {loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <div className="mt-4 flex flex-wrap gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="w-[300px]">
+              <CardSkeleton />
+            </div>
+          ))}
+        </div>
       ) : activeModules.length === 0 ? (
         <div className="mt-4">
           <EmptyState

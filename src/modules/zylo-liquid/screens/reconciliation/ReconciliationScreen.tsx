@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useReconciliation } from "./useReconciliation";
 
@@ -65,7 +65,21 @@ export default function ReconciliationScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.day")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.discrepancy")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={4} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.records.length === 0 ? (
         <EmptyState icon={Scale} title={t("empty")} />
       ) : (

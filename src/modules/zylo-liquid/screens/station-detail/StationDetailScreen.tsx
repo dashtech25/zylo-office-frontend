@@ -10,7 +10,7 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { CardSkeleton, KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
 import { AlertsBrowserModal } from "@/modules/zylo-liquid/components/AlertsBrowserModal";
 import { DeliveriesBrowserModal } from "@/modules/zylo-liquid/components/DeliveriesBrowserModal";
@@ -143,8 +143,28 @@ export default function StationDetailScreen() {
     }
   }
 
+  // Silhouette de page plutôt qu'un spinner plein écran — mêmes lignes que
+  // le contenu réel (bandeau + KPI + cuves) une fois chargé, jamais un écran
+  // vide ni un flash de chargement générique.
   if (data.loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <Stack>
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </Stack>
+    );
   }
   if (!data.station) {
     return <EmptyState icon={AlertTriangle} title={tCommon("states.error")} description={data.error ?? undefined} />;
@@ -677,7 +697,7 @@ export default function StationDetailScreen() {
           <CardSectionHeader title={t("charts.sales.title")} />
           <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.sales.subtitle")}</p>
           {trends.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
+            <Skeleton className="h-48 w-full" />
           ) : salesSeries.length === 0 || salesPoints.every((p) => Object.values(p.values).every((v) => v === 0)) ? (
             <p className="text-body-sm text-text-muted">{t("charts.sales.empty")}</p>
           ) : (
@@ -698,7 +718,7 @@ export default function StationDetailScreen() {
           <CardSectionHeader title={t("charts.stock.title")} />
           <p className="-mt-2 mb-3 text-body-sm text-text-muted">{t("charts.stock.subtitle")}</p>
           {trends.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
+            <Skeleton className="h-48 w-full" />
           ) : trends.stockPoints.length < 2 ? (
             <p className="text-body-sm text-text-muted">{t("charts.stock.empty")}</p>
           ) : (

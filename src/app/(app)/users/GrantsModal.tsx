@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   createGrant,
@@ -12,9 +13,21 @@ import {
   type Permission,
   type PermissionGrant,
 } from "@/core/api/rbac";
-import { Badge, Button, EmptyState, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Badge, Button, EmptyState, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 import { ShieldAlert } from "lucide-react";
+
+interface GrantsModalData {
+  grants: PermissionGrant[];
+  catalog: Permission[];
+}
+
+async function fetchGrants(organizationId: string, userId: string): Promise<GrantsModalData> {
+  const [grants, catalog] = await Promise.all([
+    listUserGrants(organizationId, userId),
+    listPermissionsCatalog(organizationId),
+  ]);
+  return { grants, catalog };
+}
 
 /** Modale dédiée aux grants individuels (allow/deny) d'un utilisateur —
  * distincte de l'attribution de rôle (page Utilisateurs) : c'est ici que se
@@ -36,9 +49,6 @@ export function GrantsModal({
   const tCommon = useTranslations("common");
   const format = useFormatter();
 
-  const [grants, setGrants] = useState<PermissionGrant[]>([]);
-  const [catalog, setCatalog] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,23 +59,14 @@ export function GrantsModal({
   const [validUntil, setValidUntil] = useState("");
   const [auditNote, setAuditNote] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [grantsList, catalogList] = await Promise.all([
-        listUserGrants(organizationId, member.userId),
-        listPermissionsCatalog(organizationId),
-      ]);
-      setGrants(grantsList);
-      setCatalog(catalogList);
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId, member.userId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`).
+  const grantsQuery = useQuery({
+    queryKey: ["grants", "user", organizationId, member.userId],
+    queryFn: () => fetchGrants(organizationId, member.userId),
+  });
+  const grants = grantsQuery.data?.grants ?? [];
+  const catalog = grantsQuery.data?.catalog ?? [];
+  const loading = grantsQuery.isPending;
 
   const codeById = new Map(catalog.map((p) => [p.id, p.code]));
 
@@ -88,7 +89,7 @@ export function GrantsModal({
       setResourceId("");
       setValidUntil("");
       setAuditNote("");
-      await load();
+      await grantsQuery.refetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -99,7 +100,7 @@ export function GrantsModal({
   async function handleRevoke(grant: PermissionGrant) {
     if (!window.confirm(t("revokeConfirm"))) return;
     await revokeGrant(organizationId, grant.id);
-    await load();
+    await grantsQuery.refetch();
   }
 
   function formatDate(iso: string): string {
@@ -114,7 +115,22 @@ export function GrantsModal({
         <p className="text-body-sm text-text-muted">{t("subtitle")}</p>
 
         {loading ? (
-          <PageSpinner label={tCommon("states.loading")} />
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("columns.permission")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.effect")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.scope")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.validUntil")}</TableHeaderCell>
+                <TableHeaderCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={5} />
+              ))}
+            </TableBody>
+          </Table>
         ) : activeGrants.length === 0 ? (
           <EmptyState icon={ShieldAlert} title={t("empty")} />
         ) : (

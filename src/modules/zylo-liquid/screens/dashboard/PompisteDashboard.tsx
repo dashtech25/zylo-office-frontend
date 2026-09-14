@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert as AlertBanner, Badge, Button, Card, EmptyState, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, ListSkeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { usePompisteDashboard } from "./usePompisteDashboard";
 
@@ -14,17 +14,16 @@ import { usePompisteDashboard } from "./usePompisteDashboard";
  * tableau de bord réseau, aucune vue de pilotage. Deux champs du prototype
  * fictif (pistolets/nombre de transactions par shift) n'existent pas dans
  * le modèle réel (`ShiftCashDeclaration` ne porte pas ces concepts) — omis
- * plutôt qu'inventés, conformément à la règle anti-invention de la mission. */
+ * plutôt qu'inventés, conformément à la règle anti-invention de la mission.
+ *
+ * Migré vers React Query (cf. `usePompisteDashboard`) — les 3 sections
+ * (shift courant / historique / alertes) se dégradent indépendamment avec
+ * des skeletons plutôt qu'un unique spinner plein écran. */
 export default function PompisteDashboard() {
   const t = useTranslations("zyloLiquid.pompisteDashboard");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
   const data = usePompisteDashboard(currentOrganization?.id ?? null);
-
-  if (data.loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
-  }
 
   return (
     <Stack>
@@ -33,7 +32,18 @@ export default function PompisteDashboard() {
       {data.error && <AlertBanner tone="error">{data.error}</AlertBanner>}
 
       <Card>
-        {!data.currentShift ? (
+        {data.shiftsLoading ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <KpiSkeleton />
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <KpiSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        ) : !data.currentShift ? (
           <EmptyState icon={Fuel} title={t("noShift")} />
         ) : (
           <Stack>
@@ -70,7 +80,23 @@ export default function PompisteDashboard() {
 
       <Card>
         <h2 className="text-h4 font-semibold text-text">{t("recentShifts")}</h2>
-        {data.shifts.length === 0 ? (
+        {data.shiftsLoading ? (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("table.start")}</TableHeaderCell>
+                <TableHeaderCell>{t("table.end")}</TableHeaderCell>
+                <TableHeaderCell className="text-right">{t("table.cash")}</TableHeaderCell>
+                <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={4} />
+              ))}
+            </TableBody>
+          </Table>
+        ) : data.shifts.length === 0 ? (
           <EmptyState icon={Fuel} title={t("noShift")} />
         ) : (
           <Table>
@@ -100,7 +126,9 @@ export default function PompisteDashboard() {
 
       <Card>
         <h2 className="text-h4 font-semibold text-text">{t("alertsTitle")}</h2>
-        {data.alerts.length === 0 ? (
+        {data.alertsLoading ? (
+          <ListSkeleton rows={3} />
+        ) : data.alerts.length === 0 ? (
           <EmptyState icon={AlertTriangle} title={t("noAlerts")} />
         ) : (
           <Stack>

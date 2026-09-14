@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   cancelProductSaleTransaction,
@@ -11,76 +11,74 @@ import {
   listProductSaleTransactions,
   listSellableProducts,
   listStations,
-  type CommercialAccount,
   type CreateProductSaleTransactionInput,
   type CreateSellableProductInput,
-  type Currency,
-  type ProductSaleTransaction,
-  type SellableProduct,
-  type Station,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+
+async function fetchProduitsData(organizationId: string) {
+  const [stationsPage, productsPage, transactionsPage, currenciesPage, accountsPage] = await Promise.all([
+    listStations(organizationId),
+    listSellableProducts(organizationId, { limit: 100 }),
+    listProductSaleTransactions(organizationId, { limit: 100 }),
+    listCurrencies(organizationId, 100),
+    listCommercialAccounts(organizationId).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
+  ]);
+  return {
+    stations: stationsPage.data,
+    products: productsPage.data,
+    transactions: transactionsPage.data,
+    currencies: currenciesPage.data,
+    commercialAccounts: accountsPage.data,
+  };
+}
 
 /** Catalogue produits boutique + ventes comptoir (Blocs 4 corrigé/5 de la
  * mission « vente-maintenant-reglementation ») — entité `ProductSaleTransaction`
  * volontairement séparée de `Sale` (carburant, jamais un fait nouveau
  * indépendant). */
 export function useProduits(organizationId: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [products, setProducts] = useState<SellableProduct[]>([]);
-  const [transactions, setTransactions] = useState<ProductSaleTransaction[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [commercialAccounts, setCommercialAccounts] = useState<CommercialAccount[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = ["zylo-liquid", "produits", organizationId];
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [stationsPage, productsPage, transactionsPage, currenciesPage, accountsPage] = await Promise.all([
-        listStations(organizationId),
-        listSellableProducts(organizationId, { limit: 100 }),
-        listProductSaleTransactions(organizationId, { limit: 100 }),
-        listCurrencies(organizationId, 100),
-        listCommercialAccounts(organizationId).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
-      ]);
-      setStations(stationsPage.data);
-      setProducts(productsPage.data);
-      setTransactions(transactionsPage.data);
-      setCurrencies(currenciesPage.data);
-      setCommercialAccounts(accountsPage.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchProduitsData(organizationId as string),
+    enabled: !!organizationId,
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  async function invalidate() {
+    await queryClient.invalidateQueries({ queryKey });
+  }
 
   async function addProduct(data: CreateSellableProductInput) {
     if (!organizationId) return;
     await createSellableProduct(organizationId, data);
-    await load();
+    await invalidate();
   }
 
   async function submitSale(data: CreateProductSaleTransactionInput) {
     if (!organizationId) return;
     await createProductSaleTransaction(organizationId, data);
-    await load();
+    await invalidate();
   }
 
   async function cancelSale(transactionId: string) {
     if (!organizationId) return;
     await cancelProductSaleTransaction(organizationId, transactionId);
-    await load();
+    await invalidate();
   }
 
-  return { loading, error, stations, products, transactions, currencies, commercialAccounts, addProduct, submitSale, cancelSale, reload: load };
+  return {
+    loading: !!organizationId && query.isPending,
+    error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
+    stations: query.data?.stations ?? [],
+    products: query.data?.products ?? [],
+    transactions: query.data?.transactions ?? [],
+    currencies: query.data?.currencies ?? [],
+    commercialAccounts: query.data?.commercialAccounts ?? [],
+    addProduct,
+    submitSale,
+    cancelSale,
+    reload: invalidate,
+  };
 }

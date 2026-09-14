@@ -1,57 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { ClipboardList } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "@/core/api/client";
 import { listAuditLogs, type AuditLogEntry } from "@/core/api/audit";
 import { listMembers, type OrganizationMember } from "@/core/api/rbac";
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Button, Card, EmptyState, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Button, Card, EmptyState, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 const PAGE_SIZE = 20;
 
+interface AuditPageData {
+  rows: AuditLogEntry[];
+  total: number;
+  members: OrganizationMember[];
+}
+
+async function fetchAuditPage(organizationId: string, offset: number): Promise<AuditPageData> {
+  const [page, membersList] = await Promise.all([
+    listAuditLogs(organizationId, { limit: PAGE_SIZE, offset }),
+    listMembers(organizationId).catch(() => []),
+  ]);
+  return { rows: page.data, total: page.meta.total, members: membersList };
+}
+
 export default function AuditPage() {
   const t = useTranslations("administration.audit");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
+  const organizationId = currentOrganization?.id ?? null;
 
-  const [rows, setRows] = useState<AuditLogEntry[]>([]);
-  const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [denied, setDenied] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!currentOrganization) return;
-    setLoading(true);
-    setDenied(false);
-    try {
-      const [page, membersList] = await Promise.all([
-        listAuditLogs(currentOrganization.id, { limit: PAGE_SIZE, offset }),
-        listMembers(currentOrganization.id).catch(() => []),
-      ]);
-      setRows(page.data);
-      setTotal(page.meta.total);
-      setMembers(membersList);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 403) {
-        setDenied(true);
-      } else {
-        throw err;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization, offset]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+  // une page déjà visitée s'affiche instantanément au lieu d'un rechargement
+  // complet ; un 403 (accès refusé) est un état applicatif normal, pas une
+  // erreur à propager à la boundary React.
+  const auditQuery = useQuery({
+    queryKey: ["audit", "logs", organizationId, offset],
+    queryFn: () => fetchAuditPage(organizationId as string, offset),
+    enabled: !!organizationId,
+    throwOnError: (err) => !(err instanceof ApiError && err.status === 403),
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const rows = auditQuery.data?.rows ?? [];
+  const total = auditQuery.data?.total ?? 0;
+  const members = auditQuery.data?.members ?? [];
+  const loading = !!organizationId && auditQuery.isPending;
+  const denied = auditQuery.error instanceof ApiError && auditQuery.error.status === 403;
 
   function formatDateTime(iso: string): string {
     return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -61,16 +60,30 @@ export default function AuditPage() {
     return members.find((m) => m.userId === userId)?.fullName ?? userId;
   }
 
-  if (loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
-  }
-
   return (
     <div>
       <h1 className="text-h1 font-bold text-text">{t("title")}</h1>
       <p className="mt-1 text-body-md text-text-muted">{t("subtitle")}</p>
 
-      {denied ? (
+      {loading ? (
+        <Card className="mt-6" padding="none">
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("columns.actor")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.action")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.summary")}</TableHeaderCell>
+                <TableHeaderCell>{t("columns.date")}</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={4} />
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : denied ? (
         <div className="mt-6">
           <EmptyState icon={ClipboardList} title={t("noAccess")} />
         </div>

@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { CardSkeleton } from "@/shared/ui/Skeleton";
 
 import { useCredit } from "./useCredit";
 
@@ -87,7 +87,11 @@ export default function CreditScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <div className="flex flex-col gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       ) : data.accounts.length === 0 ? (
         <EmptyState icon={CreditCard} title={t("empty")} />
       ) : (

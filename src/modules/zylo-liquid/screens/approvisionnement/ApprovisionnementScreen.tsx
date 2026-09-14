@@ -6,8 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { reconcileDeliveryDeclaration } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 import { useApprovisionnement } from "./useApprovisionnement";
 
@@ -107,7 +106,23 @@ export default function ApprovisionnementScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.product")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.volume")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+              <TableHeaderCell />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={6} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.declarations.length === 0 ? (
         <EmptyState icon={Truck} title={t("empty")} />
       ) : (

@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 
 import type { RegulatoryCertaintyLevel } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { RegulatoryDocumentModal } from "./RegulatoryDocumentModal";
 import { useRegulation } from "./useRegulation";
@@ -95,7 +95,36 @@ export function RegulationTab({ organizationId, stationId }: { organizationId: s
     });
   }
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette (tableau + formulaire) plutôt qu'un spinner plein écran —
+  // cet onglet est démonté/remonté à chaque bascule du Centre administratif
+  // (cf. `StationAdminCenter.tsx`), donc rechargé à chaque ouverture même
+  // avec le cache React Query de `useRegulation`.
+  if (data.loading) {
+    return (
+      <Stack>
+        <Card padding="none">
+          <div className="p-5">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={6} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+        <Card>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <Skeleton className="mt-3 h-20 w-full" />
+        </Card>
+      </Stack>
+    );
+  }
 
   return (
     <Stack>

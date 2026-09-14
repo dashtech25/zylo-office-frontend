@@ -2,11 +2,12 @@
 
 import { File, FileImage, FileText, Trash2, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import type { AuditLogEntry } from "@/core/api/audit";
 import type { Supplier, StationSupplier, ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, Button, Modal, Tabs } from "@/shared/ui";
+import { Badge, Button, ListSkeleton, Modal, Skeleton, Tabs } from "@/shared/ui";
 
 const CONTRACT_STATUS_TONE = { valid: "success", renew_soon: "warning", expired: "error", unknown: "neutral" } as const;
 const CATEGORY_TONE = { carburant: "info", equipement: "primary", maintenance: "warning", securite: "error", service: "neutral", autre: "neutral" } as const;
@@ -67,41 +68,37 @@ export function SupplierModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [tab, setTab] = useState("info");
-  const [files, setFiles] = useState<ZyloDocument[]>([]);
-  const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [history, setHistory] = useState<AuditLogEntry[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reloadFiles = useCallback(async () => {
-    if (!link) return;
-    setLoadingFiles(true);
-    try {
-      setFiles(await listFiles(link.id));
-    } finally {
-      setLoadingFiles(false);
-    }
-  }, [link, listFiles]);
+  // Migré vers React Query : ce composant reste monté en permanence côté
+  // parent (`SuppliersSection.tsx`, hors périmètre de cette migration), seul
+  // `open` pilote sa visibilité — `enabled: open && !!link` (même principe
+  // que `usePartData`, qui lui ne charge qu'au montage d'un onglet Radix)
+  // évite un appel réseau tant que la modale n'a jamais été ouverte pour ce
+  // fournisseur.
+  const filesQuery = useQuery({
+    queryKey: ["zylo-liquid", "station-detail", "supplier-files", link?.id ?? null],
+    queryFn: () => listFiles((link as StationSupplier).id),
+    enabled: open && !!link,
+  });
+  const files = filesQuery.data ?? [];
+  const loadingFiles = open && !!link && filesQuery.isPending;
 
-  const reloadHistory = useCallback(async () => {
-    if (!link) return;
-    setLoadingHistory(true);
-    try {
-      setHistory(await listHistory(link.id));
-    } finally {
-      setLoadingHistory(false);
-    }
-  }, [link, listHistory]);
+  const historyQuery = useQuery({
+    queryKey: ["zylo-liquid", "station-detail", "supplier-history", link?.id ?? null],
+    queryFn: () => listHistory((link as StationSupplier).id),
+    enabled: open && !!link,
+  });
+  const history = historyQuery.data ?? [];
+  const loadingHistory = open && !!link && historyQuery.isPending;
 
   useEffect(() => {
     if (!open || !link) return;
     setTab("info");
     setError(null);
-    reloadFiles();
-    reloadHistory();
-  }, [open, link, reloadFiles, reloadHistory]);
+  }, [open, link]);
 
   if (!supplier || !link) return null;
 
@@ -112,7 +109,7 @@ export function SupplierModal({
     setError(null);
     try {
       await attachFiles(link.id, list);
-      await reloadFiles();
+      await filesQuery.refetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -124,7 +121,7 @@ export function SupplierModal({
   async function handleRemoveFile(fileId: string) {
     if (!link) return;
     await removeFile(link.id, fileId);
-    await reloadFiles();
+    await filesQuery.refetch();
   }
 
   async function handleDownload(fileId: string) {
@@ -199,6 +196,9 @@ export function SupplierModal({
   const documentsTab = (
     <div className="flex flex-col gap-3 py-3">
       {error && <p className="text-body-sm text-error">{error}</p>}
+      {filesQuery.isError && !error && (
+        <p className="text-body-sm text-error">{filesQuery.error instanceof Error ? filesQuery.error.message : tCommon("states.error")}</p>
+      )}
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && handleFiles(e.target.files)} />
       <div
         onDragOver={(e) => {
@@ -219,7 +219,14 @@ export function SupplierModal({
       </div>
 
       {loadingFiles ? (
-        <p className="text-body-sm text-text-muted">{tCommon("states.loading")}</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 rounded-card border border-border-subtle p-2">
+              <Skeleton variant="circular" className="size-8" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+          ))}
+        </div>
       ) : files.length === 0 ? (
         <p className="text-body-sm text-text-muted">{t("noFiles")}</p>
       ) : (
@@ -248,7 +255,7 @@ export function SupplierModal({
   const historyTab = (
     <div className="py-3">
       {loadingHistory ? (
-        <p className="text-body-sm text-text-muted">{tCommon("states.loading")}</p>
+        <ListSkeleton rows={3} />
       ) : history.length === 0 ? (
         <p className="text-body-sm text-text-muted">{t("noHistory")}</p>
       ) : (

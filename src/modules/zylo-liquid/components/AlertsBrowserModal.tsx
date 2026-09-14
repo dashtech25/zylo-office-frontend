@@ -7,7 +7,7 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { AlertRow } from "@/modules/zylo-liquid/screens/alerts/AlertRow";
 import { useAlertsList, type AlertRow as AlertRowData, type AlertStatusFilter } from "@/modules/zylo-liquid/screens/alerts/useAlertsList";
 import { ActivityRow, Button, EmptyState, Modal, Select, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { ListSkeleton } from "@/shared/ui/Skeleton";
 
 const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "acknowledged", "resolved"];
 
@@ -87,7 +87,7 @@ export function AlertsBrowserModal({
           </div>
 
           {data.loading ? (
-            <PageSpinner label={tCommon("states.loading")} />
+            <ListSkeleton rows={5} />
           ) : data.rows.length === 0 ? (
             <EmptyState icon={AlertTriangle} title={t("empty")} />
           ) : (

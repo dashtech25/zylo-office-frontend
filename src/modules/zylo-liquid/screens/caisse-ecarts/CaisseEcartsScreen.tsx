@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, EmptyState, PageHeader, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useCaisseEcarts } from "./useCaisseEcarts";
 
@@ -23,7 +23,6 @@ const SUBJECT_TYPE_LABELS: Record<string, string> = {
  * de stock...). */
 export default function CaisseEcartsScreen() {
   const t = useTranslations("zyloLiquid.caisseEcartsScreen");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
   const data = useCaisseEcarts(currentOrganization?.id ?? null);
@@ -35,7 +34,21 @@ export default function CaisseEcartsScreen() {
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.type")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.discrepancy")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.tolerance")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.evaluatedAt")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={4} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.records.length === 0 ? (
         <EmptyState icon={Scale} title={t("empty")} />
       ) : (

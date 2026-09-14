@@ -61,7 +61,7 @@ export function StationsMap({
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [9.7, 4.05],
       zoom: 5,
     });
@@ -71,7 +71,7 @@ export function StationsMap({
       map.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [token]);
 
   useEffect(() => {
