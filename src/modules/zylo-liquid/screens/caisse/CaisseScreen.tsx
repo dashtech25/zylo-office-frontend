@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Card, EmptyState, Input, PageHeader, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, ListSkeleton } from "@/shared/ui/Skeleton";
 import { cn } from "@/shared/lib/cn";
 
 import { StationsFilterBar } from "@/modules/zylo-liquid/screens/stations-list/StationsFilterBar";
@@ -39,7 +39,6 @@ type CaisseSortBy = "name" | "highestValue" | "lowestValue";
  * périmètres divergents. */
 export default function CaisseScreen() {
   const t = useTranslations("zyloLiquid.caisse");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
 
@@ -179,7 +178,17 @@ export default function CaisseScreen() {
       )}
 
       {loading || stationsList.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Stack gap="lg">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <KpiSkeleton />
+            <KpiSkeleton />
+            <KpiSkeleton />
+            <KpiSkeleton />
+          </div>
+          <Card>
+            <ListSkeleton rows={6} />
+          </Card>
+        </Stack>
       ) : allRows.length === 0 ? (
         <Alert tone="warning">{t("noData")}</Alert>
       ) : (

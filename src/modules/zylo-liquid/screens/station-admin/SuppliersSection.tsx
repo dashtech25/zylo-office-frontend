@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import type { Supplier, StationSupplier, SupplierCategory } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { SupplierFormModal } from "../station-detail/SupplierFormModal";
 import { SupplierModal } from "../station-detail/SupplierModal";
@@ -62,7 +62,27 @@ export function SuppliersSection({ organizationId, stationId }: { organizationId
     }
   }
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette de tableau plutôt qu'un spinner plein écran — cette section
+  // est démontée/remontée à chaque bascule du Centre administratif (cf.
+  // `StationAdminCenter.tsx`), donc rechargée à chaque ouverture même avec
+  // le cache React Query de `useSuppliers`.
+  if (data.loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Card padding="none">
+          <div className="p-5">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={6} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

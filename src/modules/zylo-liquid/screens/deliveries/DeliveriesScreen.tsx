@@ -8,8 +8,8 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
-import { Alert, Button, Card, EmptyState, Input, Kpi, PageHeader, Select, Stack, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Button, Card, EmptyState, Input, Kpi, PageHeader, Select, Stack, Table, TableBody, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { DeliveriesInProgressSection } from "./DeliveriesInProgressSection";
 import { DeliveriesTable } from "./DeliveriesTable";
@@ -30,7 +30,6 @@ import { useDeliveriesList, type DeliveryRow } from "./useDeliveriesList";
  * pendant sa fenêtre de détection. */
 export default function DeliveriesScreen() {
   const t = useTranslations("zyloLiquid.deliveries");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
 
@@ -117,7 +116,28 @@ export default function DeliveriesScreen() {
       )}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Card padding="none">
+          <div className="p-5">
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.heightBefore")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.heightAfter")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.received")}</TableHeaderCell>
+                  <TableHeaderCell className="text-right">{t("table.value")}</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={7} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       ) : data.rows.length === 0 ? (
         <EmptyState icon={Truck} title={t("empty")} />
       ) : (

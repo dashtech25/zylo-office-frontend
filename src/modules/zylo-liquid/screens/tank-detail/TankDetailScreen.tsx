@@ -8,8 +8,7 @@ import { useMemo, useState } from "react";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { acknowledgeAlert, type Alert as ZyloAlert, type TankMeasurement } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, EmptyState, InfoRow, Kpi, PageHeader, Stack, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, CardSkeleton, EmptyState, InfoRow, Kpi, KpiSkeleton, PageHeader, Skeleton, Stack, Tabs } from "@/shared/ui";
 
 import { AlertsBrowserModal } from "@/modules/zylo-liquid/components/AlertsBrowserModal";
 import { DeliveriesBrowserModal } from "@/modules/zylo-liquid/components/DeliveriesBrowserModal";
@@ -114,7 +113,24 @@ export default function TankDetailScreen() {
   const measurementPoints = allMeasurementPoints.filter((_, i) => i % sampleStep === 0);
 
   if (data.loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <Stack>
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-72" />
+          <Skeleton className="h-8 w-96" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <KpiSkeleton key={i} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </Stack>
+    );
   }
   if (!data.tank || !data.state || !data.station) {
     return <EmptyState icon={AlertTriangle} title={tCommon("states.error")} description={data.error ?? undefined} />;

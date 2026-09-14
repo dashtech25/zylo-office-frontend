@@ -136,6 +136,9 @@ export function useStationsList(organizationId: string | null) {
   const tankById = new Map(tanks.map((t) => [t.id, t]));
   const alertsByStation = new Map<string, Alert[]>();
   for (const alert of activeAlerts) {
+    // Étape 2 tracking — une alerte de camion n'a pas de station, jamais
+    // regroupée ici (cette carte est spécifiquement "alertes par station").
+    if (alert.stationId === null) continue;
     const list = alertsByStation.get(alert.stationId) ?? [];
     list.push(alert);
     alertsByStation.set(alert.stationId, list);

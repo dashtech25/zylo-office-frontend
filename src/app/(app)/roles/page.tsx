@@ -1,27 +1,38 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ShieldCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { createRole, listPermissionsCatalog, listRoles, type Permission, type Role } from "@/core/api/rbac";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { Button, Card, Checkbox, EmptyState, Input, Modal, Stack } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Button, Card, CardSkeleton, Checkbox, EmptyState, Input, Modal, Stack } from "@/shared/ui";
 
 const ROLE_MANAGE = "rbac.role.manage";
+
+interface RolesPageData {
+  roles: Role[];
+  catalog: Permission[];
+}
+
+async function fetchRolesPage(organizationId: string): Promise<RolesPageData> {
+  const [roles, catalog] = await Promise.all([
+    listRoles(organizationId),
+    listPermissionsCatalog(organizationId),
+  ]);
+  return { roles, catalog };
+}
 
 export default function RolesPage() {
   const t = useTranslations("administration.roles");
   const tCommon = useTranslations("common");
   const { currentOrganization } = useOrganization();
   const { can } = usePermissions();
+  const organizationId = currentOrganization?.id ?? null;
 
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [catalog, setCatalog] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -31,24 +42,15 @@ export default function RolesPage() {
 
   const canManage = can(ROLE_MANAGE);
 
-  const load = useCallback(async () => {
-    if (!currentOrganization) return;
-    setLoading(true);
-    try {
-      const [rolesList, permissionsList] = await Promise.all([
-        listRoles(currentOrganization.id),
-        listPermissionsCatalog(currentOrganization.id),
-      ]);
-      setRoles(rolesList);
-      setCatalog(permissionsList);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`).
+  const rolesQuery = useQuery({
+    queryKey: ["roles", "list", organizationId],
+    queryFn: () => fetchRolesPage(organizationId as string),
+    enabled: !!organizationId,
+  });
+  const roles = rolesQuery.data?.roles ?? [];
+  const catalog = rolesQuery.data?.catalog ?? [];
+  const loading = !!organizationId && rolesQuery.isPending;
 
   function toggle(code: string) {
     setSelectedCodes((prev) => {
@@ -69,16 +71,12 @@ export default function RolesPage() {
       setCode("");
       setName("");
       setSelectedCodes(new Set());
-      await load();
+      await rolesQuery.refetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
-  }
-
-  if (loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
   }
 
   const byModule = new Map<string, Permission[]>();
@@ -98,7 +96,13 @@ export default function RolesPage() {
         {canManage && <Button onClick={() => setCreateOpen(true)}>{t("create")}</Button>}
       </div>
 
-      {roles.length === 0 ? (
+      {loading ? (
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : roles.length === 0 ? (
         <div className="mt-6">
           <EmptyState icon={ShieldCheck} title={t("empty")} />
         </div>

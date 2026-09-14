@@ -28,7 +28,7 @@ export const MAPBOX_STYLE_OPTIONS: MapStyleOption[] = [
   { id: "nav-night", label: "Navigation (nuit)", url: "mapbox://styles/mapbox/navigation-night-v1" },
 ];
 
-const DEFAULT_STYLE = MAPBOX_STYLE_OPTIONS[2]!;
+const DEFAULT_STYLE = MAPBOX_STYLE_OPTIONS[0]!;
 
 export interface TruckMapPoint {
   id: string;

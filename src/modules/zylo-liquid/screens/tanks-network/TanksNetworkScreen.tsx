@@ -10,7 +10,7 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { computeTankVisualData, TankVisual } from "@/modules/zylo-liquid/components/TankVisual";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Badge, Card, EmptyState, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useTanksNetwork } from "./useTanksNetwork";
 
@@ -72,7 +72,45 @@ export default function TanksNetworkScreen() {
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="flex flex-col items-center gap-2">
+                <Skeleton className="h-4 w-2/3 self-start" />
+                <Skeleton className="h-3 w-1/3 self-start" />
+                <Skeleton variant="circular" className="my-2 h-16 w-16" />
+                <Skeleton className="h-3 w-1/2" />
+              </Card>
+            ))}
+          </div>
+          <Card padding="none">
+            <div className="p-5">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+                    <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+                    <TableHeaderCell>{t("table.product")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.volume")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.sellable")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.correctedAt15C")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.capacity")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.water")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.available")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.temperature")}</TableHeaderCell>
+                    <TableHeaderCell className="text-right">{t("table.coverage")}</TableHeaderCell>
+                    <TableHeaderCell>{t("table.data")}</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <TableRowSkeleton key={i} columns={12} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </>
       ) : (
         <>
           <Card>

@@ -4,24 +4,24 @@ import { Building2, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Button, Card, EmptyState } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Button, Card, CardSkeleton, EmptyState } from "@/shared/ui";
 
 export default function OrganizationsPage() {
   const t = useTranslations("organizations");
-  const tCommon = useTranslations("common");
   const { organizations, currentOrganization, loading, selectOrganization } = useOrganization();
-
-  if (loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
-  }
 
   return (
     <div>
       <h1 className="text-h1 font-bold text-text">{t("title")}</h1>
       <p className="mt-1 text-body-md text-text-muted">{t("subtitle")}</p>
 
-      {organizations.length === 0 ? (
+      {loading ? (
+        <div className="mt-6 flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : organizations.length === 0 ? (
         <div className="mt-4">
           <EmptyState icon={Building2} title={t("emptyState.title")} description={t("emptyState.description")} />
         </div>

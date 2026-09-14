@@ -222,7 +222,8 @@ export type AlertType =
   | "delivery_declaration_pending"
   | "price_missing"
   | "sensor_mapping_missing"
-  | "calibration_missing";
+  | "calibration_missing"
+  | "truck_stop_unqualified";
 
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
@@ -232,7 +233,8 @@ export type AlertResolutionMethod = "auto_verified" | "manual_justified";
 // ne plus dériver la gravité d'un `Set` de types dupliqué côté frontend.
 export interface Alert {
   id: string;
-  stationId: string;
+  stationId: string | null;
+  truckId: string | null;
   tankId: string | null;
   productId: string | null;
   type: AlertType;
@@ -563,11 +565,12 @@ export function getStationCurrentState(organizationId: string, stationId: string
 
 export function listAlerts(
   organizationId: string,
-  params: { status?: string; stationId?: string; tankId?: string; type?: AlertType; limit?: number } = {}
+  params: { status?: string; stationId?: string; truckId?: string; tankId?: string; type?: AlertType; limit?: number } = {}
 ): Promise<Page<Alert>> {
   const search = new URLSearchParams();
   if (params.status) search.set("status", params.status);
   if (params.stationId) search.set("stationId", params.stationId);
+  if (params.truckId) search.set("truckId", params.truckId);
   if (params.tankId) search.set("tankId", params.tankId);
   if (params.type) search.set("type", params.type);
   search.set("limit", String(params.limit ?? 20));
@@ -1061,6 +1064,173 @@ export function regenerateGpsIngestCredential(organizationId: string): Promise<{
   return apiFetch<{ secretToken: string }>("/zylo-liquid/gps-ingest-credential/regenerate", { method: "POST", organizationId });
 }
 
+export function unassignGpsDevice(organizationId: string, gpsDeviceId: string): Promise<GpsDevice> {
+  return apiFetch<GpsDevice>(`/zylo-liquid/gps-devices/${gpsDeviceId}/unassign`, { method: "POST", organizationId });
+}
+
+// ================================================================
+// Tracking GPS des camions-citernes — étape 2 (flux métier, 2026-09)
+// ================================================================
+
+export interface TraccarConnection {
+  id: string;
+  organizationId: string;
+  baseUrl: string;
+  username: string;
+  password: string;
+}
+
+export interface TraccarConnectionInput {
+  baseUrl: string;
+  username: string;
+  password: string;
+}
+
+export function getTraccarConnection(organizationId: string): Promise<TraccarConnection | null> {
+  return apiFetch<TraccarConnection | null>("/zylo-liquid/traccar-connection", withOrg(organizationId));
+}
+
+export function setTraccarConnection(organizationId: string, data: TraccarConnectionInput): Promise<TraccarConnection> {
+  return apiFetch<TraccarConnection>("/zylo-liquid/traccar-connection", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export interface TraccarDeviceListItem {
+  deviceIdentifier: string;
+  name: string | null;
+  online: boolean;
+  lastPositionAt: string | null;
+  truckId: string | null;
+  truckPlateNumber: string | null;
+}
+
+export function listTraccarDevices(organizationId: string): Promise<TraccarDeviceListItem[]> {
+  return apiFetch<TraccarDeviceListItem[]>("/zylo-liquid/gps-devices/from-traccar", withOrg(organizationId));
+}
+
+export type TrackingLocationType = "port" | "entrepot" | "depot_fournisseur" | "libre";
+
+export interface TrackingLocation {
+  id: string;
+  organizationId: string;
+  name: string;
+  type: TrackingLocationType;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  status: "active" | "deleted";
+}
+
+export interface CreateTrackingLocationInput {
+  name: string;
+  type?: TrackingLocationType;
+  latitude: number;
+  longitude: number;
+  radiusMeters?: number;
+}
+
+export function listTrackingLocations(organizationId: string, includeDeleted = false): Promise<TrackingLocation[]> {
+  return apiFetch<TrackingLocation[]>(`/zylo-liquid/tracking-locations?includeDeleted=${includeDeleted}`, withOrg(organizationId));
+}
+
+export function createTrackingLocation(organizationId: string, data: CreateTrackingLocationInput): Promise<TrackingLocation> {
+  return apiFetch<TrackingLocation>("/zylo-liquid/tracking-locations", { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function updateTrackingLocation(organizationId: string, locationId: string, data: Partial<CreateTrackingLocationInput>): Promise<TrackingLocation> {
+  return apiFetch<TrackingLocation>(`/zylo-liquid/tracking-locations/${locationId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+export function deleteTrackingLocation(organizationId: string, locationId: string): Promise<TrackingLocation> {
+  return apiFetch<TrackingLocation>(`/zylo-liquid/tracking-locations/${locationId}`, { method: "DELETE", organizationId });
+}
+
+export interface TruckStopReconciliation {
+  id: string;
+  stopEventId: string;
+  candidateLocationIds: string[];
+  status: "pending" | "resolved";
+  resolvedLocationId: string | null;
+  resolvedByUserId: string | null;
+  resolvedAt: string | null;
+}
+
+export function listTruckStopReconciliations(organizationId: string, status: string | null = "pending"): Promise<TruckStopReconciliation[]> {
+  const search = new URLSearchParams();
+  if (status !== null) search.set("status", status);
+  return apiFetch<TruckStopReconciliation[]>(`/zylo-liquid/truck-stop-reconciliations?${search.toString()}`, withOrg(organizationId));
+}
+
+export function resolveTruckStopReconciliation(organizationId: string, reconciliationId: string, locationId: string | null): Promise<TruckStopReconciliation> {
+  return apiFetch<TruckStopReconciliation>(`/zylo-liquid/truck-stop-reconciliations/${reconciliationId}/resolve`, {
+    method: "POST", organizationId, body: JSON.stringify({ locationId }),
+  });
+}
+
+export interface TruckStopComment {
+  id: string;
+  stopEventId: string;
+  authorUserId: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function listTruckStopComments(organizationId: string, stopId: string): Promise<TruckStopComment[]> {
+  return apiFetch<TruckStopComment[]>(`/zylo-liquid/truck-stops/${stopId}/comments`, withOrg(organizationId));
+}
+
+export function createTruckStopComment(organizationId: string, stopId: string, body: string): Promise<TruckStopComment> {
+  return apiFetch<TruckStopComment>(`/zylo-liquid/truck-stops/${stopId}/comments`, { method: "POST", organizationId, body: JSON.stringify({ body }) });
+}
+
+export function updateTruckStopComment(organizationId: string, commentId: string, body: string): Promise<TruckStopComment> {
+  return apiFetch<TruckStopComment>(`/zylo-liquid/truck-stop-comments/${commentId}`, { method: "PATCH", organizationId, body: JSON.stringify({ body }) });
+}
+
+export function deleteTruckStopComment(organizationId: string, commentId: string): Promise<void> {
+  return apiFetch<void>(`/zylo-liquid/truck-stop-comments/${commentId}`, { method: "DELETE", organizationId });
+}
+
+export interface TruckOrderAssignment {
+  id: string;
+  truckId: string;
+  purchaseOrderId: string;
+  active: boolean;
+}
+
+export function listTrucksForPurchaseOrder(organizationId: string, purchaseOrderId: string): Promise<TruckOrderAssignment[]> {
+  return apiFetch<TruckOrderAssignment[]>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/trucks`, withOrg(organizationId));
+}
+
+export function assignTruckToPurchaseOrder(organizationId: string, purchaseOrderId: string, truckId: string): Promise<TruckOrderAssignment> {
+  return apiFetch<TruckOrderAssignment>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/trucks`, {
+    method: "POST", organizationId, body: JSON.stringify({ truckId }),
+  });
+}
+
+export function unassignTruckFromPurchaseOrder(organizationId: string, purchaseOrderId: string, truckId: string): Promise<void> {
+  return apiFetch<void>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/trucks/${truckId}`, { method: "DELETE", organizationId });
+}
+
+export function listOrdersForTruck(organizationId: string, truckId: string): Promise<TruckOrderAssignment[]> {
+  return apiFetch<TruckOrderAssignment[]>(`/zylo-liquid/trucks/${truckId}/orders`, withOrg(organizationId));
+}
+
+export interface TrackingSettings {
+  organizationId: string;
+  stopStabilizationMinutes: number | null;
+  stopRadiusMeters: number | null;
+  liveViewThrottleMs: number | null;
+}
+
+export function getTrackingSettings(organizationId: string): Promise<TrackingSettings> {
+  return apiFetch<TrackingSettings>("/zylo-liquid/tracking-settings", withOrg(organizationId));
+}
+
+export function updateTrackingSettings(organizationId: string, data: Partial<Omit<TrackingSettings, "organizationId">>): Promise<TrackingSettings> {
+  return apiFetch<TrackingSettings>("/zylo-liquid/tracking-settings", { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
 export interface TruckStopEvent {
   id: string;
   truckId: string;
@@ -1068,6 +1238,8 @@ export interface TruckStopEvent {
   longitude: number;
   startAt: string;
   endAt: string | null;
+  locationId: string | null;
+  reconciliationStatus: "none" | "pending" | "resolved";
 }
 
 export interface TruckCurrentPosition {

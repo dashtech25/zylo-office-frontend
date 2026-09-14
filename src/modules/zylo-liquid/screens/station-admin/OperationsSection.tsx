@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import type { Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, Input, Kpi, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, ListSkeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useExploitation } from "../station-detail/useExploitation";
 import { ProductDetailModal } from "../station-detail/ProductDetailModal";
@@ -22,7 +22,6 @@ const STATUS_TONE = { normal: "success", attention: "warning", critique: "error"
  * (2 checkboxes produits + 4 checkboxes service). */
 export function OperationsSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.operations");
-  const tCommon = useTranslations("common");
   const data = useExploitation(organizationId, station.id);
 
   const [tab, setTab] = useState<"carburants" | "services" | "configuration" | "historique">("carburants");
@@ -44,7 +43,35 @@ export function OperationsSection({ organizationId, station }: { organizationId:
   const totalStockLiters = data.products.reduce((sum, p) => sum + (p.currentVolumeLiters ?? 0), 0);
   const activeProductsCount = data.products.filter((p) => p.active).length;
 
-  if (data.loading) return <PageSpinner label={tCommon("states.loading")} />;
+  // Silhouette (skeleton) plutôt qu'un spinner plein écran — cet onglet du
+  // Centre administratif est démonté/remonté à chaque bascule de section
+  // (cf. `StationAdminCenter.tsx`), donc rechargé à chaque ouverture même
+  // avec le cache React Query ; un skeleton qui reprend la forme réelle
+  // (KPI + tableau) évite l'impression de « ça recharge tout » signalée sur
+  // Configuration.
+  if (data.loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+        <Card padding="none">
+          <div className="p-5">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRowSkeleton key={i} columns={7} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -386,7 +413,7 @@ function HistoryTab({ data }: { data: ReturnType<typeof useExploitation> }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (entries === null) return <PageSpinner label="…" />;
+  if (entries === null) return <ListSkeleton rows={5} />;
   if (entries.length === 0) return <EmptyState title={t("noHistory")} />;
 
   return (

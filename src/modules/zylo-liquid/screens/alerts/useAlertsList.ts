@@ -106,7 +106,7 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
     .map((alert) => ({
       alert,
       tank: alert.tankId ? (tankById.get(alert.tankId) ?? null) : null,
-      station: stationById.get(alert.stationId) ?? null,
+      station: alert.stationId ? (stationById.get(alert.stationId) ?? null) : null,
     }))
     .sort((a, b) => (a.alert.triggeredAt < b.alert.triggeredAt ? 1 : -1));
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { listMembers, type OrganizationMember } from "@/core/api/rbac";
 import {
@@ -41,70 +41,79 @@ async function loadAllCurrencies(organizationId: string): Promise<Currency[]> {
   return all;
 }
 
+interface PricesData {
+  prices: PriceHistoryEntry[];
+  stations: Station[];
+  tanks: Tank[];
+  cities: City[];
+  currencies: Currency[];
+  members: OrganizationMember[];
+}
+
 /** Charge tout ce dont l'onglet Prix (et le bandeau de configuration
  * manquante, cf. page_configuration.md §22) a besoin en une seule fois :
  * stations, cuves (pour savoir quels couples station×produit sont
  * réellement en service), villes (pour résoudre la devise d'une station
- * et détecter une géo incomplète), devises, historique des prix. */
+ * et détecter une géo incomplète), devises, historique des prix. Ces
+ * données sont mutuellement nécessaires au calcul de `missingItems` et à
+ * la grille de prix elle-même — gardées en une seule requête plutôt que
+ * scindées (contrairement à `useNetworkDashboard`, ici rien n'est
+ * indépendant : chaque calcul consomme plusieurs de ces listes à la fois). */
+async function fetchPrices(organizationId: string): Promise<PricesData> {
+  const [pricesPage, stationsPage, tanksPage, citiesPage, currenciesList, membersList] = await Promise.all([
+    listPrices(organizationId, { limit: 100 }),
+    listStations(organizationId),
+    // Le backend plafonne `limit` à 100 (PaginationParams, `le=100`) —
+    // une valeur supérieure renvoie systématiquement un 422, qui faisait
+    // échouer tout le Promise.all et donc tout l'onglet Prix (bug
+    // découvert par le test E2E réel de refonte-configuration-zylo-liquid.md,
+    // jamais un problème introduit par cette mission mais bloquant pour
+    // la vérifier).
+    listTanks(organizationId, 100),
+    listCities(organizationId, { limit: 100 }),
+    loadAllCurrencies(organizationId),
+    listMembers(organizationId).catch(() => [] as OrganizationMember[]),
+  ]);
+  return {
+    prices: pricesPage.data,
+    stations: stationsPage.data,
+    tanks: tanksPage.data,
+    cities: citiesPage.data,
+    currencies: currenciesList,
+    members: membersList,
+  };
+}
+
+/** Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+ * requête indépendante des autres onglets de `ConfigurationScreen`
+ * (catalogue carburants, associations produit×station) : son propre
+ * chargement/skeleton n'attend jamais celui des autres sections. */
 export function usePrices(organizationId: string | null) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [prices, setPrices] = useState<PriceHistoryEntry[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "configuration-prices", organizationId],
+    queryFn: () => fetchPrices(organizationId as string),
+    enabled: !!organizationId,
+  });
 
-  const load = useCallback(async () => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [pricesPage, stationsPage, tanksPage, citiesPage, currenciesList, membersList] = await Promise.all([
-        listPrices(organizationId, { limit: 100 }),
-        listStations(organizationId),
-        // Le backend plafonne `limit` à 100 (PaginationParams, `le=100`) —
-        // une valeur supérieure renvoie systématiquement un 422, qui faisait
-        // échouer tout le Promise.all et donc tout l'onglet Prix (bug
-        // découvert par le test E2E réel de refonte-configuration-zylo-liquid.md,
-        // jamais un problème introduit par cette mission mais bloquant pour
-        // la vérifier).
-        listTanks(organizationId, 100),
-        listCities(organizationId, { limit: 100 }),
-        loadAllCurrencies(organizationId),
-        listMembers(organizationId).catch(() => [] as OrganizationMember[]),
-      ]);
-      setPrices(pricesPage.data);
-      setStations(stationsPage.data);
-      setTanks(tanksPage.data);
-      setCities(citiesPage.data);
-      setCurrencies(currenciesList);
-      setMembers(membersList);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const prices = query.data?.prices ?? [];
+  const stations = query.data?.stations ?? [];
+  const tanks = query.data?.tanks ?? [];
+  const cities = query.data?.cities ?? [];
+  const currencies = query.data?.currencies ?? [];
+  const members = query.data?.members ?? [];
+  const loading = !!organizationId && query.isPending;
+  const error = query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null;
 
   async function create(data: CreatePriceHistoryInput) {
     if (!organizationId) return;
     await createPriceHistory(organizationId, data);
-    await load();
+    await query.refetch();
   }
 
   async function update(priceId: string, data: { priceAmount?: number; costAmount?: number; changeReason?: string }) {
     if (!organizationId) return;
     await updatePriceHistory(organizationId, priceId, data);
-    await load();
+    await query.refetch();
   }
 
   const cityById = new Map(cities.map((c) => [c.id, c]));
@@ -135,5 +144,20 @@ export function usePrices(organizationId: string | null) {
     return currencyByCode.get(city.currencyCode) ?? null;
   }
 
-  return { loading, error, prices, stations, tanks, cities, currencies, members, resolveStationCurrency, create, update, reload: load };
+  return {
+    loading,
+    error,
+    prices,
+    stations,
+    tanks,
+    cities,
+    currencies,
+    members,
+    resolveStationCurrency,
+    create,
+    update,
+    reload: async () => {
+      await query.refetch();
+    },
+  };
 }

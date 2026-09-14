@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getNetworkSummary,
@@ -56,6 +56,16 @@ export interface AlertTypeBreakdown {
  * remplacer une valeur manquante par une valeur inventée. */
 export interface ReportsData {
   loading: boolean;
+  /** État de chargement des états courants par station (requête séparée,
+   * dépend de la liste de stations de la base — cf. commentaire sur
+   * `useReportsData`) : permet au classement des stations et à
+   * `stationsOnlineCount` de rester en squelette indépendamment du reste
+   * (vue d'ensemble, alertes, fuites), déjà prêt lui. */
+  statesLoading: boolean;
+  /** État de chargement des livraisons de la période (requête séparée : ne
+   * dépend que de `period`, inutile de refaire la base réseau quand on
+   * change juste la période affichée). */
+  deliveriesLoading: boolean;
   error: string | null;
   stations: Station[];
   tanks: Tank[];
@@ -74,81 +84,101 @@ export interface ReportsData {
   activeTankCount: number;
 }
 
+interface ReportsBaseData {
+  stations: Station[];
+  tanks: Tank[];
+  fuelProducts: FuelProduct[];
+  networkSummary: NetworkSummary;
+  allAlerts: Alert[];
+  leakEvents: LeakEvent[];
+}
+
+async function fetchReportsBase(organizationId: string): Promise<ReportsBaseData> {
+  const [stationsPage, tanksPage, fuelProductsPage, summary, alertsPage, leakEventsPage] = await Promise.all([
+    listStations(organizationId),
+    listTanks(organizationId),
+    listFuelProducts(organizationId),
+    getNetworkSummary(organizationId),
+    listAlerts(organizationId, { limit: 100 }),
+    listLeakEvents(organizationId, { limit: 100 }),
+  ]);
+  return {
+    stations: stationsPage.data,
+    tanks: tanksPage.data,
+    fuelProducts: fuelProductsPage.data,
+    networkSummary: summary,
+    allAlerts: alertsPage.data,
+    leakEvents: leakEventsPage.data,
+  };
+}
+
+async function fetchReportsDeliveries(organizationId: string, period: ReportsPeriod): Promise<Delivery[]> {
+  const fromDate =
+    period === "today"
+      ? new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
+      : new Date(Date.now() - PERIOD_DAYS[period] * 24 * 60 * 60 * 1000).toISOString();
+  const deliveriesPage = await listDeliveries(organizationId, { fromDate, limit: 100 });
+  return deliveriesPage.data;
+}
+
+async function fetchStationStates(organizationId: string, activeStationIds: string[]): Promise<Record<string, StationCurrentState>> {
+  const states = await Promise.all(activeStationIds.map((id) => getStationCurrentState(organizationId, id)));
+  const statesByStation: Record<string, StationCurrentState> = {};
+  activeStationIds.forEach((id, index) => {
+    statesByStation[id] = states[index];
+  });
+  return statesByStation;
+}
+
 /** Hook de données privé à l'écran Rapports (colocalisé, pas dans
  * `modules/zylo-liquid/hooks/` : un seul écran l'utilise aujourd'hui — cf.
  * `src/modules/CLAUDE.md` "ne pas promouvoir au niveau du module au cas
  * où"). Réutilise entièrement `services/zyloLiquidApi.ts`, jamais un appel
  * fetch direct. Aucune donnée agrégée n'est déjà exposée par un endpoint
  * dédié pour ces classements — ils sont calculés ici à partir des mêmes
- * données brutes que le tableau de bord, jamais inventés. */
+ * données brutes que le tableau de bord, jamais inventés.
+ *
+ * Migré vers React Query (audit performance/cache, cf. `QueryProvider`),
+ * même principe de découpage que `useNetworkDashboard` : 3 requêtes
+ * indépendantes plutôt qu'une seule car ce sont 3 enchaînements avec des
+ * dépendances différentes — la base réseau (stations/cuves/produits/
+ * synthèse/alertes/fuites), les livraisons de la période (dépend
+ * uniquement de `period`), et les états courants par station active
+ * (dépend de la liste de stations de la base, d'où `enabled`). */
 export function useReportsData(organizationId: string | null, period: ReportsPeriod) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [tanks, setTanks] = useState<Tank[]>([]);
-  const [fuelProducts, setFuelProducts] = useState<FuelProduct[]>([]);
-  const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
-  const [allAlerts, setAllAlerts] = useState<Alert[]>([]);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [leakEvents, setLeakEvents] = useState<LeakEvent[]>([]);
-  const [stationStates, setStationStates] = useState<Record<string, StationCurrentState>>({});
+  const baseQuery = useQuery({
+    queryKey: ["zylo-liquid", "reports", "base", organizationId],
+    queryFn: () => fetchReportsBase(organizationId as string),
+    enabled: !!organizationId,
+  });
 
-  useEffect(() => {
-    if (!organizationId) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  const deliveriesQuery = useQuery({
+    queryKey: ["zylo-liquid", "reports", "deliveries", organizationId, period],
+    queryFn: () => fetchReportsDeliveries(organizationId as string, period),
+    enabled: !!organizationId,
+  });
 
-    const fromDate =
-      period === "today"
-        ? new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
-        : new Date(Date.now() - PERIOD_DAYS[period] * 24 * 60 * 60 * 1000).toISOString();
+  const stations = baseQuery.data?.stations ?? [];
+  const activeStationIds = stations.filter((s) => s.status === "active").map((s) => s.id);
 
-    async function load() {
-      try {
-        const [stationsPage, tanksPage, fuelProductsPage, summary, alertsPage, deliveriesPage, leakEventsPage] = await Promise.all([
-          listStations(organizationId!),
-          listTanks(organizationId!),
-          listFuelProducts(organizationId!),
-          getNetworkSummary(organizationId!),
-          listAlerts(organizationId!, { limit: 100 }),
-          listDeliveries(organizationId!, { fromDate, limit: 100 }),
-          listLeakEvents(organizationId!, { limit: 100 }),
-        ]);
-        if (cancelled) return;
+  const statesQuery = useQuery({
+    queryKey: ["zylo-liquid", "reports", "station-states", organizationId, activeStationIds],
+    queryFn: () => fetchStationStates(organizationId as string, activeStationIds),
+    enabled: !!organizationId && !!baseQuery.data,
+  });
 
-        const activeStations = stationsPage.data.filter((s) => s.status === "active");
-        const states = await Promise.all(activeStations.map((s) => getStationCurrentState(organizationId!, s.id)));
-        if (cancelled) return;
+  const loading = !!organizationId && baseQuery.isPending;
+  const statesLoading = !!organizationId && (baseQuery.isPending || statesQuery.isPending);
+  const deliveriesLoading = !!organizationId && deliveriesQuery.isPending;
+  const error = baseQuery.error ? (baseQuery.error instanceof Error ? baseQuery.error.message : String(baseQuery.error)) : null;
 
-        const statesByStation: Record<string, StationCurrentState> = {};
-        activeStations.forEach((s, index) => {
-          statesByStation[s.id] = states[index];
-        });
-
-        setStations(stationsPage.data);
-        setTanks(tanksPage.data);
-        setFuelProducts(fuelProductsPage.data);
-        setNetworkSummary(summary);
-        setAllAlerts(alertsPage.data);
-        setDeliveries(deliveriesPage.data);
-        setLeakEvents(leakEventsPage.data);
-        setStationStates(statesByStation);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, period]);
+  const tanks = baseQuery.data?.tanks ?? [];
+  const fuelProducts = baseQuery.data?.fuelProducts ?? [];
+  const networkSummary = baseQuery.data?.networkSummary ?? null;
+  const allAlerts = baseQuery.data?.allAlerts ?? [];
+  const leakEvents = baseQuery.data?.leakEvents ?? [];
+  const deliveries = deliveriesQuery.data ?? [];
+  const stationStates = statesQuery.data ?? {};
 
   const activeAlerts = allAlerts.filter((a) => a.status === "active");
   const tanksByStation = new Map<string, Tank[]>();
@@ -204,6 +234,8 @@ export function useReportsData(organizationId: string | null, period: ReportsPer
 
   const data: ReportsData = {
     loading,
+    statesLoading,
+    deliveriesLoading,
     error,
     stations,
     tanks,

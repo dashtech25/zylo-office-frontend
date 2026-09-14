@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Badge, Card, Kpi, PageHeader, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tooltip } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { KpiSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { cn } from "@/shared/lib/cn";
 
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
@@ -54,7 +54,6 @@ export default function RapportsScreen() {
   const t = useTranslations("zyloLiquid.rapports");
   const tStationsStatus = useTranslations("zyloLiquid.stations.status");
   const tAlertTypes = useTranslations("zyloLiquid.alerts.types");
-  const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization, loading: organizationLoading } = useOrganization();
 
@@ -98,7 +97,26 @@ export default function RapportsScreen() {
   }
 
   if (organizationLoading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <Stack gap="lg">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+        <Card>
+          <Table>
+            <TableBody>
+              <TableRowSkeleton columns={5} />
+              <TableRowSkeleton columns={5} />
+              <TableRowSkeleton columns={5} />
+            </TableBody>
+          </Table>
+        </Card>
+      </Stack>
+    );
   }
 
   const totalRatePct = data.totalCapacityLiters > 0 ? ((data.networkSummary?.totalVolumeLiters ?? 0) / data.totalCapacityLiters) * 100 : null;
@@ -159,10 +177,34 @@ export default function RapportsScreen() {
       )}
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <section>
+          <Skeleton className="mb-3 h-6 w-48" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <KpiSkeleton key={i} />
+            ))}
+          </div>
+        </section>
       ) : (
         <>
-          {/* Vue d'ensemble réseau — station_kpi.md §2, priorité Critique */}
+          {/* Vue d'ensemble réseau — station_kpi.md §2, priorité Critique —
+              certains KPI (stations en ligne, disponibilité ATG, stock le
+              plus bas, volume livré) dépendent des états par station
+              (`statesLoading`) et/ou des livraisons de la période
+              (`deliveriesLoading`), qui se chargent après la base : toute la
+              section reste en squelette tant que l'une des trois requêtes
+              n'est pas prête, pour ne jamais afficher un mélange de chiffres
+              réels et de zéros provisoires. */}
+          {data.statesLoading || data.deliveriesLoading ? (
+            <section>
+              <h2 className="mb-3 text-h2 font-semibold text-text">{t("sections.overview")}</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <KpiSkeleton key={i} />
+                ))}
+              </div>
+            </section>
+          ) : (
           <section>
             <h2 className="mb-3 text-h2 font-semibold text-text">{t("sections.overview")}</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -222,6 +264,7 @@ export default function RapportsScreen() {
               />
             </div>
           </section>
+          )}
 
           {/* Alertes par type — station_kpi.md §10 */}
           <Card>
@@ -286,45 +329,49 @@ export default function RapportsScreen() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sortedRows.map((row) => {
-                    const availabilityPct = row.tankCount > 0 ? (row.onlineTankCount / row.tankCount) * 100 : null;
-                    return (
-                      <TableRow key={row.station.id}>
-                        <TableCell className="font-medium">{row.station.name}</TableCell>
-                        <TableCell>
-                          <Badge tone={row.online ? "success" : "neutral"} size="sm" dot>
-                            {row.online ? tStationsStatus("online") : tStationsStatus("offline")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {row.fillRatePct === null ? (
-                            "—"
-                          ) : (
-                            <span className={cn("tabular-nums font-medium", row.fillRatePct < 20 && "text-error")}>{formatPercent(row.fillRatePct)}%</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.activeAlertsCount > 0 ? (
-                            <Badge tone="error" size="sm">
-                              {row.activeAlertsCount}
-                            </Badge>
-                          ) : (
-                            <span className="text-text-muted">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="tabular-nums">{formatVolume(row.deliveredVolumeLiters)}</TableCell>
-                        <TableCell>
-                          {availabilityPct === null ? "—" : <span className="tabular-nums">{formatPercent(availabilityPct)}%</span>}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.monetaryValue !== null && row.currencyCode ? formatMoney(row.monetaryValue, row.currencyCode) : "—"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {data.statesLoading || data.deliveriesLoading
+                    ? Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} columns={7} />)
+                    : sortedRows.map((row) => {
+                        const availabilityPct = row.tankCount > 0 ? (row.onlineTankCount / row.tankCount) * 100 : null;
+                        return (
+                          <TableRow key={row.station.id}>
+                            <TableCell className="font-medium">{row.station.name}</TableCell>
+                            <TableCell>
+                              <Badge tone={row.online ? "success" : "neutral"} size="sm" dot>
+                                {row.online ? tStationsStatus("online") : tStationsStatus("offline")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {row.fillRatePct === null ? (
+                                "—"
+                              ) : (
+                                <span className={cn("tabular-nums font-medium", row.fillRatePct < 20 && "text-error")}>{formatPercent(row.fillRatePct)}%</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {row.activeAlertsCount > 0 ? (
+                                <Badge tone="error" size="sm">
+                                  {row.activeAlertsCount}
+                                </Badge>
+                              ) : (
+                                <span className="text-text-muted">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="tabular-nums">{formatVolume(row.deliveredVolumeLiters)}</TableCell>
+                            <TableCell>
+                              {availabilityPct === null ? "—" : <span className="tabular-nums">{formatPercent(availabilityPct)}%</span>}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {row.monetaryValue !== null && row.currencyCode ? formatMoney(row.monetaryValue, row.currencyCode) : "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                 </TableBody>
               </Table>
-              {sortedRows.length === 0 && <p className="py-4 text-body-sm text-text-muted">{t("ranking.empty")}</p>}
+              {!data.statesLoading && !data.deliveriesLoading && sortedRows.length === 0 && (
+                <p className="py-4 text-body-sm text-text-muted">{t("ranking.empty")}</p>
+              )}
             </div>
           </Card>
 

@@ -6,8 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { Intervention, InterventionPriority, InterventionType } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, Textarea } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton, Tabs, Textarea } from "@/shared/ui";
 
 import { useMaintenance } from "./useMaintenance";
 
@@ -260,7 +259,36 @@ export default function MaintenanceScreen() {
       <PageHeader title={t("pageTitle")} description={t("pageSubtitle")} />
       {data.error && <Alert tone="error">{data.error}</Alert>}
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Stack>
+          <div className="flex gap-4">
+            <Skeleton className="h-8 w-28" />
+            <Skeleton className="h-8 w-28" />
+          </div>
+          <Card>
+            <Skeleton className="mb-4 h-5 w-1/3" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          </Card>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("equipment.table.type")}</TableHeaderCell>
+                <TableHeaderCell>{t("equipment.table.name")}</TableHeaderCell>
+                <TableHeaderCell>{t("equipment.table.station")}</TableHeaderCell>
+                <TableHeaderCell>{t("equipment.table.status")}</TableHeaderCell>
+                <TableHeaderCell>{t("equipment.table.lastMaintenance")}</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={5} />
+              ))}
+            </TableBody>
+          </Table>
+        </Stack>
       ) : (
         <Tabs
           items={[

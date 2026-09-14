@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { PaymentMethod } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { CardSkeleton, ListSkeleton } from "@/shared/ui/Skeleton";
 
 import { useProduits } from "./useProduits";
 
@@ -340,7 +340,10 @@ export default function ProduitsScreen() {
       <PageHeader title={t("pageTitle")} description={t("pageSubtitle")} />
       {data.error && <Alert tone="error">{data.error}</Alert>}
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Stack>
+          <CardSkeleton />
+          <ListSkeleton rows={4} />
+        </Stack>
       ) : (
         <Tabs
           items={[

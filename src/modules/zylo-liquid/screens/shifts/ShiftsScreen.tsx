@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useShifts } from "./useShifts";
 
@@ -87,7 +87,21 @@ export default function ShiftsScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.period")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.cashAmount")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={4} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.declarations.length === 0 ? (
         <EmptyState icon={Users} title={t("empty")} />
       ) : (

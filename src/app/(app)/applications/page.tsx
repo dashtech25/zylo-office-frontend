@@ -1,14 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { activateModule, deactivateModule, listOrganizationModules, type InstalledModule } from "@/core/api/modules";
+import { activateModule, deactivateModule, listOrganizationModules } from "@/core/api/modules";
 import { ApiError } from "@/core/api/client";
 import { getModuleIcon } from "@/core/modules/moduleIcons";
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, Modal } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Alert, Badge, Button, Card, CardSkeleton, EmptyState, Modal } from "@/shared/ui";
 import { LayoutGrid } from "lucide-react";
 
 const STATUS_TONE = { active: "success", inactive: "neutral", trial: "info" } as const;
@@ -17,27 +17,22 @@ export default function ApplicationsPage() {
   const t = useTranslations("applications");
   const tCommon = useTranslations("common");
   const { currentOrganization, loading: organizationLoading } = useOrganization();
-  const [modules, setModules] = useState<InstalledModule[]>([]);
-  const [loading, setLoading] = useState(true);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [confirmingCode, setConfirmingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    if (!currentOrganization) {
-      setModules([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    return listOrganizationModules(currentOrganization.id)
-      .then(setModules)
-      .finally(() => setLoading(false));
-  }, [currentOrganization]);
+  const organizationId = currentOrganization?.id ?? null;
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`) —
+  // revenir sur cette page après l'avoir quittée affiche instantanément la
+  // dernière donnée connue au lieu de tout recharger.
+  const modulesQuery = useQuery({
+    queryKey: ["applications", "organization-modules", organizationId],
+    queryFn: () => listOrganizationModules(organizationId as string),
+    enabled: !!organizationId,
+  });
+  const loading = !!organizationId && modulesQuery.isPending;
+  const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data]);
 
   const confirmingModule = useMemo(
     () => modules.find((module) => module.moduleCode === confirmingCode) ?? null,
@@ -50,7 +45,7 @@ export default function ApplicationsPage() {
     setPendingCode(moduleCode);
     try {
       await activateModule(currentOrganization.id, moduleCode);
-      await load();
+      await modulesQuery.refetch();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : tCommon("states.error"));
     } finally {
@@ -64,7 +59,7 @@ export default function ApplicationsPage() {
     setPendingCode(moduleCode);
     try {
       await deactivateModule(currentOrganization.id, moduleCode);
-      await load();
+      await modulesQuery.refetch();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : tCommon("states.error"));
     } finally {
@@ -74,7 +69,19 @@ export default function ApplicationsPage() {
   }
 
   if (organizationLoading || loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    return (
+      <div>
+        <h1 className="text-h1 font-bold text-text">{t("title")}</h1>
+        <p className="mt-1 text-body-md text-text-muted">{t("subtitle")}</p>
+        <div className="mt-6 flex flex-wrap gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="w-[300px]">
+              <CardSkeleton />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!currentOrganization) {

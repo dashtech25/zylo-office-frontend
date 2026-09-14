@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 
 import { assignRole, listMembers, listRoles, unassignRole, type OrganizationMember, type Role, type UserRoleAssignment } from "@/core/api/rbac";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { listStations, type Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, Button, Card, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Badge, Button, Card, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 import { GrantsModal } from "./GrantsModal";
 
@@ -22,16 +22,28 @@ const GRANT_MANAGE = "rbac.grant.manage";
  * pour le filtrage de listes). L'appel à `listStations` (module zylo-liquid)
  * depuis cette page globale est un couplage assumé et documenté, le temps
  * qu'un mécanisme générique de "ressources scopables par module" existe. */
+interface UsersPageData {
+  members: OrganizationMember[];
+  roles: Role[];
+  stations: Station[];
+}
+
+async function fetchUsersPage(organizationId: string): Promise<UsersPageData> {
+  const [members, roles, stationsPage] = await Promise.all([
+    listMembers(organizationId),
+    listRoles(organizationId),
+    listStations(organizationId).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
+  ]);
+  return { members, roles, stations: stationsPage.data };
+}
+
 export default function UsersPage() {
   const t = useTranslations("administration.users");
   const tCommon = useTranslations("common");
   const { currentOrganization } = useOrganization();
   const { can } = usePermissions();
+  const organizationId = currentOrganization?.id ?? null;
 
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [loading, setLoading] = useState(true);
   const [assignTarget, setAssignTarget] = useState<OrganizationMember | null>(null);
   const [grantsTarget, setGrantsTarget] = useState<OrganizationMember | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState("");
@@ -42,26 +54,16 @@ export default function UsersPage() {
   const canManage = can(ROLE_MANAGE);
   const canManageGrants = can(GRANT_MANAGE);
 
-  const load = useCallback(async () => {
-    if (!currentOrganization) return;
-    setLoading(true);
-    try {
-      const [membersList, rolesList, stationsPage] = await Promise.all([
-        listMembers(currentOrganization.id),
-        listRoles(currentOrganization.id),
-        listStations(currentOrganization.id).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
-      ]);
-      setMembers(membersList);
-      setRoles(rolesList);
-      setStations(stationsPage.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Migré vers React Query (audit performance/cache, cf. `QueryProvider`).
+  const usersQuery = useQuery({
+    queryKey: ["users", "list", organizationId],
+    queryFn: () => fetchUsersPage(organizationId as string),
+    enabled: !!organizationId,
+  });
+  const members = usersQuery.data?.members ?? [];
+  const roles = usersQuery.data?.roles ?? [];
+  const stations = usersQuery.data?.stations ?? [];
+  const loading = !!organizationId && usersQuery.isPending;
 
   const stationNameById = new Map(stations.map((s) => [s.id, s.name]));
 
@@ -81,7 +83,7 @@ export default function UsersPage() {
       setAssignTarget(null);
       setSelectedRoleId("");
       setSelectedStationId("");
-      await load();
+      await usersQuery.refetch();
     } catch (err) {
       setAssignError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -94,11 +96,7 @@ export default function UsersPage() {
     const label = scopeLabel(role);
     if (!window.confirm(t("removeRoleConfirm", { role: label ? `${role.name} (${label})` : role.name, user: member.fullName }))) return;
     await unassignRole(currentOrganization.id, role.assignmentId);
-    await load();
-  }
-
-  if (loading) {
-    return <PageSpinner label={tCommon("states.loading")} />;
+    await usersQuery.refetch();
   }
 
   return (
@@ -118,7 +116,12 @@ export default function UsersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {members.map((member) => (
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={canManage || canManageGrants ? 5 : 4} />
+              ))
+            ) : (
+            members.map((member) => (
               <TableRow key={member.userId}>
                 <TableCell className="font-medium">{member.fullName}</TableCell>
                 <TableCell>{member.email}</TableCell>
@@ -168,7 +171,8 @@ export default function UsersPage() {
                   </TableCell>
                 )}
               </TableRow>
-            ))}
+            ))
+            )}
           </TableBody>
         </Table>
       </Card>

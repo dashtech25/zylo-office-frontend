@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { listDeliveriesInProgress, type DeliveryInProgress, type FuelProduct, type Station, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
@@ -14,52 +14,38 @@ export interface DeliveryInProgressRow {
   volumeSoFarLiters: number | null;
 }
 
-/** Rafraîchi en continu (10s) — c'est le seul endroit du module où l'état
- * n'est jamais persisté : une hausse en cours peut disparaître d'un appel
- * à l'autre (stabilisée entre-temps, donc devenue une vraie livraison
- * confirmée ailleurs). */
+/** Rafraîchi en continu (10s, via `refetchInterval`) — c'est le seul endroit
+ * du module où l'état n'est jamais persisté durablement : une hausse en
+ * cours peut disparaître d'un appel à l'autre (stabilisée entre-temps, donc
+ * devenue une vraie livraison confirmée ailleurs). `tanks`/`stations`/
+ * `fuelProducts` viennent d'un autre hook déjà chargé (`useDeliveriesList`)
+ * — ils ne participent pas au fetch, seulement au mapping des lignes après
+ * coup, donc ils restent hors clé de requête. */
 export function useDeliveriesInProgress(organizationId: string | null, tanks: Tank[], stations: Station[], fuelProducts: FuelProduct[]) {
-  const [rows, setRows] = useState<DeliveryInProgressRow[]>([]);
+  const query = useQuery({
+    queryKey: ["zylo-liquid", "deliveries-in-progress", organizationId],
+    queryFn: () => listDeliveriesInProgress(organizationId as string),
+    enabled: !!organizationId,
+    refetchInterval: REFRESH_MS,
+  });
 
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
+  const items = query.data ?? [];
+  const tankById = new Map(tanks.map((t) => [t.id, t]));
+  const stationById = new Map(stations.map((s) => [s.id, s]));
+  const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
 
-    async function load() {
-      try {
-        const items = await listDeliveriesInProgress(organizationId!);
-        if (cancelled) return;
-        const tankById = new Map(tanks.map((t) => [t.id, t]));
-        const stationById = new Map(stations.map((s) => [s.id, s]));
-        const fuelProductById = new Map(fuelProducts.map((p) => [p.id, p]));
-        setRows(
-          items.map((delivery) => {
-            const tank = tankById.get(delivery.tankId) ?? null;
-            const volumeSoFarLiters =
-              delivery.currentVolumeLiters !== null && delivery.startVolumeLiters !== null
-                ? delivery.currentVolumeLiters - delivery.startVolumeLiters
-                : null;
-            return {
-              delivery,
-              tank,
-              station: stationById.get(delivery.stationId) ?? null,
-              fuelProduct: tank ? fuelProductById.get(tank.fuelProductId) ?? null : null,
-              volumeSoFarLiters,
-            };
-          })
-        );
-      } catch {
-        if (!cancelled) setRows([]);
-      }
-    }
-
-    load();
-    const interval = setInterval(load, REFRESH_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
+  const rows: DeliveryInProgressRow[] = items.map((delivery) => {
+    const tank = tankById.get(delivery.tankId) ?? null;
+    const volumeSoFarLiters =
+      delivery.currentVolumeLiters !== null && delivery.startVolumeLiters !== null ? delivery.currentVolumeLiters - delivery.startVolumeLiters : null;
+    return {
+      delivery,
+      tank,
+      station: stationById.get(delivery.stationId) ?? null,
+      fuelProduct: tank ? fuelProductById.get(tank.fuelProductId) ?? null : null,
+      volumeSoFarLiters,
     };
-  }, [organizationId, tanks, stations, fuelProducts]);
+  });
 
   return { rows };
 }

@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useVentes } from "./useVentes";
 
@@ -120,7 +120,23 @@ export default function VentesScreen() {
       </Card>
 
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("table.station")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.product")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.quantity")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("table.amount")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.paymentMethod")}</TableHeaderCell>
+              <TableHeaderCell>{t("table.date")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={6} />
+            ))}
+          </TableBody>
+        </Table>
       ) : data.sales.length === 0 ? (
         <EmptyState icon={Receipt} title={t("empty")} />
       ) : (

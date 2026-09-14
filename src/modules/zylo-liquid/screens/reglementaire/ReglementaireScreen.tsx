@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { RegulatoryCertaintyLevel, RegulatoryDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, Textarea } from "@/shared/ui";
-import { PageSpinner } from "@/shared/ui/Spinner";
+import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useReglementaire } from "./useReglementaire";
 
@@ -241,7 +241,30 @@ export default function ReglementaireScreen() {
       <Alert tone="info">{t("banner")}</Alert>
       {data.error && <Alert tone="error">{data.error}</Alert>}
       {data.loading ? (
-        <PageSpinner label={tCommon("states.loading")} />
+        <Stack>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-32 rounded-pill" />
+            <Skeleton className="h-9 w-32 rounded-pill" />
+          </div>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{t("documents.table.station")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.type")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.authority")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.expiresAt")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.status")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.certainty")}</TableHeaderCell>
+                <TableHeaderCell>{t("documents.table.actions")}</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRowSkeleton key={i} columns={7} />
+              ))}
+            </TableBody>
+          </Table>
+        </Stack>
       ) : (
         <Tabs
           items={[
