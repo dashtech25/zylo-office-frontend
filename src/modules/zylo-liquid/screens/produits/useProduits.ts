@@ -15,11 +15,11 @@ import {
   type CreateSellableProductInput,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
-async function fetchProduitsData(organizationId: string) {
+async function fetchProduitsData(organizationId: string, stationId: string | null) {
   const [stationsPage, productsPage, transactionsPage, currenciesPage, accountsPage] = await Promise.all([
     listStations(organizationId),
-    listSellableProducts(organizationId, { limit: 100 }),
-    listProductSaleTransactions(organizationId, { limit: 100 }),
+    listSellableProducts(organizationId, { limit: 100, stationId: stationId ?? undefined }),
+    listProductSaleTransactions(organizationId, { limit: 100, stationId: stationId ?? undefined }),
     listCurrencies(organizationId, 100),
     listCommercialAccounts(organizationId).catch(() => ({ data: [], meta: { total: 0, limit: 0, offset: 0 } })),
   ]);
@@ -33,16 +33,20 @@ async function fetchProduitsData(organizationId: string) {
 }
 
 /** Catalogue produits boutique + ventes comptoir (Blocs 4 corrigé/5 de la
- * mission « vente-maintenant-reglementation ») — entité `ProductSaleTransaction`
- * volontairement séparée de `Sale` (carburant, jamais un fait nouveau
- * indépendant). */
-export function useProduits(organizationId: string | null) {
+ * mission « vente-maintenant-reglementation », Phase 4 mission Boutique pour
+ * le stock) — entité `ProductSaleTransaction` volontairement séparée de
+ * `Sale` (carburant, jamais un fait nouveau indépendant). Passer `stationId`
+ * scope le catalogue/l'historique à cette station (+ catalogue réseau
+ * partagé, `stationId` nul côté backend) — utilisé par la section
+ * « Boutique » de `StationAdminCenter` ; `null` (défaut) donne la vue réseau
+ * consolidée de l'écran `/produits`. */
+export function useProduits(organizationId: string | null, stationId: string | null = null) {
   const queryClient = useQueryClient();
-  const queryKey = ["zylo-liquid", "produits", organizationId];
+  const queryKey = ["zylo-liquid", "produits", organizationId, stationId];
 
   const query = useQuery({
     queryKey,
-    queryFn: () => fetchProduitsData(organizationId as string),
+    queryFn: () => fetchProduitsData(organizationId as string, stationId),
     enabled: !!organizationId,
   });
 

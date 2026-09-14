@@ -1554,6 +1554,8 @@ export interface SellableProduct {
   unitPriceAmount: number;
   currencyId: string;
   active: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number | null;
 }
 
 export interface CreateSellableProductInput {
@@ -1564,6 +1566,8 @@ export interface CreateSellableProductInput {
   category?: string;
   unitPriceAmount: number;
   currencyId: string;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
 }
 
 export function listSellableProducts(organizationId: string, params: { stationId?: string; search?: string; limit?: number } = {}): Promise<Page<SellableProduct>> {
