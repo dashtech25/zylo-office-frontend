@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { openTruckLivePositionsStream } from "@/modules/zylo-liquid/services/liveTruckPositions";
 import {
   assignTruckToPurchaseOrder,
   createCarrier,
@@ -84,6 +86,18 @@ export function useTrucks(organizationId: string | null) {
     queryFn: () => fetchTrucksData(organizationId as string),
     enabled: !!organizationId,
   });
+
+  // Positions en direct (2026-09-14) — flux SSE en plus de la requête
+  // initiale ci-dessus (jamais à la place : celle-ci reste la source pour
+  // le premier affichage, avant que le flux ait eu le temps de livrer son
+  // premier message). `null` tant qu'aucun message n'est encore arrivé.
+  const [livePositions, setLivePositions] = useState<TruckCurrentPosition[] | null>(null);
+  useEffect(() => {
+    setLivePositions(null);
+    if (!organizationId) return;
+    const stop = openTruckLivePositionsStream(organizationId, setLivePositions);
+    return stop;
+  }, [organizationId]);
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey });
@@ -245,7 +259,7 @@ export function useTrucks(organizationId: string | null) {
     trucks: query.data?.trucks ?? [],
     carriers: query.data?.carriers ?? [],
     gpsDevices: query.data?.gpsDevices ?? [],
-    currentPositions: query.data?.currentPositions ?? [],
+    currentPositions: livePositions ?? query.data?.currentPositions ?? [],
     trackingLocations: query.data?.trackingLocations ?? [],
     reconciliations: query.data?.reconciliations ?? [],
     traccarConnection: query.data?.traccarConnection ?? null,
