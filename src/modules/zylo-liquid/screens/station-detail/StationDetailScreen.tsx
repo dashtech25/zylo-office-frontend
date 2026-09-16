@@ -23,6 +23,7 @@ import { AtgTab } from "./AtgTab";
 import { PumpsTab } from "./PumpsTab";
 import { RegulationTab } from "./RegulationTab";
 import { StaffTab } from "./StaffTab";
+import { VentesTab } from "./VentesTab";
 import { StackedBarChart, type StackedBarSeries } from "@/modules/zylo-liquid/components/StackedBarChart";
 import { ModeSwitcher, TankLegend } from "@/modules/zylo-liquid/components/TankVisual";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
@@ -738,6 +739,7 @@ export default function StationDetailScreen() {
           { value: "personnel", label: t("tabs.staff"), content: currentOrganization ? <StaffTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "reglementation", label: t("tabs.regulation"), content: currentOrganization ? <RegulationTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "atg", label: t("tabs.atg"), content: currentOrganization ? <AtgTab organizationId={currentOrganization.id} tanks={activeTanks} /> : null },
+          { value: "ventes", label: t("tabs.sales"), content: currentOrganization ? <VentesTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
         ]}
       />
 

@@ -1657,7 +1657,12 @@
       "compliance": "Conformité",
       "regulation": "Réglementation",
       "atg": "ATG",
-      "administration": "Administration"
+      "administration": "Administration",
+      "sales": "Ventes"
+    },
+    "sales": {
+      "sourceNote": "Source affichée : baisse en cuve (même principe que la caisse du jour, appliqué à l'ensemble de la station). Les ventes remontées par les pompes et les déclarations humaines ne sont pas encore intégrées à cet onglet.",
+      "byTankDrawdown": "Détail par produit et par cuve"
     },
     "tanksSection": {
       "title": "Cuves de la station",

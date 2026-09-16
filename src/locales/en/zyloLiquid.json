@@ -1657,7 +1657,12 @@
       "compliance": "Compliance",
       "regulation": "Regulation",
       "atg": "ATG",
-      "administration": "Administration"
+      "administration": "Administration",
+      "sales": "Sales"
+    },
+    "sales": {
+      "sourceNote": "Shown source: tank drawdown (same principle as the daily cash till, applied to the whole station). Pump-reported sales and human declarations are not yet integrated into this tab.",
+      "byTankDrawdown": "Breakdown by product and tank"
     },
     "tanksSection": {
       "title": "Station tanks",
