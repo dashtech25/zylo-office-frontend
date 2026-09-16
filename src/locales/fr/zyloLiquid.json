@@ -1521,6 +1521,8 @@
       "email": "Email",
       "openingTime": "Heure d'ouverture",
       "closingTime": "Heure de fermeture",
+      "customWeeklyHours": "Personnaliser les horaires jour par jour",
+      "dayClosed": "Fermé",
       "is24h": "Ouverte 24h/24",
       "is24hHint": "Si coché, les heures d'ouverture/fermeture ci-dessus sont ignorées",
       "closedWeekdays": "Jours de fermeture hebdomadaire",

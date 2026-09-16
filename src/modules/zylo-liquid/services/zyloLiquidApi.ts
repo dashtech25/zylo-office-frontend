@@ -1,6 +1,18 @@
 import { apiFetch } from "@/core/api/client";
 import type { Page } from "@/core/api/types";
 
+export interface DayHours {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+/** Horaires personnalisés par jour (P2 §5.3, audit module Stations
+ * 2026-09-16) — clé "1"=lundi.."7"=dimanche. `null`/absent = pas de
+ * personnalisation, openingTime/closingTime/closedWeekdays s'appliquent à
+ * tous les jours ouverts (comportement générique inchangé). */
+export type WeeklyHours = Partial<Record<"1" | "2" | "3" | "4" | "5" | "6" | "7", DayHours>>;
+
 export interface Station {
   id: string;
   organizationId: string;
@@ -19,6 +31,7 @@ export interface Station {
   /** CSV de jours ISO fermés (1=lundi..7=dimanche), ex. "6,7". null = ouvert
    * tous les jours. */
   closedWeekdays: string | null;
+  weeklyHours: WeeklyHours | null;
   notes: string | null;
   status: "active" | "maintenance" | "inactive";
   activeTankCount: number;
@@ -48,6 +61,7 @@ export interface CreateStationInput {
   closingTime?: string;
   is24h?: boolean;
   closedWeekdays?: string | null;
+  weeklyHours?: WeeklyHours | null;
   notes?: string;
   currencyOverrideId?: string | null;
   exploitationType?: string;

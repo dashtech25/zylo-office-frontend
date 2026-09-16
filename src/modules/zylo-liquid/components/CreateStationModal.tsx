@@ -21,6 +21,7 @@ import {
   type Currency,
   type FuelProduct,
   type Station,
+  type WeeklyHours,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { cn } from "@/shared/lib/cn";
 import { Alert, Button, Checkbox, FormField, Input, Modal, Select } from "@/shared/ui";
@@ -62,6 +63,13 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const [closingTime, setClosingTime] = useState("22:00");
   const [is24h, setIs24h] = useState(false);
   const [closedWeekdays, setClosedWeekdays] = useState<number[]>([]);
+  // Horaires personnalisés jour par jour (P2 §5.3, audit module Stations
+  // 2026-09-16) — bascule explicite entre le mode générique existant
+  // (openingTime/closingTime/closedWeekdays, inchangé) et un mode par jour ;
+  // jamais les deux combinés, jamais une resynchronisation automatique de
+  // l'un vers l'autre.
+  const [useCustomWeeklyHours, setUseCustomWeeklyHours] = useState(false);
+  const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>({});
   const [notes, setNotes] = useState("");
   const [currencyOverrideId, setCurrencyOverrideId] = useState("");
   const [tanks, setTanks] = useState<TankFieldsState[]>([]);
@@ -89,6 +97,8 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
       setClosingTime(station.closingTime || "22:00");
       setIs24h(station.is24h);
       setClosedWeekdays(station.closedWeekdays ? station.closedWeekdays.split(",").map(Number) : []);
+      setUseCustomWeeklyHours(!!station.weeklyHours);
+      setWeeklyHours(station.weeklyHours ?? {});
       setNotes(station.notes ?? "");
       setCurrencyOverrideId(station.currencyOverrideId ?? "");
     }
@@ -157,6 +167,8 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     setClosingTime("22:00");
     setIs24h(false);
     setClosedWeekdays([]);
+    setUseCustomWeeklyHours(false);
+    setWeeklyHours({});
     setNotes("");
     setCurrencyOverrideId("");
     setTimezoneTouched(false);
@@ -211,6 +223,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
         closingTime: is24h ? undefined : closingTime || undefined,
         is24h,
         closedWeekdays: closedWeekdays.length > 0 ? [...closedWeekdays].sort((a, b) => a - b).join(",") : null,
+        weeklyHours: useCustomWeeklyHours && Object.keys(weeklyHours).length > 0 ? weeklyHours : null,
         notes: notes || undefined,
         currencyOverrideId: currencyOverrideId || null,
       };
@@ -378,43 +391,84 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
               </FormField>
             </div>
 
-            <Checkbox label={t("createModal.is24h")} checked={is24h} onChange={(e) => setIs24h(e.target.checked)} />
-            {!is24h && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <FormField label={t("createModal.openingTime")}>
-                  {(field) => <Input {...field} type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} />}
-                </FormField>
-                <FormField label={t("createModal.closingTime")}>
-                  {(field) => <Input {...field} type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />}
-                </FormField>
-              </div>
-            )}
+            <Checkbox
+              label={t("createModal.customWeeklyHours")}
+              checked={useCustomWeeklyHours}
+              onChange={(e) => setUseCustomWeeklyHours(e.target.checked)}
+            />
 
-            <FormField label={t("createModal.closedWeekdays")} hint={t("createModal.closedWeekdaysHint")}>
-              {() => (
-                <div className="flex flex-wrap gap-2">
-                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                    <label
-                      key={day}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm",
-                        closedWeekdays.includes(day) ? "border-primary bg-primary/10 text-primary" : "border-border-subtle text-text-muted"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={closedWeekdays.includes(day)}
-                        onChange={(e) =>
-                          setClosedWeekdays((days) => (e.target.checked ? [...days, day] : days.filter((d) => d !== day)))
-                        }
+            {useCustomWeeklyHours ? (
+              <div className="flex flex-col gap-2">
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                  const key = String(day) as keyof WeeklyHours;
+                  const entry = weeklyHours[key] ?? { open: "06:00", close: "22:00", closed: false };
+                  return (
+                    <div key={day} className="grid grid-cols-[3rem_1fr_1fr_auto] items-center gap-2">
+                      <span className="text-body-sm text-text">{t(`createModal.weekdayShort.${day}`)}</span>
+                      <Input
+                        type="time"
+                        aria-label={t("createModal.openingTime")}
+                        value={entry.open}
+                        disabled={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, open: e.target.value } }))}
                       />
-                      {t(`createModal.weekdayShort.${day}`)}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </FormField>
+                      <Input
+                        type="time"
+                        aria-label={t("createModal.closingTime")}
+                        value={entry.close}
+                        disabled={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, close: e.target.value } }))}
+                      />
+                      <Checkbox
+                        label={t("createModal.dayClosed")}
+                        checked={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, closed: e.target.checked } }))}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <>
+                <Checkbox label={t("createModal.is24h")} checked={is24h} onChange={(e) => setIs24h(e.target.checked)} />
+                {!is24h && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <FormField label={t("createModal.openingTime")}>
+                      {(field) => <Input {...field} type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} />}
+                    </FormField>
+                    <FormField label={t("createModal.closingTime")}>
+                      {(field) => <Input {...field} type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />}
+                    </FormField>
+                  </div>
+                )}
+
+                <FormField label={t("createModal.closedWeekdays")} hint={t("createModal.closedWeekdaysHint")}>
+                  {() => (
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                        <label
+                          key={day}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm",
+                            closedWeekdays.includes(day) ? "border-primary bg-primary/10 text-primary" : "border-border-subtle text-text-muted"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={closedWeekdays.includes(day)}
+                            onChange={(e) =>
+                              setClosedWeekdays((days) => (e.target.checked ? [...days, day] : days.filter((d) => d !== day)))
+                            }
+                          />
+                          {t(`createModal.weekdayShort.${day}`)}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </FormField>
+              </>
+            )}
 
             <FormField label={t("createModal.notes")} hint={t("createModal.notesHint")}>
               {(field) => <Input {...field} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />}
