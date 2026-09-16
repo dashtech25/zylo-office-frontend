@@ -16,6 +16,7 @@ import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, Form
 
 import { BulkPriceModal } from "./BulkPriceModal";
 import { MissingConfigBanner, type MissingConfigItem } from "./MissingConfigBanner";
+import { PriceHistoryBrowser } from "./PriceHistoryBrowser";
 import { PriceNetworkGrid } from "./PriceNetworkGrid";
 import { ProductStationsToggle } from "./ProductStationsToggle";
 import { ThresholdsTab } from "./ThresholdsTab";
@@ -75,6 +76,7 @@ export default function ConfigurationScreen() {
   // (première ligne d'un produit/devise jamais vue, prix planifié à une
   // date future).
   const [showManualForm, setShowManualForm] = useState(false);
+  const [showHistoryBrowser, setShowHistoryBrowser] = useState(false);
   const [showRawHistory, setShowRawHistory] = useState(false);
 
   function formatMoney(value: number, currencyCode: string): string {
@@ -476,6 +478,27 @@ export default function ConfigurationScreen() {
           )}
         </Card>
       ))}
+
+      <Button variant="link" size="sm" onClick={() => setShowHistoryBrowser((v) => !v)}>
+        {showHistoryBrowser ? t("prices.history.hide") : t("prices.history.show")}
+      </Button>
+
+      {showHistoryBrowser && (
+        <Card>
+          <div className="mb-4">
+            <h2 className="text-h4 font-semibold text-text">{t("prices.history.title")}</h2>
+            <p className="mt-1 text-body-sm text-text-muted">{t("prices.history.subtitle")}</p>
+          </div>
+          <PriceHistoryBrowser
+            organizationId={currentOrganization?.id ?? ""}
+            stations={prices.stations}
+            cities={prices.cities}
+            fuelProducts={data.products}
+            currencies={prices.currencies}
+            members={prices.members}
+          />
+        </Card>
+      )}
 
       {currentOrganization && (
         <BulkPriceModal

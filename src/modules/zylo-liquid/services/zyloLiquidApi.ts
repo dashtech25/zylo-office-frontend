@@ -697,12 +697,15 @@ export interface CreatePriceHistoryInput {
 
 export function listPrices(
   organizationId: string,
-  params: { stationId?: string; fuelProductId?: string; limit?: number } = {}
+  params: { stationId?: string; fuelProductId?: string; fromDate?: string; toDate?: string; limit?: number; offset?: number } = {}
 ): Promise<Page<PriceHistoryEntry>> {
   const search = new URLSearchParams();
   if (params.stationId) search.set("stationId", params.stationId);
   if (params.fuelProductId) search.set("fuelProductId", params.fuelProductId);
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
   search.set("limit", String(params.limit ?? 50));
+  search.set("offset", String(params.offset ?? 0));
   return apiFetch<Page<PriceHistoryEntry>>(`/zylo-liquid/prices?${search.toString()}`, withOrg(organizationId));
 }
 
