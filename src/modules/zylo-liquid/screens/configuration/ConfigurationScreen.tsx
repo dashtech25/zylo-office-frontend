@@ -553,7 +553,9 @@ export default function ConfigurationScreen() {
                     <FormField label={t("fuelCatalog.code")} hint={t("fuelCatalog.codeHint")}>
                       {(field) => <Input {...field} value={product.code} disabled />}
                     </FormField>
-                    <FormField label={t("fuelCatalog.density")}>{(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={product.densityGPerCm3 ?? ""} />}</FormField>
+                    <FormField label={t("fuelCatalog.density")} hint={t("fuelCatalog.densityHint")}>
+                      {(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={product.densityGPerCm3 ?? ""} />}
+                    </FormField>
                     <FormField label={t("fuelCatalog.color")}>
                       {() => <ColorPicker value={product.displayColor} onChange={(hex) => (colorDraft = hex)} reservedColorMessage={t("fuelCatalog.colorReserved")} aria-label={t("fuelCatalog.color")} />}
                     </FormField>
@@ -566,6 +568,7 @@ export default function ConfigurationScreen() {
                   <Button type="button" variant="outline" size="sm" className="mt-2 w-full" disabled={savingId === product.id} onClick={() => handleToggleActive(product.id, product.active)}>
                     {product.active ? t("fuelCatalog.deactivate") : t("fuelCatalog.reactivate")}
                   </Button>
+                  <p className="mt-1 text-caption text-text-muted">{t("fuelCatalog.deactivateHint")}</p>
                 </Card>
               </form>
             );
