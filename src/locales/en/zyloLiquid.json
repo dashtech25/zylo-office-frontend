@@ -2479,11 +2479,11 @@
       }
     },
     "figures": {
-      "volume": "Measured volume",
+      "volume": "Fuel level",
       "capacity": "Total capacity",
       "fillRate": "Fill rate",
       "sellable": "Sellable volume",
-      "water": "Water detected",
+      "water": "Water level",
       "available": "Available space",
       "temperature": "Temperature",
       "coverage": "Estimated coverage",

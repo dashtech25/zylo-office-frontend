@@ -208,11 +208,20 @@ export function TankFigures({ tank, state, showValue = true }: { tank: Tank; sta
   const data = computeTankVisualData(tank, state);
   const fmt = (v: number) => `${formatLiters(v)} L`;
   const rows: [string, string][] = [
-    [t("volume"), data.volumeLiters === null ? "—" : fmt(data.volumeLiters)],
+    // Niveau carburant et niveau eau sur deux lignes clairement distinctes,
+    // chacune dans le même format (volume puis hauteur entre parenthèses)
+    // — le format précédent mélangeait hauteur et volume dans une seule
+    // chaîne pour l'eau ("0 mm · 0 L"), jamais pour le carburant, rendant
+    // les deux incohérents à lire côte à côte (P2 §5.10, audit module
+    // Stations 2026-09-16).
+    [
+      t("volume"),
+      data.volumeLiters === null ? "—" : `${fmt(data.volumeLiters)}${data.heightMm !== null ? ` (${Math.round(data.heightMm)} mm)` : ""}`,
+    ],
     [t("capacity"), fmt(data.capacityLiters)],
     [t("fillRate"), data.pct === null ? "—" : `${data.pct.toFixed(1)} %`],
     [t("sellable"), state.sellableVolumeLiters === null ? t("notCalculable") : fmt(state.sellableVolumeLiters)],
-    [t("water"), state.waterHeightMm === null ? "—" : `${Math.round(state.waterHeightMm)} mm · ${fmt(data.waterVolumeLiters)}`],
+    [t("water"), state.waterHeightMm === null ? "—" : `${fmt(data.waterVolumeLiters)} (${Math.round(state.waterHeightMm)} mm)`],
     [t("available"), fmt(data.emptyVolumeLiters)],
     [t("temperature"), state.temperatureC === null ? "—" : `${state.temperatureC.toFixed(1)} °C`],
     // Nécessiterait un débit de vente (moyenne glissante 7j) qu'aucune
