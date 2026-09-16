@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 
 import type { Alert as AlertType, FuelProduct, Tank, TankCurrentState } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 import { usePermissions } from "@/core/rbac/PermissionContext";
+import { formatFreshness } from "@/modules/zylo-liquid/utils/formatFreshness";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { TankFigures } from "@/modules/zylo-liquid/components/TankVisual";
 import { TankStatusBadge } from "@/modules/zylo-liquid/components/TankStatusBadge";
@@ -27,10 +28,6 @@ function freshnessOf(lastMeasurementAt: string | null): "ok" | "warn" | "off" {
   if (ageMin < 15) return "ok";
   if (ageMin <= 60) return "warn";
   return "off";
-}
-
-function minutesAgo(iso: string): number {
-  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
 const DOT_CLASS = { ok: "bg-success", warn: "bg-warning", off: "bg-error" } as const;
@@ -56,6 +53,7 @@ export interface TankCardProps {
  * prototype la place aussi. */
 export function TankCard({ tank, state, fuelProduct, stationAlerts, stationId, onOpenCalibration, gaugeMode }: TankCardProps) {
   const t = useTranslations("zyloLiquid.stationDetail.tankCard");
+  const format = useFormatter();
   const { can } = usePermissions();
 
   const tankAlerts = stationAlerts.filter((a) => a.tankId === tank.id);
@@ -84,7 +82,7 @@ export function TankCard({ tank, state, fuelProduct, stationAlerts, stationId, o
 
       <div className="flex items-center gap-1.5 text-caption text-text-muted">
         <span className={cn("size-2 shrink-0 rounded-full", offline ? "bg-text-disabled" : DOT_CLASS[fresh])} />
-        {state?.lastMeasurementAt ? t("sync", { minutes: minutesAgo(state.lastMeasurementAt) }) : t("syncOffline")}
+        {state?.lastMeasurementAt ? formatFreshness(state.lastMeasurementAt, format) : t("syncOffline")}
       </div>
 
       <TankGaugeColumn tank={tank} state={state} offline={offline} fuelColor={visual.fill} notCalculableLabel={t("notCalculable")} mode={gaugeMode} />

@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatFreshness } from "@/modules/zylo-liquid/utils/formatFreshness";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
@@ -343,7 +344,7 @@ export default function StationDetailScreen() {
             </Badge>
           </span>
         }
-        description={lastStationSync ? t("sync", { minutes: minutesAgo(lastStationSync) }) : t("syncNever")}
+        description={lastStationSync ? formatFreshness(lastStationSync, format) : t("syncNever")}
         actions={
           <div className="flex flex-wrap items-center gap-2 no-print">
             <Button variant="outline" size="sm" onClick={() => setDeliveriesModal({ open: true, initialDeliveryId: null })}>
