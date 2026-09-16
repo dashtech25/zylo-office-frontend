@@ -1979,6 +1979,7 @@
       "suppliers": "Suppliers",
       "financial": "Finance",
       "history": "History",
+      "shop": "Shop",
       "tanksLink": "Tanks & storage →"
     },
     "operations": {
@@ -2315,6 +2316,15 @@
         "assignedStation": "Assigned station",
         "contractType": "Contract type",
         "accessTitle": "Access & permissions",
+        "changeRole": "Change role",
+        "selectRole": "Select a role",
+        "changeRoleWarning": "This change immediately replaces this person's current access rights on this station.",
+        "confirmChangeRole": "Confirm role change",
+        "securityTitle": "Security",
+        "resetPassword": "Reset password",
+        "resetPasswordWarning": "A new temporary password will be generated and the old one will stop working immediately.",
+        "confirmResetPassword": "Confirm reset",
+        "passwordWarning": "Write down this password now — it will never be shown again.",
         "activityTitle": "Recent activity",
         "noActivity": "No recent activity.",
         "deactivate": "Deactivate access"
@@ -2514,7 +2524,7 @@
       }
     },
     "actions": {
-      "editThresholds": "Edit thresholds",
+      "editTank": "Edit tank",
       "calibration": "Calibration",
       "sensor": "Sensor"
     },
@@ -2562,6 +2572,7 @@
   },
   "addTank": {
     "title": "Add a tank",
+    "editTankTitle": "Edit tank",
     "submit": "Create tank",
     "sections": {
       "basics": "Basic information",

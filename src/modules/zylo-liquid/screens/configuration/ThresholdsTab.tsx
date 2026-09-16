@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-import { EditThresholdsModal } from "@/modules/zylo-liquid/screens/tank-detail/EditThresholdsModal";
+import { EditTankModal } from "@/modules/zylo-liquid/screens/tank-detail/EditTankModal";
 import type { FuelProduct, Station, Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
@@ -21,7 +21,7 @@ const ALL_PRODUCTS = "__all__";
  * par un seul tableau réseau, triable par colonne et filtrable par station
  * ou produit — même principe de barre d'outils au-dessus du tableau que la
  * grille de prix (Phase 3 §6). Ne réimplémente aucun calcul ni aucune
- * validation : réutilise `EditThresholdsModal`, déjà utilisée depuis la
+ * validation : réutilise `EditTankModal`, déjà utilisée depuis la
  * page Cuve. Les seuils restent définis par cuve (jamais un pourcentage
  * global) — seul le modèle de présentation change, pas le modèle de
  * données. */
@@ -169,11 +169,11 @@ export function ThresholdsTab({
       )}
 
       {editingTank && (
-        <EditThresholdsModal
+        <EditTankModal
           organizationId={organizationId}
           tank={editingTank}
           open={editingTank !== null}
-          onOpenChange={(next) => !next && setEditingTank(null)}
+          onOpenChange={(next: boolean) => !next && setEditingTank(null)}
           onUpdated={() => {
             setEditingTank(null);
             onUpdated();

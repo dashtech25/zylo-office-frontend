@@ -1979,6 +1979,7 @@
       "suppliers": "Fournisseurs",
       "financial": "Finances",
       "history": "Historique",
+      "shop": "Boutique",
       "tanksLink": "Cuves & stockage →"
     },
     "operations": {
@@ -2315,6 +2316,15 @@
         "assignedStation": "Station affectée",
         "contractType": "Type de contrat",
         "accessTitle": "Accès & permissions",
+        "changeRole": "Changer le rôle",
+        "selectRole": "Sélectionner un rôle",
+        "changeRoleWarning": "Ce changement remplace immédiatement les droits actuels de cette personne sur cette station.",
+        "confirmChangeRole": "Confirmer le changement de rôle",
+        "securityTitle": "Sécurité",
+        "resetPassword": "Réinitialiser le mot de passe",
+        "resetPasswordWarning": "Un nouveau mot de passe temporaire sera généré et l'ancien cessera immédiatement de fonctionner.",
+        "confirmResetPassword": "Confirmer la réinitialisation",
+        "passwordWarning": "Notez ce mot de passe maintenant — il ne sera plus jamais affiché.",
         "activityTitle": "Activité récente",
         "noActivity": "Aucune activité récente.",
         "deactivate": "Désactiver l'accès"
@@ -2514,7 +2524,7 @@
       }
     },
     "actions": {
-      "editThresholds": "Modifier les seuils",
+      "editTank": "Modifier la cuve",
       "calibration": "Calibration",
       "sensor": "Capteur"
     },
@@ -2562,6 +2572,7 @@
   },
   "addTank": {
     "title": "Ajouter une cuve",
+    "editTankTitle": "Modifier la cuve",
     "submit": "Créer la cuve",
     "sections": {
       "basics": "Informations de base",

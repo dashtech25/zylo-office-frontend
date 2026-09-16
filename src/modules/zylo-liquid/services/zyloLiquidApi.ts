@@ -2107,6 +2107,23 @@ export function deactivateStationStaff(organizationId: string, userId: string): 
   return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}/deactivate`, { method: "POST", organizationId });
 }
 
+/** Remplace, pour ce membre du personnel, son rôle scopé à sa station
+ * d'affectation — depuis la fiche Personnel, sans passer par l'écran RBAC
+ * global `/roles/{roleId}` (gestion des droits, 2026-09-16). */
+export function changeStationStaffRole(organizationId: string, userId: string, roleId: string): Promise<StationStaff> {
+  return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}/role`, { method: "PUT", organizationId, body: JSON.stringify({ roleId }) });
+}
+
+export interface ResetStationStaffPasswordResult {
+  /** N'apparaît que dans cette réponse, une seule fois — même contrat que
+   * `CreateStationStaffResult.temporaryPassword`. */
+  temporaryPassword: string;
+}
+
+export function resetStationStaffPassword(organizationId: string, userId: string): Promise<ResetStationStaffPasswordResult> {
+  return apiFetch<ResetStationStaffPasswordResult>(`/zylo-liquid/station-staff/${userId}/reset-password`, { method: "POST", organizationId });
+}
+
 export function listStationStaff(organizationId: string, stationId: string): Promise<StationStaff[]> {
   const search = new URLSearchParams({ stationId });
   return apiFetch<StationStaff[]>(`/zylo-liquid/station-staff?${search.toString()}`, withOrg(organizationId));

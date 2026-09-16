@@ -86,6 +86,71 @@ function parseCalibrationCsv(text: string): CalibrationPoint[] {
     .filter((p) => Number.isFinite(p.heightMm) && Number.isFinite(p.volumeLiters));
 }
 
+/** Sélection du produit carburant (existant ou nouveau créé à la volée) —
+ * extrait de `TankFieldsSection` (P0-1, audit module Stations 2026-09-16)
+ * pour être réutilisé aussi par `EditTankModal`, qui permet de changer le
+ * produit d'une cuve déjà créée sans dupliquer ce bloc. Contrôlé comme le
+ * reste de `TankFieldsState` : le parent porte l'état, ce composant ne fait
+ * que le lire/l'écrire via `set`. */
+export function TankProductField({
+  fuelMode,
+  fuelProductId,
+  newProductName,
+  newProductCode,
+  fuelProducts,
+  onChange,
+}: {
+  fuelMode: TankFieldsState["fuelMode"];
+  fuelProductId: string;
+  newProductName: string;
+  newProductCode: string;
+  fuelProducts: FuelProduct[];
+  onChange: (patch: Pick<TankFieldsState, "fuelMode" | "fuelProductId" | "newProductName" | "newProductCode">) => void;
+}) {
+  const t = useTranslations("zyloLiquid.addTank");
+
+  function patch(next: Partial<Pick<TankFieldsState, "fuelMode" | "fuelProductId" | "newProductName" | "newProductCode">>) {
+    onChange({ fuelMode, fuelProductId, newProductName, newProductCode, ...next });
+  }
+
+  return (
+    <>
+      <div className="flex gap-4 text-body-sm">
+        <label className="flex items-center gap-1.5">
+          <input type="radio" checked={fuelMode === "existing"} onChange={() => patch({ fuelMode: "existing" })} disabled={fuelProducts.length === 0} />
+          {t("existingProduct")}
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input type="radio" checked={fuelMode === "new"} onChange={() => patch({ fuelMode: "new" })} />
+          {t("newProduct")}
+        </label>
+      </div>
+      {fuelMode === "existing" ? (
+        <FormField label={t("product")} required>
+          {() => (
+            <Select
+              aria-label={t("product")}
+              value={fuelProductId}
+              onValueChange={(v) => patch({ fuelProductId: v })}
+              options={fuelProducts.map((p) => ({ value: p.id, label: p.name }))}
+              placeholder={t("selectProduct")}
+            />
+          )}
+        </FormField>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={t("newProductName")} required>
+            {(field) => <Input {...field} value={newProductName} onChange={(e) => patch({ newProductName: e.target.value })} required />}
+          </FormField>
+          <FormField label={t("newProductCode")} required>
+            {(field) => <Input {...field} value={newProductCode} onChange={(e) => patch({ newProductCode: e.target.value })} maxLength={10} required />}
+          </FormField>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** Champs de création/configuration d'une cuve — sections numérotées
  * (Point 13 de la spécification), réutilisées telles quelles par
  * `AddTankModal` (une cuve, sur une station existante) et par le bloc
@@ -150,38 +215,14 @@ export function TankFieldsSection({
           {(field) => <Input {...field} type="number" min={1} value={state.tankHeightMm} onChange={(e) => set("tankHeightMm", e.target.value)} required />}
         </FormField>
 
-        <div className="flex gap-4 text-body-sm">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={state.fuelMode === "existing"} onChange={() => set("fuelMode", "existing")} disabled={fuelProducts.length === 0} />
-            {t("existingProduct")}
-          </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={state.fuelMode === "new"} onChange={() => set("fuelMode", "new")} />
-            {t("newProduct")}
-          </label>
-        </div>
-        {state.fuelMode === "existing" ? (
-          <FormField label={t("product")} required>
-            {() => (
-              <Select
-                aria-label={t("product")}
-                value={state.fuelProductId}
-                onValueChange={(v) => set("fuelProductId", v)}
-                options={fuelProducts.map((p) => ({ value: p.id, label: p.name }))}
-                placeholder={t("selectProduct")}
-              />
-            )}
-          </FormField>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormField label={t("newProductName")} required>
-              {(field) => <Input {...field} value={state.newProductName} onChange={(e) => set("newProductName", e.target.value)} required />}
-            </FormField>
-            <FormField label={t("newProductCode")} required>
-              {(field) => <Input {...field} value={state.newProductCode} onChange={(e) => set("newProductCode", e.target.value)} maxLength={10} required />}
-            </FormField>
-          </div>
-        )}
+        <TankProductField
+          fuelMode={state.fuelMode}
+          fuelProductId={state.fuelProductId}
+          newProductName={state.newProductName}
+          newProductCode={state.newProductCode}
+          fuelProducts={fuelProducts}
+          onChange={(patch) => onChange({ ...state, ...patch })}
+        />
       </section>
 
       <section className="flex flex-col gap-3">
