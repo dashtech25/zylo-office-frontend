@@ -1383,7 +1383,10 @@
       "map": {
         "title": "Network footprint",
         "subtitle": "Click a marker to open the station",
-        "open": "View the map"
+        "open": "View the map",
+        "panelTitle": "{count} stations",
+        "expandPanel": "Show the station list",
+        "collapsePanel": "Collapse the station list"
       },
       "synthesis": {
         "title": "Summary",

@@ -42,12 +42,18 @@ export function StationsMap({
   stations,
   height = 320,
   onStationClick,
+  focusStationId,
 }: {
   stations: StationMapPoint[];
   height?: number;
   /** Quand fourni, remplace la navigation par défaut vers la page de la
    * station (ex. pour ouvrir un modal d'aperçu à la place). */
   onStationClick?: (stationId: string) => void;
+  /** Cliquer une station dans un panneau externe (ex. liste latérale du
+   * réseau, P1-4 audit module Stations 2026-09-16) doit zoomer directement
+   * dessus sur la carte — changer cette prop déclenche un `flyTo` vers ses
+   * coordonnées, sans toucher aux marqueurs déjà posés. */
+  focusStationId?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -127,6 +133,19 @@ export function StationsMap({
     if (map.loaded()) placeMarkers();
     else map.once("load", placeMarkers);
   }, [stations, token, router, onStationClick]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !token || !focusStationId) return;
+    const target = stations.find((s) => s.id === focusStationId);
+    if (!target) return;
+    const center: [number, number] = [target.longitude, target.latitude];
+    function fly() {
+      map!.flyTo({ center, zoom: 14, duration: 600 });
+    }
+    if (map.loaded()) fly();
+    else map.once("load", fly);
+  }, [focusStationId, stations, token]);
 
   if (!token) {
     return (

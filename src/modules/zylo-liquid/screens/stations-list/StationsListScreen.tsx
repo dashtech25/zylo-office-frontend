@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Map as MapIcon, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -10,6 +10,7 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
+import { cn } from "@/shared/lib/cn";
 import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
@@ -64,6 +65,8 @@ export default function StationsListScreen() {
   const [currencyId, setCurrencyId] = useState("");
   const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapPanelCollapsed, setMapPanelCollapsed] = useState(false);
+  const [focusedStationId, setFocusedStationId] = useState<string | null>(null);
   const [previewStationId, setPreviewStationId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editStation, setEditStation] = useState<StationRow["station"] | null>(null);
@@ -449,21 +452,66 @@ export default function StationsListScreen() {
           <Card>
             <StationsFilterBar {...filterBarProps} />
           </Card>
-          <StationsMap
-            height={640}
-            onStationClick={setPreviewStationId}
-            stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
-              id: r.station.id,
-              name: r.station.name,
-              latitude: r.station.latitude as number,
-              longitude: r.station.longitude as number,
-              status: r.state,
-              popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
-                sellable: formatVolume(r.totalSellableVolumeLiters),
-                available: formatVolume(r.totalVolumeLiters),
-              }),
-            }))}
-          />
+          {/* Panneau liste + carte synchronisés (P1-4, audit module Stations
+             2026-09-16) : la liste réutilise `filteredRows`, donc les mêmes
+             filtres que le reste de la page ; cliquer une ligne zoome la
+             carte dessus (StationsMap.focusStationId) au lieu de rouvrir un
+             modal d'aperçu, pour rester dans le flux liste↔carte. */}
+          <div className="flex gap-3">
+            {mapPanelCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setMapPanelCollapsed(false)}
+                aria-label={t("list.map.expandPanel")}
+                className="flex h-fit items-center rounded-card border border-border-subtle p-2 text-text-muted hover:bg-surface-muted"
+              >
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            ) : (
+              <div className="flex w-64 shrink-0 flex-col gap-2 rounded-card border border-border-subtle" style={{ height: 640 }}>
+                <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
+                  <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
+                  <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
+                    <ChevronLeft className="size-4" aria-hidden />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-1 pb-2">
+                  {filteredRows.map((row) => (
+                    <button
+                      key={row.station.id}
+                      type="button"
+                      onClick={() => setFocusedStationId(row.station.id)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-button px-2 py-2 text-left text-body-sm hover:bg-surface-muted",
+                        focusedStationId === row.station.id && "bg-surface-muted font-medium"
+                      )}
+                    >
+                      <StatusDot state={row.state} />
+                      <span className="truncate">{row.station.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex-1">
+              <StationsMap
+                height={640}
+                onStationClick={setPreviewStationId}
+                focusStationId={focusedStationId}
+                stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+                  id: r.station.id,
+                  name: r.station.name,
+                  latitude: r.station.latitude as number,
+                  longitude: r.station.longitude as number,
+                  status: r.state,
+                  popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
+                    sellable: formatVolume(r.totalSellableVolumeLiters),
+                    available: formatVolume(r.totalVolumeLiters),
+                  }),
+                }))}
+              />
+            </div>
+          </div>
         </Stack>
       </Modal>
 

@@ -1383,7 +1383,10 @@
       "map": {
         "title": "Implantation du réseau",
         "subtitle": "Cliquez sur une pastille pour ouvrir la station",
-        "open": "Voir la carte"
+        "open": "Voir la carte",
+        "panelTitle": "{count} stations",
+        "expandPanel": "Afficher la liste des stations",
+        "collapsePanel": "Réduire la liste des stations"
       },
       "synthesis": {
         "title": "Synthèse",
