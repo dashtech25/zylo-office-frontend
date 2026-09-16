@@ -1,8 +1,8 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
 import { AlertTriangle, Compass, Gauge, MapPin, Radio, Ship } from "lucide-react";
 
+import { TrucksMap, type TruckMapPoint, type TruckMapStatus } from "@/modules/zylo-liquid/components/TrucksMap";
 import {
   Badge,
   type BadgeProps,
@@ -198,80 +198,34 @@ export default function SupervisionScreen() {
   );
 }
 
-const STATUS_COLOR: Record<MockVessel["status"], string> = {
-  underway: "#0d9488",
-  anchored: "#d97706",
-  moored: "#41576b",
-};
+/** Statut navire (underway/moored/anchored) -> statut générique de
+ * `TrucksMap` (moving/stopped/unknown) : `anchored` reste distinct de
+ * `moored` métier (à quai vs au mouillage) mais les deux sont visuellement
+ * "à l'arrêt" sur cette carte partagée avec les camions, faute d'un
+ * troisième statut dans le composant. */
+function toTruckMapStatus(status: MockVessel["status"]): TruckMapStatus {
+  if (status === "underway") return "moving";
+  return "stopped";
+}
 
-/** Carte "flotte" — pas de librairie de cartographie (hors périmètre) :
- * nuage de points ECharts positionnant chaque navire selon sa longitude
- * (axe X) / latitude (axe Y), avec une marge autour de l'emprise réelle
- * de la flotte pour éviter d'accoler les points aux bords quand les
- * navires sont proches les uns des autres. */
+/** Carte "flotte" — vraie carte Mapbox, `TrucksMap` (mêmes marqueurs,
+ * survol, recentrage et sélecteur de fond de carte que le tracking camions
+ * de Zylo Liquid) réutilisé tel quel : générique sur id/label/lat/lon/
+ * statut, aucune connaissance propre aux camions. */
 function FleetMapCard() {
-  const lats = MOCK_VESSELS.map((v) => v.latitude);
-  const lons = MOCK_VESSELS.map((v) => v.longitude);
-  const latSpan = Math.max(Math.max(...lats) - Math.min(...lats), 0.05);
-  const lonSpan = Math.max(Math.max(...lons) - Math.min(...lons), 0.05);
-  const latMargin = latSpan * 0.4;
-  const lonMargin = lonSpan * 0.4;
-
-  const option = {
-    grid: { left: 56, right: 24, top: 24, bottom: 40 },
-    xAxis: {
-      type: "value",
-      name: "Longitude",
-      nameLocation: "middle",
-      nameGap: 26,
-      min: Math.min(...lons) - lonMargin,
-      max: Math.max(...lons) + lonMargin,
-      axisLabel: { formatter: (v: number) => v.toFixed(2) },
-    },
-    yAxis: {
-      type: "value",
-      name: "Latitude",
-      nameLocation: "middle",
-      nameGap: 40,
-      min: Math.min(...lats) - latMargin,
-      max: Math.max(...lats) + latMargin,
-      axisLabel: { formatter: (v: number) => v.toFixed(2) },
-    },
-    tooltip: {
-      formatter: (params: { data: { name: string; value: number[]; status: MockVessel["status"] } }) => {
-        const { name, value, status } = params.data;
-        return `<strong>${name}</strong><br/>${STATUS_LABEL[status]}<br/>${value[1].toFixed(3)}, ${value[0].toFixed(3)}`;
-      },
-    },
-    series: [
-      {
-        type: "scatter",
-        symbolSize: 22,
-        label: {
-          show: true,
-          formatter: (params: { data: { code: string } }) => params.data.code,
-          position: "top",
-          fontSize: 11,
-          color: "#41576b",
-        },
-        data: MOCK_VESSELS.map((vessel) => ({
-          name: vessel.name,
-          code: vessel.code,
-          status: vessel.status,
-          value: [vessel.longitude, vessel.latitude],
-          itemStyle: { color: STATUS_COLOR[vessel.status] },
-        })),
-      },
-    ],
-  };
+  const points: TruckMapPoint[] = MOCK_VESSELS.map((vessel) => ({
+    id: vessel.id,
+    label: `${vessel.name} (${vessel.code})`,
+    latitude: vessel.latitude,
+    longitude: vessel.longitude,
+    status: toTruckMapStatus(vessel.status),
+  }));
 
   return (
     <Card>
       <CardSectionHeader icon={MapPin} title="Carte de la flotte" />
       <CardContent>
-        <div className="h-72 w-full overflow-hidden rounded-card border border-border-subtle bg-surface-muted">
-          <ReactECharts option={option} style={{ height: "100%", width: "100%" }} notMerge />
-        </div>
+        <TrucksMap trucks={points} height={320} />
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {MOCK_VESSELS.map((vessel) => (
