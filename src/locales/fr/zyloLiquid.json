@@ -1481,14 +1481,14 @@
       "menu": {
         "viewDetail": "Voir le détail",
         "edit": "Modifier",
-        "deactivate": "Désactiver",
-        "reactivate": "Réactiver",
+        "deactivate": "Fermer",
+        "reactivate": "Ouvrir",
         "viewAlerts": "Voir les alertes",
         "viewDeliveries": "Voir les livraisons",
         "viewLeaks": "Voir les fuites"
       },
-      "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
-      "confirmReactivate": "Réactiver cette station ?",
+      "confirmDeactivate": "Fermer cette station ? L'historique reste consultable.",
+      "confirmReactivate": "Ouvrir cette station ?",
       "footer": {
         "networkTotal": "Total réseau"
       }
@@ -1630,8 +1630,8 @@
       "leaks": "Fuites",
       "edit": "Modifier",
       "configuration": "Configuration",
-      "deactivate": "Désactiver",
-      "reactivate": "Réactiver"
+      "deactivate": "Fermer",
+      "reactivate": "Ouvrir"
     },
     "status": {
       "online": "En ligne",
@@ -1762,8 +1762,8 @@
     "editModal": {
       "title": "Modifier la station"
     },
-    "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
-    "confirmReactivate": "Réactiver cette station ?",
+    "confirmDeactivate": "Fermer cette station ? L'historique reste consultable.",
+    "confirmReactivate": "Ouvrir cette station ?",
     "parts": {
       "unavailable": {
         "title": "Non visible pour votre rôle",

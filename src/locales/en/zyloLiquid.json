@@ -1481,14 +1481,14 @@
       "menu": {
         "viewDetail": "View detail",
         "edit": "Edit",
-        "deactivate": "Deactivate",
-        "reactivate": "Reactivate",
+        "deactivate": "Close",
+        "reactivate": "Open",
         "viewAlerts": "View alerts",
         "viewDeliveries": "View deliveries",
         "viewLeaks": "View leaks"
       },
-      "confirmDeactivate": "Deactivate this station? History remains available.",
-      "confirmReactivate": "Reactivate this station?",
+      "confirmDeactivate": "Close this station? History remains available.",
+      "confirmReactivate": "Open this station?",
       "footer": {
         "networkTotal": "Network total"
       }
@@ -1630,8 +1630,8 @@
       "leaks": "Leaks",
       "edit": "Edit",
       "configuration": "Configuration",
-      "deactivate": "Deactivate",
-      "reactivate": "Reactivate"
+      "deactivate": "Close",
+      "reactivate": "Open"
     },
     "status": {
       "online": "Online",
@@ -1762,8 +1762,8 @@
     "editModal": {
       "title": "Edit station"
     },
-    "confirmDeactivate": "Deactivate this station? Its history stays available.",
-    "confirmReactivate": "Reactivate this station?",
+    "confirmDeactivate": "Close this station? Its history stays available.",
+    "confirmReactivate": "Open this station?",
     "parts": {
       "unavailable": {
         "title": "Not available for your role",
