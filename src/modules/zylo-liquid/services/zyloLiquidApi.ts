@@ -223,7 +223,8 @@ export type AlertType =
   | "price_missing"
   | "sensor_mapping_missing"
   | "calibration_missing"
-  | "truck_stop_unqualified";
+  | "truck_stop_unqualified"
+  | "station_offline";
 
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
 export type AlertStatus = "active" | "acknowledged" | "resolved";

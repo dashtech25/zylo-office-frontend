@@ -14,7 +14,7 @@ import { StationAlertGroup } from "./StationAlertGroup";
 import { useAlertsList, type AlertStatusFilter } from "./useAlertsList";
 
 const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "acknowledged", "resolved"];
-const COUNTABLE_TYPES: AlertType[] = ["leak", "level_low", "level_high", "water", "sensor_offline"];
+const COUNTABLE_TYPES: AlertType[] = ["leak", "level_low", "level_high", "water", "sensor_offline", "station_offline"];
 
 /** Centre d'alertes réseau : affiche par défaut l'historique complet
  * (actives + résolues) de toutes les stations — le filtre de statut
@@ -72,6 +72,9 @@ export default function AlertsScreen() {
     sensor_mapping_missing: Gauge,
     calibration_missing: Ruler,
     truck_stop_unqualified: Truck,
+    // Silence complet de la station (toutes ses cuves configurées hors
+    // ligne) — P1-9, audit module Stations 2026-09-16.
+    station_offline: Wifi,
   };
   const typeTone: Record<AlertType, "error" | "warning" | "info" | "neutral"> = {
     leak: "error",
@@ -89,6 +92,7 @@ export default function AlertsScreen() {
     sensor_mapping_missing: "warning",
     calibration_missing: "warning",
     truck_stop_unqualified: "warning",
+    station_offline: "error",
   };
 
   return (

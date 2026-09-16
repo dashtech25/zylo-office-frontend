@@ -558,6 +558,43 @@ export default function StationDetailScreen() {
             data.alerts.map((a) => {
               const tank = data.tanks.find((tk) => tk.id === a.tankId);
               const critical = a.type === "leak" || a.type === "level_high";
+              // Silence complet de la station : jamais remontée comme
+              // alerte jusqu'ici, avec une action rapide pour contacter la
+              // station (P1-9, audit module Stations 2026-09-16). Le
+              // téléphone reste la seule coordonnée de contact du modèle
+              // Station (pas de champ WhatsApp/Facebook dédié) — réutilisé
+              // pour les 3 canaux via des liens tel:/sms:/wa.me.
+              if (a.type === "station_offline") {
+                const phone = station.phone?.replace(/[^\d+]/g, "") ?? null;
+                const message = encodeURIComponent(t("columns.alerts.stationOfflineMessage", { station: station.name }));
+                return (
+                  <ActivityRow
+                    key={a.id}
+                    icon={AlertTriangle}
+                    iconTone="error"
+                    title={tAlerts(`types.${a.type}`)}
+                    meta={phone ? station.phone ?? undefined : t("columns.alerts.noPhone")}
+                    trailing={
+                      phone ? (
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <a href={`tel:${phone}`} className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.call")}
+                          </a>
+                          <a href={`sms:${phone}?body=${message}`} className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.sms")}
+                          </a>
+                          <a href={`https://wa.me/${phone.replace("+", "")}?text=${message}`} target="_blank" rel="noreferrer" className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.whatsapp")}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-caption text-text-muted">{minutesAgo(a.triggeredAt)} min</span>
+                      )
+                    }
+                    onClick={() => setAlertsModal({ open: true, initialAlertId: a.id })}
+                  />
+                );
+              }
               return (
                 <ActivityRow
                   key={a.id}

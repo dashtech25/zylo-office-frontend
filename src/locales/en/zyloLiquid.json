@@ -1529,7 +1529,8 @@
       "delivery_declaration_pending": "Declaration awaiting confirmation",
       "price_missing": "Missing sale price",
       "sensor_mapping_missing": "Sensor not mapped",
-      "calibration_missing": "Missing calibration chart"
+      "calibration_missing": "Missing calibration chart",
+      "station_offline": "Total silence — no tank reporting"
     },
     "page": {
       "title": "Alert center",
@@ -1711,7 +1712,12 @@
     "columns": {
       "alerts": {
         "title": "Alerts ({count})",
-        "empty": "No alert for this station"
+        "empty": "No alert for this station",
+        "stationOfflineMessage": "Hello, station {station} has stopped sending any data for a while. Can you tell us what caused the outage?",
+        "noPhone": "No phone number on file for this station",
+        "call": "Call",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
       },
       "deliveries": {
         "title": "Recent deliveries ({count})",

@@ -1529,7 +1529,8 @@
       "delivery_declaration_pending": "Déclaration en attente de confirmation",
       "price_missing": "Prix de vente manquant",
       "sensor_mapping_missing": "Sonde non associée",
-      "calibration_missing": "Barème de calibration manquant"
+      "calibration_missing": "Barème de calibration manquant",
+      "station_offline": "Silence complet — aucune cuve ne transmet"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -1711,7 +1712,12 @@
     "columns": {
       "alerts": {
         "title": "Alertes ({count})",
-        "empty": "Aucune alerte pour cette station"
+        "empty": "Aucune alerte pour cette station",
+        "stationOfflineMessage": "Bonjour, la station {station} ne transmet plus aucune donnée depuis un moment. Pouvez-vous nous indiquer l'origine de la coupure ?",
+        "noPhone": "Aucun téléphone renseigné pour cette station",
+        "call": "Appeler",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
       },
       "deliveries": {
         "title": "Livraisons récentes ({count})",
