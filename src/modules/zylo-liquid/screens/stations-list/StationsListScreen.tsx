@@ -193,8 +193,23 @@ export default function StationsListScreen() {
       string,
       { name: string; color: string | null; volume: number; capacity: number; stationIds: Set<string>; monetary: number; sellableVolume: number; sellableMonetary: number; currencies: Set<string> }
     >();
+    // Toujours une entrée par produit ACTIF du catalogue de l'organisation,
+    // même sans aucune cuve qui le vend — sinon un produit sans station
+    // (ex. "Pétrole") n'obtient jamais de carte du tout (P0-2, audit module
+    // Stations 2026-09-16) au lieu d'une carte à 0.
+    for (const product of data.fuelProducts) {
+      if (!product.active) continue;
+      byProduct.set(product.id, { name: product.name, color: product.displayColor, volume: 0, capacity: 0, stationIds: new Set<string>(), monetary: 0, sellableVolume: 0, sellableMonetary: 0, currencies: new Set<string>() });
+    }
     for (const row of filteredRows) {
       for (const p of row.products) {
+        // Un filtre produit actif ne doit pas seulement retenir/exclure des
+        // stations entières : il doit aussi restreindre QUELS produits de
+        // ces stations sont comptés, sinon une station qui vend Gasoil ET
+        // Super continue d'alimenter la carte Super même filtrée sur Gasoil
+        // (P0-3, audit module Stations 2026-09-16 — "le filtre n'a aucun
+        // effet visible sur les cartes").
+        if (productFilter && p.fuelProductId !== productFilter) continue;
         const entry =
           byProduct.get(p.fuelProductId) ??
           { name: p.fuelProductName, color: p.displayColor, volume: 0, capacity: 0, stationIds: new Set<string>(), monetary: 0, sellableVolume: 0, sellableMonetary: 0, currencies: new Set<string>() };
@@ -222,7 +237,7 @@ export default function StationsListScreen() {
       sellableVolumeLiters: e.sellableVolume,
       sellableMonetaryValue: e.currencies.size === 1 ? e.sellableMonetary : null,
     }));
-  }, [filteredRows]);
+  }, [filteredRows, data.fuelProducts, productFilter]);
 
   // Bandeau de fiabilité (« double vérité » du prototype, prototype.html
   // bandeauFiabilite() ~ligne 3001) : une station entière est jugée "hors
@@ -325,8 +340,12 @@ export default function StationsListScreen() {
         </Alert>
       )}
 
-      {/* Cartes de synthèse réseau — dépendent des lignes filtrées, donc de
-          `data.loading`. */}
+      {/* Cartes de synthèse réseau — toujours affichées dès que le
+          catalogue a au moins un produit actif (`networkProducts` n'est
+          plus jamais vide, voir son useMemo) : un filtre qui ne retient
+          aucune station affiche des cartes à 0, jamais une section vide
+          (P0-3, audit module Stations 2026-09-16 — "toutes les cartes
+          disparaissent" en filtrant sur un produit sans station). */}
       {data.loading ? (
         <section>
           <Skeleton className="mb-3 h-6 w-48" />
@@ -337,7 +356,7 @@ export default function StationsListScreen() {
           </div>
         </section>
       ) : (
-        filteredRows.length > 0 && (
+        networkProducts.length > 0 && (
           <NetworkStockSummaryCards
             products={networkProducts}
             totalVolumeLiters={networkVolumeLiters}
