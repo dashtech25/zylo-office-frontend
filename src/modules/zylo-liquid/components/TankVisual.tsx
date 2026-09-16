@@ -204,6 +204,7 @@ export function TankVisual({ tank, state, mode, big, fuelColor }: { tank: Tank; 
 
 export function TankFigures({ tank, state, showValue = true }: { tank: Tank; state: TankCurrentState; showValue?: boolean }) {
   const t = useTranslations("zyloLiquid.tankVisual.figures");
+  const tReasons = useTranslations("zyloLiquid.caisse.reasons");
   const data = computeTankVisualData(tank, state);
   const fmt = (v: number) => `${formatLiters(v)} L`;
   const rows: [string, string][] = [
@@ -220,8 +221,19 @@ export function TankFigures({ tank, state, showValue = true }: { tank: Tank; sta
     // "Couverture" déjà désactivée pour cette raison).
     [t("coverage"), t("notCalculable")],
   ];
-  if (showValue && state.monetaryValue !== null && state.currencyCode) {
-    rows.push([t("value"), `${Math.round(state.monetaryValue).toLocaleString()} ${state.currencyCode}`]);
+  if (showValue) {
+    if (state.monetaryValue !== null && state.currencyCode) {
+      rows.push([t("value"), `${Math.round(state.monetaryValue).toLocaleString()} ${state.currencyCode}`]);
+    } else if (state.monetaryValueNotCalculableReason !== null) {
+      // Jamais "valeur non calculable" affichée sans raison (P0-7, audit
+      // module Stations 2026-09-16) — la carte cuve omettait purement et
+      // simplement la ligne, laissant croire à une cuve mal configurée
+      // alors que la vraie cause (prix manquant, devise mal résolue,
+      // volume non calculable) est déjà connue côté backend. Réutilise le
+      // même dictionnaire de raisons que les écrans Caisse plutôt que d'en
+      // dupliquer un.
+      rows.push([t("value"), tReasons(state.monetaryValueNotCalculableReason)]);
+    }
   }
   return (
     <div className="flex flex-col gap-1.5">

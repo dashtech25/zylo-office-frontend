@@ -191,6 +191,8 @@
     "reasons": {
       "no_calibration_table": "Cuve non calibrée — volume non calculable.",
       "no_applicable_price": "Aucun prix de vente configuré sur la période.",
+      "price_currency_mismatch": "Un prix réseau par défaut existe, mais dans une devise différente de celle de la station — vérifiez la devise de la station ou le prix saisi.",
+      "volume_not_calculable": "Volume non calculable — valeur du stock indisponible.",
       "mixed_currencies": "Devises différentes mélangées — non additionnable.",
       "incomplete_pricing": "Prix incomplet sur au moins une cuve contributrice.",
       "insufficient_data": "Aucune mesure exploitable sur cette période."

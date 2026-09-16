@@ -191,6 +191,8 @@
     "reasons": {
       "no_calibration_table": "Tank not calibrated — volume not calculable.",
       "no_applicable_price": "No sale price configured for this period.",
+      "price_currency_mismatch": "A network default price exists, but in a different currency than the station's — check the station's currency or the price entered.",
+      "volume_not_calculable": "Volume not calculable — stock value unavailable.",
       "mixed_currencies": "Different currencies mixed — not addable.",
       "incomplete_pricing": "Incomplete pricing on at least one contributing tank.",
       "insufficient_data": "No usable measurement for this period."
