@@ -407,6 +407,8 @@
     "fuelCatalog": {
       "banner": "Le catalogue est partagé par tout le réseau. Un carburant n'est jamais supprimé — il est retiré du catalogue, ce qui préserve tout l'historique.",
       "title": "Produits",
+      "empty": "Aucun produit carburant dans le catalogue.",
+      "statusColumn": "Statut",
       "statusActive": "Au catalogue",
       "statusInactive": "Retiré",
       "name": "Nom",

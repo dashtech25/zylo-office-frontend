@@ -12,7 +12,7 @@ import { HolykellTab } from "@/modules/zylo-liquid/screens/settings/HolykellTab"
 import { OrganisationTab } from "@/modules/zylo-liquid/screens/settings/OrganisationTab";
 import { SystemeTab } from "@/modules/zylo-liquid/screens/settings/SystemeTab";
 import { TrackingTab } from "@/modules/zylo-liquid/screens/settings/TrackingTab";
-import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, FormField, Input, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, TableRowSkeleton } from "@/shared/ui";
+import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, FormField, Input, Modal, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, TableRowSkeleton } from "@/shared/ui";
 
 import { BulkPriceModal } from "./BulkPriceModal";
 import { MissingConfigBanner, type MissingConfigItem } from "./MissingConfigBanner";
@@ -147,6 +147,12 @@ export default function ConfigurationScreen() {
   const [newDensity, setNewDensity] = useState("");
   const [newColor, setNewColor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  // Table + modal au lieu de cartes + formulaire toujours visible (P2 §5.7,
+  // audit module Stations 2026-09-16) : `createProductOpen` remplace la
+  // Card d'ajout permanente, `editingProductId` remplace le formulaire
+  // inline de chaque carte.
+  const [createProductOpen, setCreateProductOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   async function handleSave(id: string, form: HTMLFormElement, color: string | null) {
     setSavingId(id);
@@ -158,6 +164,7 @@ export default function ConfigurationScreen() {
         densityGPerCm3: fd.get("density") ? Number(fd.get("density")) : undefined,
         displayColor: color ?? undefined,
       });
+      setEditingProductId(null);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -195,6 +202,7 @@ export default function ConfigurationScreen() {
       setNewCode("");
       setNewDensity("");
       setNewColor(null);
+      setCreateProductOpen(false);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -517,72 +525,71 @@ export default function ConfigurationScreen() {
     </Stack>
   );
 
+  const editingProduct = editingProductId ? data.products.find((p) => p.id === editingProductId) ?? null : null;
+  let editingColorDraft: string | null = editingProduct?.displayColor ?? null;
+
+  // Tableau + modals plutôt que cartes + formulaire d'ajout toujours
+  // visible en permanence (P2 §5.7, audit module Stations 2026-09-16) :
+  // chaque ligne ouvre un modal de détail/modification, "+ Ajouter un
+  // produit" en haut à droite ouvre un modal de création — même principe
+  // que "n'afficher un formulaire que lorsqu'il est nécessaire" appliqué
+  // ailleurs dans l'app.
   const fuelCatalogTab = (
     <Stack>
       <Alert tone="info">{t("fuelCatalog.banner")}</Alert>
       {formError && <Alert tone="error">{formError}</Alert>}
       {data.error && <Alert tone="error">{data.error}</Alert>}
 
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setCreateProductOpen(true)}>
+          <Plus className="size-4" aria-hidden />
+          {t("fuelCatalog.addTitle")}
+        </Button>
+      </div>
+
       {data.loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </div>
+        <CardSkeleton />
+      ) : data.products.length === 0 ? (
+        <EmptyState title={t("fuelCatalog.empty")} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.products.map((product) => {
-            let colorDraft: string | null = product.displayColor;
-            return (
-              <form
-                key={product.id}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSave(product.id, e.currentTarget, colorDraft);
-                }}
-              >
-                <Card>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-text">{product.name}</span>
-                    <Badge tone={product.active ? "success" : "neutral"} dot>
-                      {product.active ? t("fuelCatalog.statusActive") : t("fuelCatalog.statusInactive")}
-                    </Badge>
-                  </div>
-                  <div className="mt-3 flex flex-col gap-3">
-                    <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} name="name" defaultValue={product.name} />}</FormField>
-                    <FormField label={t("fuelCatalog.code")} hint={t("fuelCatalog.codeHint")}>
-                      {(field) => <Input {...field} value={product.code} disabled />}
-                    </FormField>
-                    <FormField label={t("fuelCatalog.density")} hint={t("fuelCatalog.densityHint")}>
-                      {(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={product.densityGPerCm3 ?? ""} />}
-                    </FormField>
-                    <FormField label={t("fuelCatalog.color")}>
-                      {() => <ColorPicker value={product.displayColor} onChange={(hex) => (colorDraft = hex)} reservedColorMessage={t("fuelCatalog.colorReserved")} aria-label={t("fuelCatalog.color")} />}
-                    </FormField>
-                  </div>
-                  <ProductStationsToggle stations={prices.stations} cities={prices.cities} isActive={(stationId) => stationProducts.isActive(product.id, stationId)} onToggle={(stationId, active) => stationProducts.toggle(product.id, stationId, active)} />
-                  <Button type="submit" size="sm" className="mt-3 w-full" disabled={savingId === product.id}>
-                    <Check className="size-4" aria-hidden />
-                    {t("fuelCatalog.save")}
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" className="mt-2 w-full" disabled={savingId === product.id} onClick={() => handleToggleActive(product.id, product.active)}>
-                    {product.active ? t("fuelCatalog.deactivate") : t("fuelCatalog.reactivate")}
-                  </Button>
-                  <p className="mt-1 text-caption text-text-muted">{t("fuelCatalog.deactivateHint")}</p>
-                </Card>
-              </form>
-            );
-          })}
-        </div>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>{t("fuelCatalog.name")}</TableHeaderCell>
+              <TableHeaderCell>{t("fuelCatalog.code")}</TableHeaderCell>
+              <TableHeaderCell className="text-right">{t("fuelCatalog.density")}</TableHeaderCell>
+              <TableHeaderCell>{t("fuelCatalog.color")}</TableHeaderCell>
+              <TableHeaderCell>{t("fuelCatalog.statusColumn")}</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.products.map((product) => (
+              <TableRow key={product.id} className="cursor-pointer hover:bg-surface-muted" onClick={() => setEditingProductId(product.id)}>
+                <TableCell className="font-medium text-text">{product.name}</TableCell>
+                <TableCell className="font-mono text-text-muted">{product.code}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{product.densityGPerCm3 ?? "—"}</TableCell>
+                <TableCell>
+                  <span className="inline-block size-4 rounded-full border border-border-subtle" style={{ background: product.displayColor ?? "transparent" }} />
+                </TableCell>
+                <TableCell>
+                  <Badge tone={product.active ? "success" : "neutral"} dot>
+                    {product.active ? t("fuelCatalog.statusActive") : t("fuelCatalog.statusInactive")}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
-      <Card>
-        <h2 className="text-h4 font-semibold text-text">{t("fuelCatalog.addTitle")}</h2>
-        <p className="mb-4 mt-1 text-body-sm text-text-muted">{t("fuelCatalog.addSubtitle")}</p>
+      <Modal open={createProductOpen} onOpenChange={setCreateProductOpen} title={t("fuelCatalog.addTitle")} closeLabel={tCommon("actions.close")}>
+        <p className="mb-4 text-body-sm text-text-muted">{t("fuelCatalog.addSubtitle")}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("fuelCatalog.namePlaceholder")} />}</FormField>
           <FormField label={t("fuelCatalog.code")}>{(field) => <Input {...field} value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder={t("fuelCatalog.codePlaceholder")} maxLength={10} />}</FormField>
-          <FormField label={t("fuelCatalog.density")}>{(field) => <Input {...field} type="number" step="0.0001" value={newDensity} onChange={(e) => setNewDensity(e.target.value)} placeholder="0.8400" />}</FormField>
+          <FormField label={t("fuelCatalog.density")} hint={t("fuelCatalog.densityHint")}>
+            {(field) => <Input {...field} type="number" step="0.0001" value={newDensity} onChange={(e) => setNewDensity(e.target.value)} placeholder="0.8400" />}
+          </FormField>
         </div>
         <div className="mt-3">
           <FormField label={t("fuelCatalog.color")}>
@@ -593,7 +600,57 @@ export default function ConfigurationScreen() {
           <Plus className="size-4" aria-hidden />
           {t("fuelCatalog.create")}
         </Button>
-      </Card>
+      </Modal>
+
+      {editingProduct && (
+        <Modal open={!!editingProduct} onOpenChange={(next) => !next && setEditingProductId(null)} title={editingProduct.name} closeLabel={tCommon("actions.close")}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave(editingProduct.id, e.currentTarget, editingColorDraft);
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <Badge tone={editingProduct.active ? "success" : "neutral"} dot>
+                {editingProduct.active ? t("fuelCatalog.statusActive") : t("fuelCatalog.statusInactive")}
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-3">
+              <FormField label={t("fuelCatalog.name")}>{(field) => <Input {...field} name="name" defaultValue={editingProduct.name} />}</FormField>
+              <FormField label={t("fuelCatalog.code")} hint={t("fuelCatalog.codeHint")}>
+                {(field) => <Input {...field} value={editingProduct.code} disabled />}
+              </FormField>
+              <FormField label={t("fuelCatalog.density")} hint={t("fuelCatalog.densityHint")}>
+                {(field) => <Input {...field} name="density" type="number" step="0.0001" defaultValue={editingProduct.densityGPerCm3 ?? ""} />}
+              </FormField>
+              <FormField label={t("fuelCatalog.color")}>
+                {() => <ColorPicker value={editingProduct.displayColor} onChange={(hex) => (editingColorDraft = hex)} reservedColorMessage={t("fuelCatalog.colorReserved")} aria-label={t("fuelCatalog.color")} />}
+              </FormField>
+            </div>
+            <ProductStationsToggle
+              stations={prices.stations}
+              cities={prices.cities}
+              isActive={(stationId) => stationProducts.isActive(editingProduct.id, stationId)}
+              onToggle={(stationId, active) => stationProducts.toggle(editingProduct.id, stationId, active)}
+            />
+            <Button type="submit" size="sm" className="mt-3 w-full" disabled={savingId === editingProduct.id}>
+              <Check className="size-4" aria-hidden />
+              {t("fuelCatalog.save")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 w-full"
+              disabled={savingId === editingProduct.id}
+              onClick={() => handleToggleActive(editingProduct.id, editingProduct.active)}
+            >
+              {editingProduct.active ? t("fuelCatalog.deactivate") : t("fuelCatalog.reactivate")}
+            </Button>
+            <p className="mt-1 text-caption text-text-muted">{t("fuelCatalog.deactivateHint")}</p>
+          </form>
+        </Modal>
+      )}
     </Stack>
   );
 

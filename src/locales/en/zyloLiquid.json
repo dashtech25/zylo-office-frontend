@@ -407,6 +407,8 @@
     "fuelCatalog": {
       "banner": "The catalog is shared across the whole network. A fuel product is never deleted — it is removed from the catalog, which preserves all history.",
       "title": "Products",
+      "empty": "No fuel product in the catalog.",
+      "statusColumn": "Status",
       "statusActive": "In catalog",
       "statusInactive": "Removed",
       "name": "Name",
