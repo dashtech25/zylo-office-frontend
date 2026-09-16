@@ -653,6 +653,22 @@ export function listCities(organizationId: string, params: { q?: string; limit?:
   return apiFetch<Page<City>>(`/cities?${search.toString()}`, withOrg(organizationId));
 }
 
+export interface Country {
+  id: string;
+  name: string;
+  isoCode2: string;
+  currencyId: string | null;
+  currencyCode: string;
+  defaultTimezone: string;
+}
+
+export function listCountries(organizationId: string, params: { q?: string; limit?: number } = {}): Promise<Page<Country>> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  search.set("limit", String(params.limit ?? 300));
+  return apiFetch<Page<Country>>(`/countries?${search.toString()}`, withOrg(organizationId));
+}
+
 export interface PriceHistoryEntry {
   id: string;
   /** `null` = prix par défaut réseau, non rattaché à une station précise (audit Configuration carburant P2). */
