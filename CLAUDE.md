@@ -108,6 +108,67 @@ composant dans `shared/ui`, l'ancien supprimé.
   Quand un composant partagé remplace un ancien, migrer tous les usages
   et supprimer l'ancien — ne pas le laisser "au cas où".
 
+## Frontières backend côté frontend : composer, jamais mélanger
+
+Le backend migre vers un **monolithe modulaire** (plan complet :
+`plan-migration/architecture-migration.md` dans `zylo_liquid_prototype/`) :
+Files, Location (GPS), Alertes, Holykell deviennent des modules Python
+indépendants (`app/files/`, `app/location/`, `app/alerts/`,
+`app/integrations/holykell/`), chacun avec son `service.py`/`router.py`
+propres, séparés de `app/modules/zylo_liquid/`. Le frontend applique la
+**même discipline de frontières**, symétriquement.
+
+**La règle** : un écran qui a besoin de données appartenant à deux domaines
+différents (un fichier attaché à une livraison, la position GPS d'un camion
+à côté de son niveau de carburant) appelle **deux endpoints séparés** — un
+par domaine propriétaire — jamais un seul endpoint backend qui mélangerait
+Files + Liquid + Alertes "pour économiser un aller-retour". Si l'envie
+d'un endpoint backend qui fusionne plusieurs domaines apparaît, c'est le
+signal qu'il faut composer deux appels côté frontend (deux hooks, combinés
+via React Query), pas demander au backend de violer ses propres frontières
+de module.
+
+**Patron déjà en place dans ce dépôt — s'en inspirer, ne pas réinventer** :
+- `src/modules/zylo-liquid/services/zyloLiquidApi.ts` reste le fichier
+  client API centralisé du module `zylo-liquid` (un seul fichier, toutes
+  les fonctions `listX`/`createX`/`updateX` + leurs types).
+- `src/modules/zylo-liquid/screens/trucks/useTrucks.ts` illustre déjà la
+  composition frontend : `fetchTrucksData` lance en parallèle
+  `listTrucks`, `listCarriers`, `listGpsDevices`,
+  `listTruckCurrentPositions`, `listTrackingLocations`,
+  `listTruckStopReconciliations`, `getTraccarConnection` via `Promise.all`,
+  puis un seul hook `useTrucks` expose le résultat combiné à l'écran.
+  Chaque fonction reste un appel indépendant à son propre endpoint — c'est
+  exactement le patron "composer côté frontend, ne pas mélanger côté
+  backend" à reproduire pour Files/Alertes/Location.
+- `src/modules/zylo-liquid/services/liveTruckPositions.ts` montre qu'une
+  préoccupation frontend spécifique (flux SSE, authentification manuelle
+  via `fetch`/`ReadableStream` car `EventSource` natif ne permet pas l'en-
+  tête `Authorization`) reste dans son propre fichier plutôt que d'être
+  ajoutée dans `zyloLiquidApi.ts` — un fichier client API garde des
+  fonctions `fetch` simples et uniformes, pas de la logique de streaming.
+
+**Effet de la migration backend sur le frontend** : le plan de migration
+choisit explicitement de garder les préfixes d'URL actuels
+(`/api/v1/zylo-liquid/...`) même une fois le code physiquement déplacé
+côté backend vers `app/files/`, `app/location/`, `app/alerts/` — pour ne
+rien casser côté frontend pendant le refactor. **Aucune modification
+frontend n'est donc requise par la migration backend elle-même.** Mais
+tout **nouveau** code frontend doit déjà suivre la discipline "un
+hook/appel par domaine, composer plutôt que mélanger" — ne pas attendre
+que le backend ait fini de se découper pour l'appliquer.
+
+**Direction pour l'organisation des clients API** (pas urgent, juste le
+sens dans lequel avancer à mesure que les modules backend se stabilisent) :
+quand un domaine backend (Files, Location, Alertes) devient un module
+backend indépendant et stable avec son propre préfixe d'URL dédié, lui
+donner son propre fichier client frontend au même niveau que
+`zyloLiquidApi.ts` (ex. `services/filesApi.ts`,
+`services/alertsApi.ts`) plutôt que de continuer à accumuler ses fonctions
+dans `zyloLiquidApi.ts`. Tant que le préfixe reste `/zylo-liquid/...` et
+que le domaine n'a pas de vie propre côté produit, le laisser où il est
+déjà — pas de scission prématurée sur la seule base du découpage backend.
+
 ## Méthode de travail
 
 Par familles cohérentes (layout → tokens → primitives → composants →
