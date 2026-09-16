@@ -8,7 +8,9 @@ import { useRef, useState } from "react";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatFreshness } from "@/modules/zylo-liquid/utils/formatFreshness";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
 import { CardSkeleton, KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
@@ -22,6 +24,7 @@ import { AtgTab } from "./AtgTab";
 import { PumpsTab } from "./PumpsTab";
 import { RegulationTab } from "./RegulationTab";
 import { StaffTab } from "./StaffTab";
+import { VentesTab } from "./VentesTab";
 import { StackedBarChart, type StackedBarSeries } from "@/modules/zylo-liquid/components/StackedBarChart";
 import { ModeSwitcher, TankLegend } from "@/modules/zylo-liquid/components/TankVisual";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
@@ -175,7 +178,7 @@ export default function StationDetailScreen() {
   const city = (station.cityId ? data.cities.find((c) => c.id === station.cityId) : null) ?? null;
 
   const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
-  const stationOnline = tankStates.some((s) => s.sensorStatus === "online");
+  const { online: stationOnline } = computeStationOnlineStatus(tankStates);
   const criticalAlert = data.alerts.some((a) => a.type === "leak" || a.type === "level_high");
   const stationState: "offline" | "critical" | "alert" | "online" = !stationOnline ? "offline" : criticalAlert ? "critical" : data.alerts.length > 0 ? "alert" : "online";
 
@@ -341,7 +344,7 @@ export default function StationDetailScreen() {
             </Badge>
           </span>
         }
-        description={lastStationSync ? t("sync", { minutes: minutesAgo(lastStationSync) }) : t("syncNever")}
+        description={lastStationSync ? formatFreshness(lastStationSync, format) : t("syncNever")}
         actions={
           <div className="flex flex-wrap items-center gap-2 no-print">
             <Button variant="outline" size="sm" onClick={() => setDeliveriesModal({ open: true, initialDeliveryId: null })}>
@@ -556,6 +559,43 @@ export default function StationDetailScreen() {
             data.alerts.map((a) => {
               const tank = data.tanks.find((tk) => tk.id === a.tankId);
               const critical = a.type === "leak" || a.type === "level_high";
+              // Silence complet de la station : jamais remontée comme
+              // alerte jusqu'ici, avec une action rapide pour contacter la
+              // station (P1-9, audit module Stations 2026-09-16). Le
+              // téléphone reste la seule coordonnée de contact du modèle
+              // Station (pas de champ WhatsApp/Facebook dédié) — réutilisé
+              // pour les 3 canaux via des liens tel:/sms:/wa.me.
+              if (a.type === "station_offline") {
+                const phone = station.phone?.replace(/[^\d+]/g, "") ?? null;
+                const message = encodeURIComponent(t("columns.alerts.stationOfflineMessage", { station: station.name }));
+                return (
+                  <ActivityRow
+                    key={a.id}
+                    icon={AlertTriangle}
+                    iconTone="error"
+                    title={tAlerts(`types.${a.type}`)}
+                    meta={phone ? station.phone ?? undefined : t("columns.alerts.noPhone")}
+                    trailing={
+                      phone ? (
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <a href={`tel:${phone}`} className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.call")}
+                          </a>
+                          <a href={`sms:${phone}?body=${message}`} className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.sms")}
+                          </a>
+                          <a href={`https://wa.me/${phone.replace("+", "")}?text=${message}`} target="_blank" rel="noreferrer" className="text-caption font-medium text-primary hover:underline">
+                            {t("columns.alerts.whatsapp")}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-caption text-text-muted">{minutesAgo(a.triggeredAt)} min</span>
+                      )
+                    }
+                    onClick={() => setAlertsModal({ open: true, initialAlertId: a.id })}
+                  />
+                );
+              }
               return (
                 <ActivityRow
                   key={a.id}
@@ -737,6 +777,7 @@ export default function StationDetailScreen() {
           { value: "personnel", label: t("tabs.staff"), content: currentOrganization ? <StaffTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "reglementation", label: t("tabs.regulation"), content: currentOrganization ? <RegulationTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
           { value: "atg", label: t("tabs.atg"), content: currentOrganization ? <AtgTab organizationId={currentOrganization.id} tanks={activeTanks} /> : null },
+          { value: "ventes", label: t("tabs.sales"), content: currentOrganization ? <VentesTab organizationId={currentOrganization.id} stationId={stationId} /> : null },
         ]}
       />
 

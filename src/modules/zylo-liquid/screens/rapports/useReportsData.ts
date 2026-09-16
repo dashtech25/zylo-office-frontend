@@ -21,6 +21,7 @@ import {
   type StationCurrentState,
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 
 /** Fenêtre d'analyse pour les KPI qui dépendent d'une période (livraisons,
  * fuites) — les KPI de stock/alerte restent "maintenant" (Niveau 1 n'a pas
@@ -193,8 +194,7 @@ export function useReportsData(organizationId: string | null, period: ReportsPer
     const state = stationStates[station.id];
     const tankStates = state?.tanks ?? [];
     const stationTanks = tanksByStation.get(station.id) ?? [];
-    const online = tankStates.some((t) => t.sensorStatus === "online");
-    const onlineTankCount = tankStates.filter((t) => t.sensorStatus === "online").length;
+    const { online, onlineTankCount } = computeStationOnlineStatus(tankStates);
     const volumeLiters = tankStates.reduce((sum, t) => sum + (t.volumeLiters ?? 0), 0);
     const capacityLiters = stationTanks.reduce((sum, t) => sum + (t.calibratedCapacityLiters ?? t.capacityLiters), 0);
     const currencies = new Set(tankStates.map((t) => t.currencyCode).filter((c): c is string => c !== null));

@@ -204,14 +204,24 @@ export function TankVisual({ tank, state, mode, big, fuelColor }: { tank: Tank; 
 
 export function TankFigures({ tank, state, showValue = true }: { tank: Tank; state: TankCurrentState; showValue?: boolean }) {
   const t = useTranslations("zyloLiquid.tankVisual.figures");
+  const tReasons = useTranslations("zyloLiquid.caisse.reasons");
   const data = computeTankVisualData(tank, state);
   const fmt = (v: number) => `${formatLiters(v)} L`;
   const rows: [string, string][] = [
-    [t("volume"), data.volumeLiters === null ? "—" : fmt(data.volumeLiters)],
+    // Niveau carburant et niveau eau sur deux lignes clairement distinctes,
+    // chacune dans le même format (volume puis hauteur entre parenthèses)
+    // — le format précédent mélangeait hauteur et volume dans une seule
+    // chaîne pour l'eau ("0 mm · 0 L"), jamais pour le carburant, rendant
+    // les deux incohérents à lire côte à côte (P2 §5.10, audit module
+    // Stations 2026-09-16).
+    [
+      t("volume"),
+      data.volumeLiters === null ? "—" : `${fmt(data.volumeLiters)}${data.heightMm !== null ? ` (${Math.round(data.heightMm)} mm)` : ""}`,
+    ],
     [t("capacity"), fmt(data.capacityLiters)],
     [t("fillRate"), data.pct === null ? "—" : `${data.pct.toFixed(1)} %`],
     [t("sellable"), state.sellableVolumeLiters === null ? t("notCalculable") : fmt(state.sellableVolumeLiters)],
-    [t("water"), state.waterHeightMm === null ? "—" : `${Math.round(state.waterHeightMm)} mm · ${fmt(data.waterVolumeLiters)}`],
+    [t("water"), state.waterHeightMm === null ? "—" : `${fmt(data.waterVolumeLiters)} (${Math.round(state.waterHeightMm)} mm)`],
     [t("available"), fmt(data.emptyVolumeLiters)],
     [t("temperature"), state.temperatureC === null ? "—" : `${state.temperatureC.toFixed(1)} °C`],
     // Nécessiterait un débit de vente (moyenne glissante 7j) qu'aucune
@@ -220,8 +230,19 @@ export function TankFigures({ tank, state, showValue = true }: { tank: Tank; sta
     // "Couverture" déjà désactivée pour cette raison).
     [t("coverage"), t("notCalculable")],
   ];
-  if (showValue && state.monetaryValue !== null && state.currencyCode) {
-    rows.push([t("value"), `${Math.round(state.monetaryValue).toLocaleString()} ${state.currencyCode}`]);
+  if (showValue) {
+    if (state.monetaryValue !== null && state.currencyCode) {
+      rows.push([t("value"), `${Math.round(state.monetaryValue).toLocaleString()} ${state.currencyCode}`]);
+    } else if (state.monetaryValueNotCalculableReason !== null) {
+      // Jamais "valeur non calculable" affichée sans raison (P0-7, audit
+      // module Stations 2026-09-16) — la carte cuve omettait purement et
+      // simplement la ligne, laissant croire à une cuve mal configurée
+      // alors que la vraie cause (prix manquant, devise mal résolue,
+      // volume non calculable) est déjà connue côté backend. Réutilise le
+      // même dictionnaire de raisons que les écrans Caisse plutôt que d'en
+      // dupliquer un.
+      rows.push([t("value"), tReasons(state.monetaryValueNotCalculableReason)]);
+    }
   }
   return (
     <div className="flex flex-col gap-1.5">

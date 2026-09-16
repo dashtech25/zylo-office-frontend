@@ -1,6 +1,7 @@
 {
   "actions": {
     "save": "Save",
+    "generate": "Generate",
     "cancel": "Cancel",
     "close": "Close",
     "next": "Next",

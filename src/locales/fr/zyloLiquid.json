@@ -191,6 +191,8 @@
     "reasons": {
       "no_calibration_table": "Cuve non calibrée — volume non calculable.",
       "no_applicable_price": "Aucun prix de vente configuré sur la période.",
+      "price_currency_mismatch": "Un prix réseau par défaut existe, mais dans une devise différente de celle de la station — vérifiez la devise de la station ou le prix saisi.",
+      "volume_not_calculable": "Volume non calculable — valeur du stock indisponible.",
       "mixed_currencies": "Devises différentes mélangées — non additionnable.",
       "incomplete_pricing": "Prix incomplet sur au moins une cuve contributrice.",
       "insufficient_data": "Aucune mesure exploitable sur cette période."
@@ -310,7 +312,34 @@
       "networkDefaultHint": "S'applique à toute station qui n'a pas de prix propre pour ce produit — une station avec un prix déjà enregistré garde le sien.",
       "networkDefaultBadge": "Réseau (par défaut)",
       "historyTitle": "Historique des prix",
-      "historySubtitle": "Dernières lignes enregistrées, toutes stations et produits confondus",
+      "historySubtitle": "Dernières lignes enregistrées (fenêtre récente, modifiables) — pour remonter à une date précise, voir « Recherche par date » ci-dessous.",
+      "history": {
+        "show": "Rechercher dans l'historique par date",
+        "hide": "Masquer la recherche par date",
+        "title": "Recherche dans l'historique complet",
+        "subtitle": "Filtrez par station, produit et plage de dates — parcourt tout l'historique enregistré, pas seulement les dernières lignes (lecture seule, pour audit).",
+        "station": "Station",
+        "allStations": "Toutes les stations",
+        "product": "Produit",
+        "allProducts": "Tous les produits",
+        "fromDate": "Du",
+        "toDate": "Au",
+        "error": "Impossible de charger l'historique des prix.",
+        "empty": "Aucun prix sur cette période/ces filtres.",
+        "networkDefault": "Réseau (par défaut)",
+        "unknownAuthor": "Auteur inconnu",
+        "columns": {
+          "effectiveFrom": "En vigueur à partir de",
+          "station": "Station",
+          "product": "Produit",
+          "price": "Prix",
+          "reason": "Motif",
+          "author": "Enregistré par"
+        },
+        "pageInfo": "{from}–{to} sur {total}",
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
       "columns": {
         "station": "Station",
         "product": "Produit",
@@ -378,12 +407,15 @@
     "fuelCatalog": {
       "banner": "Le catalogue est partagé par tout le réseau. Un carburant n'est jamais supprimé — il est retiré du catalogue, ce qui préserve tout l'historique.",
       "title": "Produits",
+      "empty": "Aucun produit carburant dans le catalogue.",
+      "statusColumn": "Statut",
       "statusActive": "Au catalogue",
       "statusInactive": "Retiré",
       "name": "Nom",
       "code": "Code",
       "codeHint": "Le code est la clé du produit dans la base : il n'est pas modifiable.",
       "density": "Masse volumique (g/cm³)",
+      "densityHint": "Champ de référence, informatif — non utilisé aujourd'hui dans un calcul de Zylo Liquid (le volume corrigé à 15°C s'appuie sur le coefficient de dilatation thermique, pas sur la masse volumique).",
       "color": "Couleur d'affichage",
       "colorReserved": "Cette teinte de rouge est réservée aux alertes du système — choisissez une autre couleur.",
       "activeTanks": "Cuves en service",
@@ -394,6 +426,7 @@
       "save": "Enregistrer",
       "deactivate": "Retirer du catalogue",
       "reactivate": "Remettre au catalogue",
+      "deactivateHint": "Reste visible ici (historique conservé) mais n'est plus proposé dans le choix de produit lors de la création/modification d'une cuve.",
       "addTitle": "Ajouter un carburant",
       "addSubtitle": "Écrit une ligne dans le référentiel carburant de votre organisation.",
       "namePlaceholder": "Gasoil premium",
@@ -1361,6 +1394,11 @@
       "pageSubtitle": "{count} stations au total",
       "print": "Imprimer",
       "export": "Exporter",
+      "exportFormat": {
+        "csv": "CSV",
+        "xlsx": "Excel (.xlsx)",
+        "docx": "Word (.docx)"
+      },
       "add": "Ajouter une station",
       "filterAll": "Toutes",
       "searchPlaceholder": "Rechercher une station...",
@@ -1376,7 +1414,10 @@
       "map": {
         "title": "Implantation du réseau",
         "subtitle": "Cliquez sur une pastille pour ouvrir la station",
-        "open": "Voir la carte"
+        "open": "Voir la carte",
+        "panelTitle": "{count} stations",
+        "expandPanel": "Afficher la liste des stations",
+        "collapsePanel": "Réduire la liste des stations"
       },
       "synthesis": {
         "title": "Synthèse",
@@ -1444,14 +1485,14 @@
       "menu": {
         "viewDetail": "Voir le détail",
         "edit": "Modifier",
-        "deactivate": "Désactiver",
-        "reactivate": "Réactiver",
+        "deactivate": "Fermer",
+        "reactivate": "Ouvrir",
         "viewAlerts": "Voir les alertes",
         "viewDeliveries": "Voir les livraisons",
         "viewLeaks": "Voir les fuites"
       },
-      "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
-      "confirmReactivate": "Réactiver cette station ?",
+      "confirmDeactivate": "Fermer cette station ? L'historique reste consultable.",
+      "confirmReactivate": "Ouvrir cette station ?",
       "footer": {
         "networkTotal": "Total réseau"
       }
@@ -1462,10 +1503,13 @@
       "nameHint": "Nom affiché dans toute l'application (liste, détail, rapports)",
       "code": "Code",
       "codeHint": "Identifiant court, unique dans votre réseau (ex. STA-01)",
+      "country": "Pays",
+      "countryHint": "Détermine la liste des villes proposées, la devise et le fuseau horaire par défaut de la station",
+      "countrySelectPlaceholder": "Sélectionner un pays",
       "city": "Ville",
-      "cityHint": "Détermine la devise native de la station et son fuseau horaire",
+      "cityHint": "Filtrée selon le pays sélectionné ci-dessus — affine la devise native de la station",
       "citySelectPlaceholder": "Sélectionner une ville",
-      "resolvedCurrency": "Devise de cette station : {code} (déduite du pays de la ville sélectionnée)",
+      "resolvedCurrency": "Devise de cette station : {code} (déduite automatiquement, modifiable ci-dessous)",
       "currencyOverride": "Dérogation de devise",
       "currencyOverrideHint": "Ne remplir que si cette station facture dans une devise différente de celle de son pays (ex. station frontalière). Laisser vide pour hériter automatiquement de la ville.",
       "currencyOverrideNone": "Aucune — hériter de la ville",
@@ -1475,11 +1519,14 @@
       "longitude": "Longitude",
       "coordinatesHint": "Position GPS de la station, facultative (utile pour la carte réseau)",
       "timezone": "Fuseau horaire",
-      "timezoneHint": "Utilisé pour horodater les mesures et rapports de cette station",
+      "timezoneHint": "Pré-rempli selon le pays sélectionné, modifiable — utilisé pour horodater les mesures et rapports de cette station",
+      "timezoneSelectPlaceholder": "Sélectionner un fuseau horaire",
       "phone": "Téléphone",
       "email": "Email",
       "openingTime": "Heure d'ouverture",
       "closingTime": "Heure de fermeture",
+      "customWeeklyHours": "Personnaliser les horaires jour par jour",
+      "dayClosed": "Fermé",
       "is24h": "Ouverte 24h/24",
       "is24hHint": "Si coché, les heures d'ouverture/fermeture ci-dessus sont ignorées",
       "closedWeekdays": "Jours de fermeture hebdomadaire",
@@ -1515,7 +1562,8 @@
       "delivery_declaration_pending": "Déclaration en attente de confirmation",
       "price_missing": "Prix de vente manquant",
       "sensor_mapping_missing": "Sonde non associée",
-      "calibration_missing": "Barème de calibration manquant"
+      "calibration_missing": "Barème de calibration manquant",
+      "station_offline": "Silence complet — aucune cuve ne transmet"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -1588,8 +1636,8 @@
       "leaks": "Fuites",
       "edit": "Modifier",
       "configuration": "Configuration",
-      "deactivate": "Désactiver",
-      "reactivate": "Réactiver"
+      "deactivate": "Fermer",
+      "reactivate": "Ouvrir"
     },
     "status": {
       "online": "En ligne",
@@ -1643,7 +1691,12 @@
       "compliance": "Conformité",
       "regulation": "Réglementation",
       "atg": "ATG",
-      "administration": "Administration"
+      "administration": "Administration",
+      "sales": "Ventes"
+    },
+    "sales": {
+      "sourceNote": "Source affichée : baisse en cuve (même principe que la caisse du jour, appliqué à l'ensemble de la station). Les ventes remontées par les pompes et les déclarations humaines ne sont pas encore intégrées à cet onglet.",
+      "byTankDrawdown": "Détail par produit et par cuve"
     },
     "tanksSection": {
       "title": "Cuves de la station",
@@ -1681,13 +1734,23 @@
       "tankHeight": "Hauteur physique de la cuve",
       "height": "Hauteur",
       "volume": "Volume",
-      "upload": "+ Charger la table",
-      "replace": "Remplacer la table"
+      "upload": "Importer CSV",
+      "replace": "Remplacer (CSV)",
+      "importXlsx": "Importer Excel (.xlsx)",
+      "editManually": "Saisie manuelle",
+      "export": "Exporter",
+      "addRow": "Ajouter une ligne",
+      "removeRow": "Supprimer cette ligne"
     },
     "columns": {
       "alerts": {
         "title": "Alertes ({count})",
-        "empty": "Aucune alerte pour cette station"
+        "empty": "Aucune alerte pour cette station",
+        "stationOfflineMessage": "Bonjour, la station {station} ne transmet plus aucune donnée depuis un moment. Pouvez-vous nous indiquer l'origine de la coupure ?",
+        "noPhone": "Aucun téléphone renseigné pour cette station",
+        "call": "Appeler",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
       },
       "deliveries": {
         "title": "Livraisons récentes ({count})",
@@ -1705,8 +1768,8 @@
     "editModal": {
       "title": "Modifier la station"
     },
-    "confirmDeactivate": "Désactiver cette station ? L'historique reste consultable.",
-    "confirmReactivate": "Réactiver cette station ?",
+    "confirmDeactivate": "Fermer cette station ? L'historique reste consultable.",
+    "confirmReactivate": "Ouvrir cette station ?",
     "parts": {
       "unavailable": {
         "title": "Non visible pour votre rôle",
@@ -1979,6 +2042,7 @@
       "suppliers": "Fournisseurs",
       "financial": "Finances",
       "history": "Historique",
+      "shop": "Boutique",
       "tanksLink": "Cuves & stockage →"
     },
     "operations": {
@@ -2315,6 +2379,15 @@
         "assignedStation": "Station affectée",
         "contractType": "Type de contrat",
         "accessTitle": "Accès & permissions",
+        "changeRole": "Changer le rôle",
+        "selectRole": "Sélectionner un rôle",
+        "changeRoleWarning": "Ce changement remplace immédiatement les droits actuels de cette personne sur cette station.",
+        "confirmChangeRole": "Confirmer le changement de rôle",
+        "securityTitle": "Sécurité",
+        "resetPassword": "Réinitialiser le mot de passe",
+        "resetPasswordWarning": "Un nouveau mot de passe temporaire sera généré et l'ancien cessera immédiatement de fonctionner.",
+        "confirmResetPassword": "Confirmer la réinitialisation",
+        "passwordWarning": "Notez ce mot de passe maintenant — il ne sera plus jamais affiché.",
         "activityTitle": "Activité récente",
         "noActivity": "Aucune activité récente.",
         "deactivate": "Désactiver l'accès"
@@ -2408,11 +2481,11 @@
       }
     },
     "figures": {
-      "volume": "Volume mesuré",
+      "volume": "Niveau carburant",
       "capacity": "Capacité totale",
       "fillRate": "Remplissage",
       "sellable": "Volume vendable",
-      "water": "Eau détectée",
+      "water": "Niveau eau",
       "available": "Espace disponible",
       "temperature": "Température",
       "coverage": "Couverture estimée",
@@ -2479,7 +2552,21 @@
         "3": "3 jours",
         "1": "24 heures"
       },
-      "waterTempNote": "L'évolution de l'eau et de la température dans le temps n'est pas encore disponible dans Zylo Liquid : seule la valeur instantanée est affichée aujourd'hui (onglet Jauge & composition)."
+      "waterTempNote": "L'évolution de l'eau et de la température dans le temps n'est pas encore disponible dans Zylo Liquid : seule la valeur instantanée est affichée aujourd'hui (onglet Jauge & composition).",
+      "table": {
+        "title": "Historique détaillé des mesures",
+        "empty": "Aucune mesure enregistrée",
+        "columns": {
+          "measuredAt": "Horodatage",
+          "rawValue": "Valeur brute",
+          "volume": "Volume",
+          "correction": "Correction"
+        },
+        "correctionYes": "Correction manuelle",
+        "pageInfo": "{from}–{to} sur {total}",
+        "previous": "Précédent",
+        "next": "Suivant"
+      }
     },
     "gaugingNote": "Le jaugeage manuel de contrôle n'est pas encore disponible dans Zylo Liquid.",
     "alerts": {
@@ -2514,7 +2601,7 @@
       }
     },
     "actions": {
-      "editThresholds": "Modifier les seuils",
+      "editTank": "Modifier la cuve",
       "calibration": "Calibration",
       "sensor": "Capteur"
     },
@@ -2562,6 +2649,7 @@
   },
   "addTank": {
     "title": "Ajouter une cuve",
+    "editTankTitle": "Modifier la cuve",
     "submit": "Créer la cuve",
     "sections": {
       "basics": "Informations de base",
@@ -2584,7 +2672,7 @@
     "thresholdLow": "Alarme bas",
     "thresholdWater": "Alarme eau",
     "sensorSerial": "Numéro de série de la sonde",
-    "sensorSerialHint": "Numéro de série physique — facultatif, associable plus tard",
+    "sensorSerialHint": "Identifie la sonde Holykell physique installée dans la cuve — c'est ce numéro qui permet au système de savoir à quelle cuve rattacher les mesures reçues de cette sonde. Facultatif à la création, associable plus tard une fois la sonde posée.",
     "measurementType": "Type de mesure",
     "measurementTypes": {
       "productLevel": "Niveau carburant",

@@ -8,6 +8,7 @@ import { Badge, Button, Modal } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 
 export interface ProductFilter {
   /** null = vue "Total réseau", tous produits confondus. */
@@ -63,11 +64,18 @@ export function ProductBreakdownModal({
 
   const groups: StationGroup[] = [];
   for (const station of stations) {
+    // Une station désactivée ne doit jamais être comptée comme "vendant" le
+    // produit, même si une cuve active y reste configurée — sinon ce
+    // comptage diverge de `stationCount` de la carte qui ouvre cette modale
+    // (celle-ci n'agrège que les stations actives, voir useStationsList.ts)
+    // et affiche un nombre de stations trop élevé (P0-4, audit module
+    // Stations 2026-09-16).
+    if (station.status !== "active") continue;
     const tanksForStation = relevantTanks.filter((tank) => tank.stationId === station.id);
     if (tanksForStation.length === 0) continue;
 
     const state = stationStates[station.id];
-    const online = (state?.tanks ?? []).some((ts) => ts.sensorStatus === "online");
+    const { online } = computeStationOnlineStatus(state?.tanks ?? []);
 
     const rows: TankRow[] = tanksForStation.map((tank) => {
       const tankState = state?.tanks.find((ts) => ts.tankId === tank.id);

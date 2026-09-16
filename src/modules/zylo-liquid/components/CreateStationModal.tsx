@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ApiError } from "@/core/api/client";
@@ -11,17 +11,23 @@ import {
   createTank,
   createTankSensorMapping,
   listCities,
+  listCountries,
   listCurrencies,
   listFuelProducts,
   replaceTankCalibrationPoints,
   updateStation,
   type City,
+  type Country,
   type Currency,
   type FuelProduct,
   type Station,
+  type WeeklyHours,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { cn } from "@/shared/lib/cn";
 import { Alert, Button, Checkbox, FormField, Input, Modal, Select } from "@/shared/ui";
+
+import { generateCode } from "@/modules/zylo-liquid/utils/generateCode";
+import { listIanaTimezones } from "@/modules/zylo-liquid/utils/timezones";
 
 import { createEmptyTankFieldsState, isTankFieldsStateValid, TankFieldsSection, type TankFieldsState } from "./TankFieldsSection";
 
@@ -46,6 +52,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [countryId, setCountryId] = useState("");
   const [cityId, setCityId] = useState("");
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("");
@@ -57,17 +64,30 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   const [closingTime, setClosingTime] = useState("22:00");
   const [is24h, setIs24h] = useState(false);
   const [closedWeekdays, setClosedWeekdays] = useState<number[]>([]);
+  // Horaires personnalisés jour par jour (P2 §5.3, audit module Stations
+  // 2026-09-16) — bascule explicite entre le mode générique existant
+  // (openingTime/closingTime/closedWeekdays, inchangé) et un mode par jour ;
+  // jamais les deux combinés, jamais une resynchronisation automatique de
+  // l'un vers l'autre.
+  const [useCustomWeeklyHours, setUseCustomWeeklyHours] = useState(false);
+  const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>({});
   const [notes, setNotes] = useState("");
   const [currencyOverrideId, setCurrencyOverrideId] = useState("");
   const [tanks, setTanks] = useState<TankFieldsState[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Le pays n'est pré-rempli automatiquement (timezone, devise) que tant que
+  // l'utilisateur ne l'a pas modifié lui-même — sinon changer de pays
+  // écraserait systématiquement un fuseau déjà ajusté à la main (P1-1/P1-2,
+  // audit module Stations 2026-09-16).
+  const [timezoneTouched, setTimezoneTouched] = useState(false);
 
   useEffect(() => {
     if (open && station) {
       setName(station.name);
       setCode(station.code);
       setCityId(station.cityId ?? "");
+      setTimezoneTouched(true);
       setAddress(station.address ?? "");
       setLatitude(station.latitude !== null ? String(station.latitude) : "");
       setLongitude(station.longitude !== null ? String(station.longitude) : "");
@@ -78,6 +98,8 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
       setClosingTime(station.closingTime || "22:00");
       setIs24h(station.is24h);
       setClosedWeekdays(station.closedWeekdays ? station.closedWeekdays.split(",").map(Number) : []);
+      setUseCustomWeeklyHours(!!station.weeklyHours);
+      setWeeklyHours(station.weeklyHours ?? {});
       setNotes(station.notes ?? "");
       setCurrencyOverrideId(station.currencyOverrideId ?? "");
     }
@@ -96,6 +118,12 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     enabled: open,
     staleTime: 5 * 60 * 1000,
   });
+  const countriesQuery = useQuery({
+    queryKey: ["zylo-liquid", "countries", organizationId],
+    queryFn: () => listCountries(organizationId, { limit: 300 }),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
   const fuelProductsQuery = useQuery({
     queryKey: ["zylo-liquid", "fuel-products", organizationId],
     queryFn: () => listFuelProducts(organizationId),
@@ -110,12 +138,25 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
   });
 
   const cities: City[] = citiesQuery.data?.data ?? [];
+  const countries: Country[] = countriesQuery.data?.data ?? [];
   const fuelProducts: FuelProduct[] = (fuelProductsQuery.data?.data ?? []).filter((p) => p.active !== false);
   const currencies: Currency[] = currenciesQuery.data?.data ?? [];
+
+  // Édition : `Station` n'a pas de `countryId` propre (seulement `cityId`),
+  // le pays est donc dérivé de la ville une fois le référentiel villes
+  // chargé — jamais avant, pour ne pas réinitialiser un pays déjà choisi
+  // par l'utilisateur pendant la même session de la modale.
+  useEffect(() => {
+    if (open && station && station.cityId && cities.length > 0 && !countryId) {
+      const city = cities.find((c) => c.id === station.cityId);
+      if (city) setCountryId(city.countryId);
+    }
+  }, [open, station, cities, countryId]);
 
   function reset() {
     setName("");
     setCode("");
+    setCountryId("");
     setCityId("");
     setAddress("");
     setLatitude("");
@@ -127,20 +168,43 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
     setClosingTime("22:00");
     setIs24h(false);
     setClosedWeekdays([]);
+    setUseCustomWeeklyHours(false);
+    setWeeklyHours({});
     setNotes("");
     setCurrencyOverrideId("");
+    setTimezoneTouched(false);
     setTanks([]);
     setError(null);
   }
 
+  const timezoneOptions = useMemo(() => listIanaTimezones(), []);
   const selectedCity = cities.find((c) => c.id === cityId);
+  const selectedCountry = countries.find((c) => c.id === countryId);
+  // Ville filtrée par pays sélectionné (P1-1, audit module Stations
+  // 2026-09-16 : le pays manquait alors que la ville en dépend directement).
+  // Aucun pays choisi = toutes les villes, comme avant ce correctif.
+  const citiesForCountry = countryId ? cities.filter((c) => c.countryId === countryId) : cities;
+
+  function handleCountryChange(nextCountryId: string) {
+    setCountryId(nextCountryId);
+    if (cityId && !cities.some((c) => c.id === cityId && c.countryId === nextCountryId)) {
+      setCityId("");
+    }
+    const nextCountry = countries.find((c) => c.id === nextCountryId);
+    if (nextCountry && !timezoneTouched) {
+      setTimezone(nextCountry.defaultTimezone);
+    }
+  }
 
   function tankNumbersExcept(index: number): number[] {
     return tanks.filter((_, i) => i !== index).map((tk) => Number(tk.tankNumber)).filter((n) => Number.isFinite(n));
   }
 
   const tanksValid = tanks.every((tk, i) => isTankFieldsStateValid(tk, tankNumbersExcept(i)));
-  const canSubmit = !!name && (isEdit || !!code) && tanksValid;
+  // Un contrôle de validation renforcé (Pays et Fuseau horaire désormais
+  // obligatoires) : la création aboutissait auparavant même formulaire mal
+  // ou incomplètement renseigné (P1-1, audit module Stations 2026-09-16).
+  const canSubmit = !!name && (isEdit || !!code) && !!countryId && !!timezone && tanksValid;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -160,6 +224,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
         closingTime: is24h ? undefined : closingTime || undefined,
         is24h,
         closedWeekdays: closedWeekdays.length > 0 ? [...closedWeekdays].sort((a, b) => a - b).join(",") : null,
+        weeklyHours: useCustomWeeklyHours && Object.keys(weeklyHours).length > 0 ? weeklyHours : null,
         notes: notes || undefined,
         currencyOverrideId: currencyOverrideId || null,
       };
@@ -244,10 +309,28 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
               </FormField>
               {!isEdit && (
                 <FormField label={t("createModal.code")} required hint={t("createModal.codeHint")}>
-                  {(field) => <Input {...field} value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />}
+                  {(field) => (
+                    <div className="flex gap-2">
+                      <Input {...field} value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setCode(generateCode(name || "STATION", 20))}>
+                        {tCommon("actions.generate")}
+                      </Button>
+                    </div>
+                  )}
                 </FormField>
               )}
             </div>
+
+            <FormField label={t("createModal.country")} required hint={t("createModal.countryHint")}>
+              {(field) => (
+                <Select
+                  {...field}
+                  value={countryId}
+                  onValueChange={handleCountryChange}
+                  options={[{ value: "", label: t("createModal.countrySelectPlaceholder") }, ...countries.map((c) => ({ value: c.id, label: c.name }))]}
+                />
+              )}
+            </FormField>
 
             <FormField label={t("createModal.city")} hint={t("createModal.cityHint")}>
               {(field) => (
@@ -255,12 +338,15 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
                   {...field}
                   value={cityId}
                   onValueChange={setCityId}
-                  options={[{ value: "", label: t("createModal.citySelectPlaceholder") }, ...cities.map((c) => ({ value: c.id, label: `${c.name} (${c.regionName}, ${c.countryName})` }))]}
+                  options={[{ value: "", label: t("createModal.citySelectPlaceholder") }, ...citiesForCountry.map((c) => ({ value: c.id, label: `${c.name} (${c.regionName}, ${c.countryName})` }))]}
                 />
               )}
             </FormField>
             {selectedCity && !currencyOverrideId && (
               <p className="text-caption text-text-muted">{t("createModal.resolvedCurrency", { code: selectedCity.currencyCode })}</p>
+            )}
+            {!selectedCity && selectedCountry && !currencyOverrideId && (
+              <p className="text-caption text-text-muted">{t("createModal.resolvedCurrency", { code: selectedCountry.currencyCode })}</p>
             )}
 
             <FormField label={t("createModal.currencyOverride")} hint={t("createModal.currencyOverrideHint")}>
@@ -287,8 +373,21 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
               </FormField>
             </div>
 
-            <FormField label={t("createModal.timezone")} hint={t("createModal.timezoneHint")}>
-              {(field) => <Input {...field} value={timezone} onChange={(e) => setTimezone(e.target.value)} maxLength={50} placeholder="Africa/Douala" />}
+            <FormField label={t("createModal.timezone")} required hint={t("createModal.timezoneHint")}>
+              {(field) => (
+                <Select
+                  {...field}
+                  value={timezone}
+                  onValueChange={(next) => {
+                    setTimezone(next);
+                    setTimezoneTouched(true);
+                  }}
+                  options={[
+                    { value: "", label: t("createModal.timezoneSelectPlaceholder") },
+                    ...timezoneOptions.map((tz) => ({ value: tz, label: tz })),
+                  ]}
+                />
+              )}
             </FormField>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -300,43 +399,84 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
               </FormField>
             </div>
 
-            <Checkbox label={t("createModal.is24h")} checked={is24h} onChange={(e) => setIs24h(e.target.checked)} />
-            {!is24h && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <FormField label={t("createModal.openingTime")}>
-                  {(field) => <Input {...field} type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} />}
-                </FormField>
-                <FormField label={t("createModal.closingTime")}>
-                  {(field) => <Input {...field} type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />}
-                </FormField>
-              </div>
-            )}
+            <Checkbox
+              label={t("createModal.customWeeklyHours")}
+              checked={useCustomWeeklyHours}
+              onChange={(e) => setUseCustomWeeklyHours(e.target.checked)}
+            />
 
-            <FormField label={t("createModal.closedWeekdays")} hint={t("createModal.closedWeekdaysHint")}>
-              {() => (
-                <div className="flex flex-wrap gap-2">
-                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                    <label
-                      key={day}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm",
-                        closedWeekdays.includes(day) ? "border-primary bg-primary/10 text-primary" : "border-border-subtle text-text-muted"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={closedWeekdays.includes(day)}
-                        onChange={(e) =>
-                          setClosedWeekdays((days) => (e.target.checked ? [...days, day] : days.filter((d) => d !== day)))
-                        }
+            {useCustomWeeklyHours ? (
+              <div className="flex flex-col gap-2">
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                  const key = String(day) as keyof WeeklyHours;
+                  const entry = weeklyHours[key] ?? { open: "06:00", close: "22:00", closed: false };
+                  return (
+                    <div key={day} className="grid grid-cols-[3rem_1fr_1fr_auto] items-center gap-2">
+                      <span className="text-body-sm text-text">{t(`createModal.weekdayShort.${day}`)}</span>
+                      <Input
+                        type="time"
+                        aria-label={t("createModal.openingTime")}
+                        value={entry.open}
+                        disabled={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, open: e.target.value } }))}
                       />
-                      {t(`createModal.weekdayShort.${day}`)}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </FormField>
+                      <Input
+                        type="time"
+                        aria-label={t("createModal.closingTime")}
+                        value={entry.close}
+                        disabled={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, close: e.target.value } }))}
+                      />
+                      <Checkbox
+                        label={t("createModal.dayClosed")}
+                        checked={entry.closed}
+                        onChange={(e) => setWeeklyHours((wh) => ({ ...wh, [key]: { ...entry, closed: e.target.checked } }))}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <>
+                <Checkbox label={t("createModal.is24h")} checked={is24h} onChange={(e) => setIs24h(e.target.checked)} />
+                {!is24h && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <FormField label={t("createModal.openingTime")}>
+                      {(field) => <Input {...field} type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} />}
+                    </FormField>
+                    <FormField label={t("createModal.closingTime")}>
+                      {(field) => <Input {...field} type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />}
+                    </FormField>
+                  </div>
+                )}
+
+                <FormField label={t("createModal.closedWeekdays")} hint={t("createModal.closedWeekdaysHint")}>
+                  {() => (
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                        <label
+                          key={day}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1.5 text-body-sm",
+                            closedWeekdays.includes(day) ? "border-primary bg-primary/10 text-primary" : "border-border-subtle text-text-muted"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={closedWeekdays.includes(day)}
+                            onChange={(e) =>
+                              setClosedWeekdays((days) => (e.target.checked ? [...days, day] : days.filter((d) => d !== day)))
+                            }
+                          />
+                          {t(`createModal.weekdayShort.${day}`)}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </FormField>
+              </>
+            )}
 
             <FormField label={t("createModal.notes")} hint={t("createModal.notesHint")}>
               {(field) => <Input {...field} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />}

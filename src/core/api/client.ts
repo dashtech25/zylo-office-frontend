@@ -97,3 +97,33 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}, is
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
+
+/** Variante de `apiFetch` pour les réponses binaires (export XLSX/DOCX,
+ * etc.) — même logique d'authentification/refresh, mais `response.blob()`
+ * au lieu de `response.json()` qui échouerait sur un corps binaire. */
+export async function apiFetchBlob(path: string, options: RequestOptions = {}, isRetry = false): Promise<Blob> {
+  const headers = new Headers(options.headers);
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (!options.skipAuth) {
+    const token = getAccessToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (options.organizationId) headers.set("X-Organization-Id", options.organizationId);
+
+  const response = await fetch(`${API_URL}/api/v1${path}`, { ...options, headers });
+
+  if (response.status === 401 && !options.skipAuth && !isRetry) {
+    const hadSession = !!getRefreshToken();
+    const refreshed = await tryRefresh();
+    if (refreshed) return apiFetchBlob(path, options, true);
+    clearTokens();
+    if (hadSession) broadcastSessionExpired();
+  }
+
+  if (!response.ok) {
+    throw await parseErrorBody(response);
+  }
+  return response.blob();
+}

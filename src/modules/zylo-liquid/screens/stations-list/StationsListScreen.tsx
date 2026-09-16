@@ -1,15 +1,18 @@
 "use client";
 
-import { Download, Map as MapIcon, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { exportTable } from "@/core/api/exportTable";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Button, Card, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
+import { normalizeSearchText } from "@/modules/zylo-liquid/utils/normalizeSearchText";
+import { cn } from "@/shared/lib/cn";
+import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
@@ -63,12 +66,17 @@ export default function StationsListScreen() {
   const [currencyId, setCurrencyId] = useState("");
   const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapPanelCollapsed, setMapPanelCollapsed] = useState(false);
+  const [focusedStationId, setFocusedStationId] = useState<string | null>(null);
   const [previewStationId, setPreviewStationId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editStation, setEditStation] = useState<StationRow["station"] | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!currencyId && data.currencies.length > 0) setCurrencyId(data.currencies[0].id);
@@ -77,6 +85,7 @@ export default function StationsListScreen() {
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null);
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setExportMenuOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -114,7 +123,7 @@ export default function StationsListScreen() {
       if (badgeAlerts && row.alertsCount === 0) return false;
       if (cityFilter && row.station.cityId !== cityFilter) return false;
       if (productFilter && !row.products.some((p) => p.fuelProductId === productFilter)) return false;
-      if (search.trim() && !row.station.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      if (search.trim() && !normalizeSearchText(row.station.name).includes(normalizeSearchText(search.trim()))) return false;
       return true;
     });
 
@@ -153,8 +162,12 @@ export default function StationsListScreen() {
     setSearch("");
   }
 
-  function handleExport() {
-    const header = [t("list.columns.station"), "Ville", t("list.columns.status"), t("list.columns.stockByProduct"), t("list.columns.totalValue"), t("list.columns.sync")];
+  // Extrait pour être réutilisé par les 3 formats d'export (P1-3, audit
+  // module Stations 2026-09-16 : l'export était limité au CSV) — même
+  // construction de lignes, seul le rendu final (CSV côté client, XLSX/DOCX
+  // via le backend) diffère selon le format choisi.
+  function buildExportTable(): { headers: string[]; rows: string[][] } {
+    const headers = [t("list.columns.station"), "Ville", t("list.columns.status"), t("list.columns.stockByProduct"), t("list.columns.totalValue"), t("list.columns.sync")];
     const rows = filteredRows.map((row) => [
       row.station.name,
       row.station.cityId ? (cityById.get(row.station.cityId)?.name ?? "") : "",
@@ -163,7 +176,23 @@ export default function StationsListScreen() {
       row.totalValue !== null && row.totalCurrencyCode ? (formatMoney(row.totalValue, row.totalCurrencyCode) ?? `${row.totalValue} ${row.totalCurrencyCode}`) : t("list.row.valueNotCalculable"),
       row.lastMeasurementAt ? format.dateTime(new Date(row.lastMeasurementAt)) : t("list.row.syncOffline"),
     ]);
-    downloadCsv("stations.csv", [header, ...rows]);
+    return { headers, rows };
+  }
+
+  async function handleExport(exportFormat: "csv" | "xlsx" | "docx") {
+    setExportMenuOpen(false);
+    const { headers, rows } = buildExportTable();
+    if (exportFormat === "csv") {
+      downloadCsv("stations.csv", [headers, ...rows]);
+      return;
+    }
+    if (!currentOrganization) return;
+    setExporting(true);
+    try {
+      await exportTable(exportFormat, "stations", headers, rows, currentOrganization.id);
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleToggleStatus(row: StationRow) {
@@ -193,8 +222,23 @@ export default function StationsListScreen() {
       string,
       { name: string; color: string | null; volume: number; capacity: number; stationIds: Set<string>; monetary: number; sellableVolume: number; sellableMonetary: number; currencies: Set<string> }
     >();
+    // Toujours une entrée par produit ACTIF du catalogue de l'organisation,
+    // même sans aucune cuve qui le vend — sinon un produit sans station
+    // (ex. "Pétrole") n'obtient jamais de carte du tout (P0-2, audit module
+    // Stations 2026-09-16) au lieu d'une carte à 0.
+    for (const product of data.fuelProducts) {
+      if (!product.active) continue;
+      byProduct.set(product.id, { name: product.name, color: product.displayColor, volume: 0, capacity: 0, stationIds: new Set<string>(), monetary: 0, sellableVolume: 0, sellableMonetary: 0, currencies: new Set<string>() });
+    }
     for (const row of filteredRows) {
       for (const p of row.products) {
+        // Un filtre produit actif ne doit pas seulement retenir/exclure des
+        // stations entières : il doit aussi restreindre QUELS produits de
+        // ces stations sont comptés, sinon une station qui vend Gasoil ET
+        // Super continue d'alimenter la carte Super même filtrée sur Gasoil
+        // (P0-3, audit module Stations 2026-09-16 — "le filtre n'a aucun
+        // effet visible sur les cartes").
+        if (productFilter && p.fuelProductId !== productFilter) continue;
         const entry =
           byProduct.get(p.fuelProductId) ??
           { name: p.fuelProductName, color: p.displayColor, volume: 0, capacity: 0, stationIds: new Set<string>(), monetary: 0, sellableVolume: 0, sellableMonetary: 0, currencies: new Set<string>() };
@@ -222,7 +266,7 @@ export default function StationsListScreen() {
       sellableVolumeLiters: e.sellableVolume,
       sellableMonetaryValue: e.currencies.size === 1 ? e.sellableMonetary : null,
     }));
-  }, [filteredRows]);
+  }, [filteredRows, data.fuelProducts, productFilter]);
 
   // Bandeau de fiabilité (« double vérité » du prototype, prototype.html
   // bandeauFiabilite() ~ligne 3001) : une station entière est jugée "hors
@@ -282,10 +326,17 @@ export default function StationsListScreen() {
                 <Select aria-label={t("list.currency")} value={currencyId} onValueChange={setCurrencyId} options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />
               </div>
             )}
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="size-4" aria-hidden />
-              {t("list.export")}
-            </Button>
+            <div ref={exportMenuRef} className="relative">
+              <Button variant="outline" size="sm" onClick={() => setExportMenuOpen((v) => !v)} loading={exporting}>
+                <Download className="size-4" aria-hidden />
+                {t("list.export")}
+              </Button>
+              <DropdownMenu open={exportMenuOpen}>
+                <DropdownMenuItem onClick={() => handleExport("csv")}>{t("list.exportFormat.csv")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("xlsx")}>{t("list.exportFormat.xlsx")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("docx")}>{t("list.exportFormat.docx")}</DropdownMenuItem>
+              </DropdownMenu>
+            </div>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" aria-hidden />
               {t("list.add")}
@@ -325,8 +376,12 @@ export default function StationsListScreen() {
         </Alert>
       )}
 
-      {/* Cartes de synthèse réseau — dépendent des lignes filtrées, donc de
-          `data.loading`. */}
+      {/* Cartes de synthèse réseau — toujours affichées dès que le
+          catalogue a au moins un produit actif (`networkProducts` n'est
+          plus jamais vide, voir son useMemo) : un filtre qui ne retient
+          aucune station affiche des cartes à 0, jamais une section vide
+          (P0-3, audit module Stations 2026-09-16 — "toutes les cartes
+          disparaissent" en filtrant sur un produit sans station). */}
       {data.loading ? (
         <section>
           <Skeleton className="mb-3 h-6 w-48" />
@@ -337,7 +392,7 @@ export default function StationsListScreen() {
           </div>
         </section>
       ) : (
-        filteredRows.length > 0 && (
+        networkProducts.length > 0 && (
           <NetworkStockSummaryCards
             products={networkProducts}
             totalVolumeLiters={networkVolumeLiters}
@@ -398,21 +453,66 @@ export default function StationsListScreen() {
           <Card>
             <StationsFilterBar {...filterBarProps} />
           </Card>
-          <StationsMap
-            height={640}
-            onStationClick={setPreviewStationId}
-            stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
-              id: r.station.id,
-              name: r.station.name,
-              latitude: r.station.latitude as number,
-              longitude: r.station.longitude as number,
-              status: r.state,
-              popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
-                sellable: formatVolume(r.totalSellableVolumeLiters),
-                available: formatVolume(r.totalVolumeLiters),
-              }),
-            }))}
-          />
+          {/* Panneau liste + carte synchronisés (P1-4, audit module Stations
+             2026-09-16) : la liste réutilise `filteredRows`, donc les mêmes
+             filtres que le reste de la page ; cliquer une ligne zoome la
+             carte dessus (StationsMap.focusStationId) au lieu de rouvrir un
+             modal d'aperçu, pour rester dans le flux liste↔carte. */}
+          <div className="flex gap-3">
+            {mapPanelCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setMapPanelCollapsed(false)}
+                aria-label={t("list.map.expandPanel")}
+                className="flex h-fit items-center rounded-card border border-border-subtle p-2 text-text-muted hover:bg-surface-muted"
+              >
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            ) : (
+              <div className="flex w-64 shrink-0 flex-col gap-2 rounded-card border border-border-subtle" style={{ height: 640 }}>
+                <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
+                  <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
+                  <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
+                    <ChevronLeft className="size-4" aria-hidden />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-1 pb-2">
+                  {filteredRows.map((row) => (
+                    <button
+                      key={row.station.id}
+                      type="button"
+                      onClick={() => setFocusedStationId(row.station.id)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-button px-2 py-2 text-left text-body-sm hover:bg-surface-muted",
+                        focusedStationId === row.station.id && "bg-surface-muted font-medium"
+                      )}
+                    >
+                      <StatusDot state={row.state} />
+                      <span className="truncate">{row.station.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex-1">
+              <StationsMap
+                height={640}
+                onStationClick={setPreviewStationId}
+                focusStationId={focusedStationId}
+                stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+                  id: r.station.id,
+                  name: r.station.name,
+                  latitude: r.station.latitude as number,
+                  longitude: r.station.longitude as number,
+                  status: r.state,
+                  popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
+                    sellable: formatVolume(r.totalSellableVolumeLiters),
+                    available: formatVolume(r.totalVolumeLiters),
+                  }),
+                }))}
+              />
+            </div>
+          </div>
         </Stack>
       </Modal>
 

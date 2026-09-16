@@ -191,6 +191,8 @@
     "reasons": {
       "no_calibration_table": "Tank not calibrated — volume not calculable.",
       "no_applicable_price": "No sale price configured for this period.",
+      "price_currency_mismatch": "A network default price exists, but in a different currency than the station's — check the station's currency or the price entered.",
+      "volume_not_calculable": "Volume not calculable — stock value unavailable.",
       "mixed_currencies": "Different currencies mixed — not addable.",
       "incomplete_pricing": "Incomplete pricing on at least one contributing tank.",
       "insufficient_data": "No usable measurement for this period."
@@ -310,7 +312,34 @@
       "networkDefaultHint": "Applies to any station that has no price of its own for this product — a station with an existing price keeps its own.",
       "networkDefaultBadge": "Network (default)",
       "historyTitle": "Price history",
-      "historySubtitle": "Most recent rows, across all stations and products",
+      "historySubtitle": "Most recent rows (recent window, editable) — to reach a specific date, see \"Search by date\" below.",
+      "history": {
+        "show": "Search history by date",
+        "hide": "Hide date search",
+        "title": "Search full history",
+        "subtitle": "Filter by station, product and date range — browses the entire recorded history, not just the most recent rows (read-only, for audit).",
+        "station": "Station",
+        "allStations": "All stations",
+        "product": "Product",
+        "allProducts": "All products",
+        "fromDate": "From",
+        "toDate": "To",
+        "error": "Could not load price history.",
+        "empty": "No price for this period/these filters.",
+        "networkDefault": "Network (default)",
+        "unknownAuthor": "Unknown author",
+        "columns": {
+          "effectiveFrom": "Effective from",
+          "station": "Station",
+          "product": "Product",
+          "price": "Price",
+          "reason": "Reason",
+          "author": "Recorded by"
+        },
+        "pageInfo": "{from}–{to} of {total}",
+        "previous": "Previous",
+        "next": "Next"
+      },
       "columns": {
         "station": "Station",
         "product": "Product",
@@ -378,12 +407,15 @@
     "fuelCatalog": {
       "banner": "The catalog is shared across the whole network. A fuel product is never deleted — it is removed from the catalog, which preserves all history.",
       "title": "Products",
+      "empty": "No fuel product in the catalog.",
+      "statusColumn": "Status",
       "statusActive": "In catalog",
       "statusInactive": "Removed",
       "name": "Name",
       "code": "Code",
       "codeHint": "The code is the product's database key: it cannot be changed.",
       "density": "Density (g/cm³)",
+      "densityHint": "Reference field, informational only — not used today in any Zylo Liquid calculation (volume corrected to 15°C relies on the thermal expansion coefficient, not density).",
       "color": "Display color",
       "colorReserved": "This shade of red is reserved for system alerts — pick another color.",
       "activeTanks": "Tanks in service",
@@ -394,6 +426,7 @@
       "save": "Save",
       "deactivate": "Remove from catalog",
       "reactivate": "Restore to catalog",
+      "deactivateHint": "Stays visible here (history kept) but is no longer offered as a product choice when creating/editing a tank.",
       "addTitle": "Add a fuel product",
       "addSubtitle": "Writes a row to your organization's fuel reference data.",
       "namePlaceholder": "Premium diesel",
@@ -1361,6 +1394,11 @@
       "pageSubtitle": "{count} stations total",
       "print": "Print",
       "export": "Export",
+      "exportFormat": {
+        "csv": "CSV",
+        "xlsx": "Excel (.xlsx)",
+        "docx": "Word (.docx)"
+      },
       "add": "Add a station",
       "filterAll": "All",
       "searchPlaceholder": "Search a station...",
@@ -1376,7 +1414,10 @@
       "map": {
         "title": "Network footprint",
         "subtitle": "Click a marker to open the station",
-        "open": "View the map"
+        "open": "View the map",
+        "panelTitle": "{count} stations",
+        "expandPanel": "Show the station list",
+        "collapsePanel": "Collapse the station list"
       },
       "synthesis": {
         "title": "Summary",
@@ -1444,14 +1485,14 @@
       "menu": {
         "viewDetail": "View detail",
         "edit": "Edit",
-        "deactivate": "Deactivate",
-        "reactivate": "Reactivate",
+        "deactivate": "Close",
+        "reactivate": "Open",
         "viewAlerts": "View alerts",
         "viewDeliveries": "View deliveries",
         "viewLeaks": "View leaks"
       },
-      "confirmDeactivate": "Deactivate this station? History remains available.",
-      "confirmReactivate": "Reactivate this station?",
+      "confirmDeactivate": "Close this station? History remains available.",
+      "confirmReactivate": "Open this station?",
       "footer": {
         "networkTotal": "Network total"
       }
@@ -1462,10 +1503,13 @@
       "nameHint": "Name shown across the app (list, detail, reports)",
       "code": "Code",
       "codeHint": "Short identifier, unique in your network (e.g. STA-01)",
+      "country": "Country",
+      "countryHint": "Determines the list of cities offered, and the station's default currency and timezone",
+      "countrySelectPlaceholder": "Select a country",
       "city": "City",
-      "cityHint": "Determines the station's native currency and timezone",
+      "cityHint": "Filtered by the country selected above — refines the station's native currency",
       "citySelectPlaceholder": "Select a city",
-      "resolvedCurrency": "This station's currency: {code} (derived from the selected city's country)",
+      "resolvedCurrency": "This station's currency: {code} (auto-derived, editable below)",
       "currencyOverride": "Currency override",
       "currencyOverrideHint": "Fill in only if this station bills in a different currency than its country (e.g. a border station). Leave empty to inherit automatically from the city.",
       "currencyOverrideNone": "None — inherit from city",
@@ -1475,11 +1519,14 @@
       "longitude": "Longitude",
       "coordinatesHint": "GPS position of the station, optional (used on the network map)",
       "timezone": "Timezone",
-      "timezoneHint": "Used to timestamp this station's readings and reports",
+      "timezoneHint": "Pre-filled from the selected country, editable — used to timestamp this station's readings and reports",
+      "timezoneSelectPlaceholder": "Select a timezone",
       "phone": "Phone",
       "email": "Email",
       "openingTime": "Opening time",
       "closingTime": "Closing time",
+      "customWeeklyHours": "Customize hours per day",
+      "dayClosed": "Closed",
       "is24h": "Open 24/7",
       "is24hHint": "When checked, the opening/closing times above are ignored",
       "closedWeekdays": "Weekly closing days",
@@ -1515,7 +1562,8 @@
       "delivery_declaration_pending": "Declaration awaiting confirmation",
       "price_missing": "Missing sale price",
       "sensor_mapping_missing": "Sensor not mapped",
-      "calibration_missing": "Missing calibration chart"
+      "calibration_missing": "Missing calibration chart",
+      "station_offline": "Total silence — no tank reporting"
     },
     "page": {
       "title": "Alert center",
@@ -1588,8 +1636,8 @@
       "leaks": "Leaks",
       "edit": "Edit",
       "configuration": "Configuration",
-      "deactivate": "Deactivate",
-      "reactivate": "Reactivate"
+      "deactivate": "Close",
+      "reactivate": "Open"
     },
     "status": {
       "online": "Online",
@@ -1643,7 +1691,12 @@
       "compliance": "Compliance",
       "regulation": "Regulation",
       "atg": "ATG",
-      "administration": "Administration"
+      "administration": "Administration",
+      "sales": "Sales"
+    },
+    "sales": {
+      "sourceNote": "Shown source: tank drawdown (same principle as the daily cash till, applied to the whole station). Pump-reported sales and human declarations are not yet integrated into this tab.",
+      "byTankDrawdown": "Breakdown by product and tank"
     },
     "tanksSection": {
       "title": "Station tanks",
@@ -1681,13 +1734,23 @@
       "tankHeight": "Tank physical height",
       "height": "Height",
       "volume": "Volume",
-      "upload": "+ Load table",
-      "replace": "Replace table"
+      "upload": "Import CSV",
+      "replace": "Replace (CSV)",
+      "importXlsx": "Import Excel (.xlsx)",
+      "editManually": "Manual entry",
+      "export": "Export",
+      "addRow": "Add a row",
+      "removeRow": "Remove this row"
     },
     "columns": {
       "alerts": {
         "title": "Alerts ({count})",
-        "empty": "No alert for this station"
+        "empty": "No alert for this station",
+        "stationOfflineMessage": "Hello, station {station} has stopped sending any data for a while. Can you tell us what caused the outage?",
+        "noPhone": "No phone number on file for this station",
+        "call": "Call",
+        "sms": "SMS",
+        "whatsapp": "WhatsApp"
       },
       "deliveries": {
         "title": "Recent deliveries ({count})",
@@ -1705,8 +1768,8 @@
     "editModal": {
       "title": "Edit station"
     },
-    "confirmDeactivate": "Deactivate this station? Its history stays available.",
-    "confirmReactivate": "Reactivate this station?",
+    "confirmDeactivate": "Close this station? Its history stays available.",
+    "confirmReactivate": "Open this station?",
     "parts": {
       "unavailable": {
         "title": "Not available for your role",
@@ -1979,6 +2042,7 @@
       "suppliers": "Suppliers",
       "financial": "Finance",
       "history": "History",
+      "shop": "Shop",
       "tanksLink": "Tanks & storage →"
     },
     "operations": {
@@ -2315,6 +2379,15 @@
         "assignedStation": "Assigned station",
         "contractType": "Contract type",
         "accessTitle": "Access & permissions",
+        "changeRole": "Change role",
+        "selectRole": "Select a role",
+        "changeRoleWarning": "This change immediately replaces this person's current access rights on this station.",
+        "confirmChangeRole": "Confirm role change",
+        "securityTitle": "Security",
+        "resetPassword": "Reset password",
+        "resetPasswordWarning": "A new temporary password will be generated and the old one will stop working immediately.",
+        "confirmResetPassword": "Confirm reset",
+        "passwordWarning": "Write down this password now — it will never be shown again.",
         "activityTitle": "Recent activity",
         "noActivity": "No recent activity.",
         "deactivate": "Deactivate access"
@@ -2408,11 +2481,11 @@
       }
     },
     "figures": {
-      "volume": "Measured volume",
+      "volume": "Fuel level",
       "capacity": "Total capacity",
       "fillRate": "Fill rate",
       "sellable": "Sellable volume",
-      "water": "Water detected",
+      "water": "Water level",
       "available": "Available space",
       "temperature": "Temperature",
       "coverage": "Estimated coverage",
@@ -2479,7 +2552,21 @@
         "3": "3 days",
         "1": "24 hours"
       },
-      "waterTempNote": "Water and temperature history over time is not yet available in Zylo Liquid: only the instant value is shown today (Gauge & composition tab)."
+      "waterTempNote": "Water and temperature history over time is not yet available in Zylo Liquid: only the instant value is shown today (Gauge & composition tab).",
+      "table": {
+        "title": "Detailed measurement history",
+        "empty": "No measurements recorded",
+        "columns": {
+          "measuredAt": "Timestamp",
+          "rawValue": "Raw value",
+          "volume": "Volume",
+          "correction": "Correction"
+        },
+        "correctionYes": "Manual correction",
+        "pageInfo": "{from}–{to} of {total}",
+        "previous": "Previous",
+        "next": "Next"
+      }
     },
     "gaugingNote": "Manual control gauging is not yet available in Zylo Liquid.",
     "alerts": {
@@ -2514,7 +2601,7 @@
       }
     },
     "actions": {
-      "editThresholds": "Edit thresholds",
+      "editTank": "Edit tank",
       "calibration": "Calibration",
       "sensor": "Sensor"
     },
@@ -2562,6 +2649,7 @@
   },
   "addTank": {
     "title": "Add a tank",
+    "editTankTitle": "Edit tank",
     "submit": "Create tank",
     "sections": {
       "basics": "Basic information",
@@ -2584,7 +2672,7 @@
     "thresholdLow": "Low alarm",
     "thresholdWater": "Water alarm",
     "sensorSerial": "Sensor serial number",
-    "sensorSerialHint": "Physical serial number — optional, can be associated later",
+    "sensorSerialHint": "Identifies the physical Holykell sensor installed in the tank — this number is how the system knows which tank the readings from that sensor belong to. Optional at creation, can be linked later once the sensor is installed.",
     "measurementType": "Measurement type",
     "measurementTypes": {
       "productLevel": "Fuel level",

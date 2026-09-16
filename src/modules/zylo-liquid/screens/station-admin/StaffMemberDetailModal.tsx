@@ -1,21 +1,36 @@
 "use client";
 
-import { Camera, Check, Mail, UserX } from "lucide-react";
+import { Camera, Check, Copy, Mail, UserX } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 
-import { getRole, type UserRoleAssignment } from "@/core/api/rbac";
+import { getRole, listRoles, type Role, type UserRoleAssignment } from "@/core/api/rbac";
 import { listAuditLogs } from "@/core/api/audit";
-import { deactivateStationStaff, updateStationStaff, type StationStaff } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, FormField, Input, Modal } from "@/shared/ui";
+import {
+  changeStationStaffRole,
+  deactivateStationStaff,
+  resetStationStaffPassword,
+  updateStationStaff,
+  type StationStaff,
+} from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { Alert, Badge, Button, FormField, Input, Modal, Select } from "@/shared/ui";
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 import { domainsGrantedByPermissions, STAFF_PERMISSION_DOMAINS } from "./staffPermissionDomains";
 
 /** Mockup emalioration/personnel/modal detail personnel.png — fiche membre
- * complète : infos personnelles/poste, résumé des accès par domaine
- * (calculé côté frontend depuis les permissions du rôle, jamais un second
- * endroit où stocker un doublon de la vérité RBAC), activité récente
- * (journal d'audit filtré par auteur), désactivation d'accès. */
+ * complète : infos personnelles/poste, gestion des droits (rôle + résumé
+ * des accès par domaine, calculé côté frontend depuis les permissions du
+ * rôle — jamais un second endroit où stocker un doublon de la vérité RBAC),
+ * réinitialisation de mot de passe, activité récente (journal d'audit
+ * filtré par auteur), désactivation d'accès.
+ *
+ * Gestion des droits (2026-09-16) : le rôle est modifiable directement
+ * depuis cette fiche — `changeStationStaffRole`/`resetStationStaffPassword`
+ * contournent volontairement les endpoints RBAC génériques (réservés au
+ * propriétaire d'organisation) en passant par des routes du module Zylo
+ * Liquid scopées à la station (`STATION_STAFF_MANAGE`), avec la même
+ * protection anti-escalade de privilèges qu'à la création d'un membre du
+ * personnel — jamais une case à cocher décorative comme avant. */
 export function StaffMemberDetailModal({
   organizationId,
   staff,
@@ -39,16 +54,22 @@ export function StaffMemberDetailModal({
   const format = useFormatter();
 
   const [reloadKey, setReloadKey] = useState(0);
+  // Id du rôle actuellement affiché — initialisé depuis la prop, mais mis à
+  // jour localement après un changement réussi (la prop `roleAssignment` du
+  // parent peut rester périmée tant que la fiche reste ouverte).
+  const [displayedRoleId, setDisplayedRoleId] = useState(roleAssignment?.id ?? null);
+
   const load = useCallback(async () => {
-    const [role, activityPage] = await Promise.all([
-      roleAssignment ? getRole(organizationId, roleAssignment.id) : Promise.resolve(null),
+    const [role, roles, activityPage] = await Promise.all([
+      displayedRoleId ? getRole(organizationId, displayedRoleId) : Promise.resolve(null),
+      listRoles(organizationId),
       listAuditLogs(organizationId, { actorUserId: staff.userId, limit: 10 }),
     ]);
-    return { role, activity: activityPage.data };
+    return { role, roles, activity: activityPage.data };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, staff.userId, roleAssignment?.id, reloadKey]);
+  }, [organizationId, staff.userId, displayedRoleId, reloadKey]);
   const state = usePartData(
-    ["zylo-liquid", "station-admin", "staff-member-detail", organizationId, staff.userId, roleAssignment?.id, reloadKey],
+    ["zylo-liquid", "station-admin", "staff-member-detail", organizationId, staff.userId, displayedRoleId, reloadKey],
     load
   );
 
@@ -61,6 +82,19 @@ export function StaffMemberDetailModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+
+  // Changement de rôle.
+  const [roleEditing, setRoleEditing] = useState(false);
+  const [pendingRoleId, setPendingRoleId] = useState("");
+  const [roleSaving, setRoleSaving] = useState(false);
+
+  // Réinitialisation de mot de passe — confirmation à deux temps, puis
+  // affichage du mot de passe temporaire une seule fois (même UI que la
+  // création d'un membre du personnel, `AddStaffMemberModal`).
+  const [resetConfirming, setResetConfirming] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -75,6 +109,45 @@ export function StaffMemberDetailModal({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleChangeRole() {
+    if (!pendingRoleId) return;
+    setRoleSaving(true);
+    setError(null);
+    try {
+      await changeStationStaffRole(organizationId, staff.userId, pendingRoleId);
+      setDisplayedRoleId(pendingRoleId);
+      setRoleEditing(false);
+      onChanged();
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setRoleSaving(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    setResetting(true);
+    setError(null);
+    try {
+      const result = await resetStationStaffPassword(organizationId, staff.userId);
+      setNewPassword(result.temporaryPassword);
+      setResetConfirming(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  function handleCopyPassword() {
+    if (!newPassword) return;
+    navigator.clipboard.writeText(newPassword).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   async function handleDeactivate() {
@@ -107,7 +180,7 @@ export function StaffMemberDetailModal({
           </div>
           <div>
             <h3 className="text-h4 font-semibold text-text">{staff.fullName}</h3>
-            {roleAssignment && <Badge tone="primary" className="mt-1">{roleAssignment.name}</Badge>}
+            {state.status === "ready" && state.data.role && <Badge tone="primary" className="mt-1">{state.data.role.name}</Badge>}
             <p className="mt-1 flex items-center gap-1.5 text-body-sm text-text-muted">
               <span className={staff.status === "active" ? "size-1.5 rounded-full bg-success" : "size-1.5 rounded-full bg-text-muted"} />
               {t(`status.${staff.status}`)}
@@ -139,7 +212,6 @@ export function StaffMemberDetailModal({
             <div>
               <h4 className="mb-2 text-body-sm font-semibold text-text">{t("jobInfoTitle")}</h4>
               <dl className="flex flex-col gap-1.5 text-body-sm">
-                <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("role")}</dt><dd className="text-text">{roleAssignment?.name ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("employeeNumber")}</dt><dd className="text-text">{staff.employeeNumber ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("assignedStation")}</dt><dd className="text-text">{stationName ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("contractType")}</dt><dd className="text-text">{staff.contractType ?? "—"}</dd></div>
@@ -152,18 +224,79 @@ export function StaffMemberDetailModal({
           {state.status === "ready" && (
             <>
               <div>
-                <h4 className="mb-2 text-body-sm font-semibold text-text">{t("accessTitle")}</h4>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {(() => {
-                    const granted = state.data.role ? domainsGrantedByPermissions(state.data.role.permissionCodes) : new Set<string>();
-                    return STAFF_PERMISSION_DOMAINS.map((domain) => (
-                      <div key={domain} className="flex items-center gap-1.5 rounded-card border border-border-subtle px-2.5 py-1.5">
-                        {granted.has(domain) ? <Check className="size-3.5 shrink-0 text-success" aria-hidden /> : <span className="size-3.5 shrink-0" />}
-                        <span className="text-caption text-text">{tDomains(domain)}</span>
-                      </div>
-                    ));
-                  })()}
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-body-sm font-semibold text-text">{t("accessTitle")}</h4>
+                  {!roleEditing && (
+                    <button
+                      type="button"
+                      className="text-caption font-medium text-primary hover:underline"
+                      onClick={() => { setPendingRoleId(displayedRoleId ?? ""); setRoleEditing(true); }}
+                    >
+                      {t("changeRole")}
+                    </button>
+                  )}
                 </div>
+
+                {roleEditing ? (
+                  <div className="flex flex-col gap-2 rounded-card border border-border-subtle p-3">
+                    <FormField label={t("role")}>
+                      {() => (
+                        <Select
+                          aria-label={t("role")}
+                          value={pendingRoleId || undefined}
+                          onValueChange={setPendingRoleId}
+                          placeholder={t("selectRole")}
+                          options={state.data.roles.map((r: Role) => ({ value: r.id, label: r.name }))}
+                        />
+                      )}
+                    </FormField>
+                    <Alert tone="warning">{t("changeRoleWarning")}</Alert>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setRoleEditing(false)}>{tCommon("actions.cancel")}</Button>
+                      <Button size="sm" loading={roleSaving} disabled={!pendingRoleId || pendingRoleId === displayedRoleId} onClick={handleChangeRole}>
+                        {t("confirmChangeRole")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {(() => {
+                      const granted = state.data.role ? domainsGrantedByPermissions(state.data.role.permissionCodes) : new Set<string>();
+                      return STAFF_PERMISSION_DOMAINS.map((domain) => (
+                        <div key={domain} className="flex items-center gap-1.5 rounded-card border border-border-subtle px-2.5 py-1.5">
+                          {granted.has(domain) ? <Check className="size-3.5 shrink-0 text-success" aria-hidden /> : <span className="size-3.5 shrink-0" />}
+                          <span className="text-caption text-text">{tDomains(domain)}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-body-sm font-semibold text-text">{t("securityTitle")}</h4>
+                {newPassword ? (
+                  <div className="flex flex-col gap-2">
+                    <Alert tone="warning">{t("passwordWarning")}</Alert>
+                    <div className="flex items-center justify-between gap-3 rounded-card border border-border-subtle bg-surface-muted px-4 py-3">
+                      <code className="text-body-md font-semibold tabular-nums text-text">{newPassword}</code>
+                      <button type="button" onClick={handleCopyPassword} className="flex items-center gap-1.5 text-caption font-medium text-primary hover:underline">
+                        {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                        {copied ? tCommon("actions.copied") : tCommon("actions.copy")}
+                      </button>
+                    </div>
+                  </div>
+                ) : resetConfirming ? (
+                  <div className="flex flex-col gap-2 rounded-card border border-border-subtle p-3">
+                    <Alert tone="warning">{t("resetPasswordWarning")}</Alert>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setResetConfirming(false)}>{tCommon("actions.cancel")}</Button>
+                      <Button size="sm" loading={resetting} onClick={handleResetPassword}>{t("confirmResetPassword")}</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setResetConfirming(true)}>{t("resetPassword")}</Button>
+                )}
               </div>
 
               <div>

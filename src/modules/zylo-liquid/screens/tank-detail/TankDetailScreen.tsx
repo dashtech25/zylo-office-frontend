@@ -16,9 +16,10 @@ import { LeaksBrowserModal } from "@/modules/zylo-liquid/components/LeaksBrowser
 import { computeTankVisualData, ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "@/modules/zylo-liquid/components/TankVisual";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { CalibrationModal } from "@/modules/zylo-liquid/components/CalibrationModal";
+import { MeasurementHistoryTable } from "@/modules/zylo-liquid/screens/tank-detail/MeasurementHistoryTable";
 import { ComingSoonTabContent } from "@/modules/zylo-liquid/screens/settings/ComingSoonTabContent";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { EditThresholdsModal } from "./EditThresholdsModal";
+import { EditTankModal } from "./EditTankModal";
 import { useTankDetail } from "./useTankDetail";
 
 // Même permission que celle qui protège déjà la valorisation monétaire du
@@ -193,7 +194,7 @@ export default function TankDetailScreen() {
           <div className="flex flex-wrap gap-2 no-print">
             <Button variant="primary" size="sm" onClick={() => setThresholdsOpen(true)}>
               <SlidersHorizontal className="size-4" aria-hidden />
-              {t("actions.editThresholds")}
+              {t("actions.editTank")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setCalibrationOpen(true)}>
               <Gauge className="size-4" aria-hidden />
@@ -367,6 +368,13 @@ export default function TankDetailScreen() {
                   )}
                 </Card>
 
+                {currentOrganization && (
+                  <Card>
+                    <h2 className="mb-3 text-h4 font-semibold text-text">{t("history.table.title")}</h2>
+                    <MeasurementHistoryTable organizationId={currentOrganization.id} tankId={tankId} />
+                  </Card>
+                )}
+
                 <ComingSoonTabContent note={t("history.waterTempNote")} />
 
                 <Card>
@@ -472,7 +480,7 @@ export default function TankDetailScreen() {
                   <InfoRow label={t("technical.thresholdLow")} value={`${Math.round(tank.lowAlarmMm)} mm`} mono />
                   <InfoRow label={t("technical.thresholdWater")} value={`${Math.round(tank.alertWaterMaxMm)} mm`} mono />
                   <Button variant="link" size="inline" className="mt-2" onClick={() => setThresholdsOpen(true)}>
-                    {t("actions.editThresholds")}
+                    {t("actions.editTank")}
                   </Button>
                 </Card>
 
@@ -525,7 +533,7 @@ export default function TankDetailScreen() {
 
       {currentOrganization && (
         <>
-          <EditThresholdsModal organizationId={currentOrganization.id} tank={tank} open={thresholdsOpen} onOpenChange={setThresholdsOpen} onUpdated={data.reload} />
+          <EditTankModal organizationId={currentOrganization.id} tank={tank} open={thresholdsOpen} onOpenChange={setThresholdsOpen} onUpdated={data.reload} />
           <CalibrationModal organizationId={currentOrganization.id} tank={tank} open={calibrationOpen} onOpenChange={setCalibrationOpen} onUpdated={data.reload} />
           <AlertsBrowserModal
             organizationId={currentOrganization.id}

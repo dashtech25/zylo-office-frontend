@@ -1,6 +1,18 @@
 import { apiFetch } from "@/core/api/client";
 import type { Page } from "@/core/api/types";
 
+export interface DayHours {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+/** Horaires personnalisés par jour (P2 §5.3, audit module Stations
+ * 2026-09-16) — clé "1"=lundi.."7"=dimanche. `null`/absent = pas de
+ * personnalisation, openingTime/closingTime/closedWeekdays s'appliquent à
+ * tous les jours ouverts (comportement générique inchangé). */
+export type WeeklyHours = Partial<Record<"1" | "2" | "3" | "4" | "5" | "6" | "7", DayHours>>;
+
 export interface Station {
   id: string;
   organizationId: string;
@@ -19,6 +31,7 @@ export interface Station {
   /** CSV de jours ISO fermés (1=lundi..7=dimanche), ex. "6,7". null = ouvert
    * tous les jours. */
   closedWeekdays: string | null;
+  weeklyHours: WeeklyHours | null;
   notes: string | null;
   status: "active" | "maintenance" | "inactive";
   activeTankCount: number;
@@ -48,6 +61,7 @@ export interface CreateStationInput {
   closingTime?: string;
   is24h?: boolean;
   closedWeekdays?: string | null;
+  weeklyHours?: WeeklyHours | null;
   notes?: string;
   currencyOverrideId?: string | null;
   exploitationType?: string;
@@ -223,7 +237,8 @@ export type AlertType =
   | "price_missing"
   | "sensor_mapping_missing"
   | "calibration_missing"
-  | "truck_stop_unqualified";
+  | "truck_stop_unqualified"
+  | "station_offline";
 
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
@@ -653,6 +668,22 @@ export function listCities(organizationId: string, params: { q?: string; limit?:
   return apiFetch<Page<City>>(`/cities?${search.toString()}`, withOrg(organizationId));
 }
 
+export interface Country {
+  id: string;
+  name: string;
+  isoCode2: string;
+  currencyId: string | null;
+  currencyCode: string;
+  defaultTimezone: string;
+}
+
+export function listCountries(organizationId: string, params: { q?: string; limit?: number } = {}): Promise<Page<Country>> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  search.set("limit", String(params.limit ?? 300));
+  return apiFetch<Page<Country>>(`/countries?${search.toString()}`, withOrg(organizationId));
+}
+
 export interface PriceHistoryEntry {
   id: string;
   /** `null` = prix par défaut réseau, non rattaché à une station précise (audit Configuration carburant P2). */
@@ -680,12 +711,15 @@ export interface CreatePriceHistoryInput {
 
 export function listPrices(
   organizationId: string,
-  params: { stationId?: string; fuelProductId?: string; limit?: number } = {}
+  params: { stationId?: string; fuelProductId?: string; fromDate?: string; toDate?: string; limit?: number; offset?: number } = {}
 ): Promise<Page<PriceHistoryEntry>> {
   const search = new URLSearchParams();
   if (params.stationId) search.set("stationId", params.stationId);
   if (params.fuelProductId) search.set("fuelProductId", params.fuelProductId);
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
   search.set("limit", String(params.limit ?? 50));
+  search.set("offset", String(params.offset ?? 0));
   return apiFetch<Page<PriceHistoryEntry>>(`/zylo-liquid/prices?${search.toString()}`, withOrg(organizationId));
 }
 
@@ -2105,6 +2139,23 @@ export function updateStationStaff(
 
 export function deactivateStationStaff(organizationId: string, userId: string): Promise<StationStaff> {
   return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}/deactivate`, { method: "POST", organizationId });
+}
+
+/** Remplace, pour ce membre du personnel, son rôle scopé à sa station
+ * d'affectation — depuis la fiche Personnel, sans passer par l'écran RBAC
+ * global `/roles/{roleId}` (gestion des droits, 2026-09-16). */
+export function changeStationStaffRole(organizationId: string, userId: string, roleId: string): Promise<StationStaff> {
+  return apiFetch<StationStaff>(`/zylo-liquid/station-staff/${userId}/role`, { method: "PUT", organizationId, body: JSON.stringify({ roleId }) });
+}
+
+export interface ResetStationStaffPasswordResult {
+  /** N'apparaît que dans cette réponse, une seule fois — même contrat que
+   * `CreateStationStaffResult.temporaryPassword`. */
+  temporaryPassword: string;
+}
+
+export function resetStationStaffPassword(organizationId: string, userId: string): Promise<ResetStationStaffPasswordResult> {
+  return apiFetch<ResetStationStaffPasswordResult>(`/zylo-liquid/station-staff/${userId}/reset-password`, { method: "POST", organizationId });
 }
 
 export function listStationStaff(organizationId: string, stationId: string): Promise<StationStaff[]> {

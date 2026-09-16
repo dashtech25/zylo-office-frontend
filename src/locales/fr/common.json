@@ -1,6 +1,7 @@
 {
   "actions": {
     "save": "Enregistrer",
+    "generate": "Générer",
     "cancel": "Annuler",
     "close": "Fermer",
     "next": "Suivant",
