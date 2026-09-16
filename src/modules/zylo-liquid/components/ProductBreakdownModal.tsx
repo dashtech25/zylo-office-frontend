@@ -63,6 +63,13 @@ export function ProductBreakdownModal({
 
   const groups: StationGroup[] = [];
   for (const station of stations) {
+    // Une station désactivée ne doit jamais être comptée comme "vendant" le
+    // produit, même si une cuve active y reste configurée — sinon ce
+    // comptage diverge de `stationCount` de la carte qui ouvre cette modale
+    // (celle-ci n'agrège que les stations actives, voir useStationsList.ts)
+    // et affiche un nombre de stations trop élevé (P0-4, audit module
+    // Stations 2026-09-16).
+    if (station.status !== "active") continue;
     const tanksForStation = relevantTanks.filter((tank) => tank.stationId === station.id);
     if (tanksForStation.length === 0) continue;
 
