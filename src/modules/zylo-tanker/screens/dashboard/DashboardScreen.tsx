@@ -3,7 +3,6 @@
 import {
   Activity,
   AlertTriangle,
-  Anchor,
   Compass,
   Droplets,
   Fuel,
@@ -25,6 +24,7 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { Stack } from "@/shared/ui/Stack";
 import { Tabs } from "@/shared/ui/Tabs";
 
+import { TrucksMap, type TruckMapPoint, type TruckMapStatus } from "@/modules/zylo-liquid/components/TrucksMap";
 import { EChartsTrendChart } from "@/modules/zylo-tanker/components/EChartsTrendChart";
 import {
   MOCK_ALARMS,
@@ -51,6 +51,13 @@ const VESSEL_STATUS_TONE: Record<MockVessel["status"], "success" | "info" | "war
   moored: "info",
   anchored: "warning",
 };
+
+/** Statut navire -> statut générique de `TrucksMap` (moving/stopped/
+ * unknown) — même mapping que SupervisionScreen (dupliqué localement,
+ * fonction pure à 2 branches, pas de partage justifié). */
+function toTruckMapStatus(status: MockVessel["status"]): TruckMapStatus {
+  return status === "underway" ? "moving" : "stopped";
+}
 
 const ALARM_SEVERITY_TONE: Record<MockAlarm["severity"], "error" | "warning" | "info"> = {
   critical: "error",
@@ -162,12 +169,18 @@ function VesselDetail({ vessel }: { vessel: MockVessel }) {
               <p className="tabular-nums mt-1 text-body-md font-semibold text-text">{vessel.speedKnots.toFixed(1)} nds</p>
             </div>
           </div>
-          <div className="flex min-h-[120px] min-w-[160px] flex-col items-center justify-center gap-1 rounded-card border border-dashed border-border-subtle bg-surface-muted p-4 text-center">
-            <Anchor className="size-5 text-text-muted" aria-hidden />
-            <p className="text-caption text-text-muted">Carte non disponible</p>
-            <p className="tabular-nums text-caption font-medium text-text">
-              {vessel.latitude.toFixed(2)}, {vessel.longitude.toFixed(2)}
-            </p>
+          <div className="min-h-[220px] min-w-[240px] overflow-hidden rounded-card">
+            <TrucksMap
+              trucks={MOCK_VESSELS.map((v): TruckMapPoint => ({
+                id: v.id,
+                label: `${v.name} (${v.code})`,
+                latitude: v.latitude,
+                longitude: v.longitude,
+                status: toTruckMapStatus(v.status),
+              }))}
+              selectedTruckId={vessel.id}
+              height={220}
+            />
           </div>
         </CardContent>
       </Card>
