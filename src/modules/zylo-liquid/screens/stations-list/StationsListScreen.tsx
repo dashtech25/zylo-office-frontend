@@ -10,6 +10,7 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
+import { normalizeSearchText } from "@/modules/zylo-liquid/utils/normalizeSearchText";
 import { cn } from "@/shared/lib/cn";
 import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
@@ -122,7 +123,7 @@ export default function StationsListScreen() {
       if (badgeAlerts && row.alertsCount === 0) return false;
       if (cityFilter && row.station.cityId !== cityFilter) return false;
       if (productFilter && !row.products.some((p) => p.fuelProductId === productFilter)) return false;
-      if (search.trim() && !row.station.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      if (search.trim() && !normalizeSearchText(row.station.name).includes(normalizeSearchText(search.trim()))) return false;
       return true;
     });
 
