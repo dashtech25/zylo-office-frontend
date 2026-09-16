@@ -1700,8 +1700,13 @@
       "tankHeight": "Hauteur physique de la cuve",
       "height": "Hauteur",
       "volume": "Volume",
-      "upload": "+ Charger la table",
-      "replace": "Remplacer la table"
+      "upload": "Importer CSV",
+      "replace": "Remplacer (CSV)",
+      "importXlsx": "Importer Excel (.xlsx)",
+      "editManually": "Saisie manuelle",
+      "export": "Exporter",
+      "addRow": "Ajouter une ligne",
+      "removeRow": "Supprimer cette ligne"
     },
     "columns": {
       "alerts": {

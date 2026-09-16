@@ -1700,8 +1700,13 @@
       "tankHeight": "Tank physical height",
       "height": "Height",
       "volume": "Volume",
-      "upload": "+ Load table",
-      "replace": "Replace table"
+      "upload": "Import CSV",
+      "replace": "Replace (CSV)",
+      "importXlsx": "Import Excel (.xlsx)",
+      "editManually": "Manual entry",
+      "export": "Export",
+      "addRow": "Add a row",
+      "removeRow": "Remove this row"
     },
     "columns": {
       "alerts": {
