@@ -19,6 +19,7 @@ import {
   type StationCurrentState,
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 
 export type Period = "now" | "today" | "7d" | "30d" | "custom";
 
@@ -256,7 +257,7 @@ export function useNetworkDashboard(organizationId: string | null, period: Perio
   const stationAggregates: StationAggregate[] = stations.map((station) => {
     const state = stationStates[station.id];
     const tankStates = state?.tanks ?? [];
-    const online = tankStates.some((t) => t.sensorStatus === "online");
+    const { online } = computeStationOnlineStatus(tankStates);
     const volumeLiters = tankStates.reduce((sum, t) => sum + (t.volumeLiters ?? 0), 0);
     const capacityLiters = tanks
       .filter((t) => t.stationId === station.id && t.active)

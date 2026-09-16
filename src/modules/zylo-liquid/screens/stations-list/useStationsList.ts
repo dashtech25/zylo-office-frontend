@@ -20,6 +20,7 @@ import {
   type StationCurrentState,
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 
 export interface StationProductBreakdown {
   fuelProductId: string;
@@ -147,7 +148,7 @@ export function useStationsList(organizationId: string | null) {
   const rows: StationRow[] = stations.map((station) => {
     const state = statesByStation[station.id];
     const tankStates = state?.tanks ?? [];
-    const online = tankStates.some((t) => t.sensorStatus === "online");
+    const { online } = computeStationOnlineStatus(tankStates);
 
     const byProduct = new Map<string, StationProductBreakdown>();
     let lastMeasurementAt: string | null = null;

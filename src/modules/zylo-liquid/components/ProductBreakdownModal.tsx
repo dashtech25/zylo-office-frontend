@@ -8,6 +8,7 @@ import { Badge, Button, Modal } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 
 export interface ProductFilter {
   /** null = vue "Total réseau", tous produits confondus. */
@@ -74,7 +75,7 @@ export function ProductBreakdownModal({
     if (tanksForStation.length === 0) continue;
 
     const state = stationStates[station.id];
-    const online = (state?.tanks ?? []).some((ts) => ts.sensorStatus === "online");
+    const { online } = computeStationOnlineStatus(state?.tanks ?? []);
 
     const rows: TankRow[] = tanksForStation.map((tank) => {
       const tankState = state?.tanks.find((ts) => ts.tankId === tank.id);

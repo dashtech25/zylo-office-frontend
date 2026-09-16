@@ -9,6 +9,7 @@ import { usePermissions } from "@/core/rbac/PermissionContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
+import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
 import { CardSkeleton, KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
@@ -175,7 +176,7 @@ export default function StationDetailScreen() {
   const city = (station.cityId ? data.cities.find((c) => c.id === station.cityId) : null) ?? null;
 
   const tankStates = activeTanks.map((tank) => data.tankStateById.get(tank.id)).filter((s): s is NonNullable<typeof s> => !!s);
-  const stationOnline = tankStates.some((s) => s.sensorStatus === "online");
+  const { online: stationOnline } = computeStationOnlineStatus(tankStates);
   const criticalAlert = data.alerts.some((a) => a.type === "leak" || a.type === "level_high");
   const stationState: "offline" | "critical" | "alert" | "online" = !stationOnline ? "offline" : criticalAlert ? "critical" : data.alerts.length > 0 ? "alert" : "online";
 
