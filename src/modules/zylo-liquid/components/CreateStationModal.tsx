@@ -26,6 +26,7 @@ import {
 import { cn } from "@/shared/lib/cn";
 import { Alert, Button, Checkbox, FormField, Input, Modal, Select } from "@/shared/ui";
 
+import { generateCode } from "@/modules/zylo-liquid/utils/generateCode";
 import { listIanaTimezones } from "@/modules/zylo-liquid/utils/timezones";
 
 import { createEmptyTankFieldsState, isTankFieldsStateValid, TankFieldsSection, type TankFieldsState } from "./TankFieldsSection";
@@ -308,7 +309,14 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
               </FormField>
               {!isEdit && (
                 <FormField label={t("createModal.code")} required hint={t("createModal.codeHint")}>
-                  {(field) => <Input {...field} value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />}
+                  {(field) => (
+                    <div className="flex gap-2">
+                      <Input {...field} value={code} onChange={(e) => setCode(e.target.value)} required maxLength={20} />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setCode(generateCode(name || "STATION", 20))}>
+                        {tCommon("actions.generate")}
+                      </Button>
+                    </div>
+                  )}
                 </FormField>
               )}
             </div>

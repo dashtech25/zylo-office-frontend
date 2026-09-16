@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { useTranslations } from "next-intl";
 
 import type { CalibrationPoint, FuelProduct } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { generateCode } from "@/modules/zylo-liquid/utils/generateCode";
 import { Alert, Button, Checkbox, FormField, Input, Select } from "@/shared/ui";
 
 export interface TankSensorRow {
@@ -108,6 +109,7 @@ export function TankProductField({
   onChange: (patch: Pick<TankFieldsState, "fuelMode" | "fuelProductId" | "newProductName" | "newProductCode">) => void;
 }) {
   const t = useTranslations("zyloLiquid.addTank");
+  const tCommon = useTranslations("common");
 
   function patch(next: Partial<Pick<TankFieldsState, "fuelMode" | "fuelProductId" | "newProductName" | "newProductCode">>) {
     onChange({ fuelMode, fuelProductId, newProductName, newProductCode, ...next });
@@ -143,7 +145,14 @@ export function TankProductField({
             {(field) => <Input {...field} value={newProductName} onChange={(e) => patch({ newProductName: e.target.value })} required />}
           </FormField>
           <FormField label={t("newProductCode")} required>
-            {(field) => <Input {...field} value={newProductCode} onChange={(e) => patch({ newProductCode: e.target.value })} maxLength={10} required />}
+            {(field) => (
+              <div className="flex gap-2">
+                <Input {...field} value={newProductCode} onChange={(e) => patch({ newProductCode: e.target.value })} maxLength={10} required />
+                <Button type="button" variant="outline" size="sm" onClick={() => patch({ newProductCode: generateCode(newProductName || "PRODUIT", 10) })}>
+                  {tCommon("actions.generate")}
+                </Button>
+              </div>
+            )}
           </FormField>
         </div>
       )}
