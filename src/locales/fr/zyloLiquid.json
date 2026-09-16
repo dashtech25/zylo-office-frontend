@@ -1363,6 +1363,11 @@
       "pageSubtitle": "{count} stations au total",
       "print": "Imprimer",
       "export": "Exporter",
+      "exportFormat": {
+        "csv": "CSV",
+        "xlsx": "Excel (.xlsx)",
+        "docx": "Word (.docx)"
+      },
       "add": "Ajouter une station",
       "filterAll": "Toutes",
       "searchPlaceholder": "Rechercher une station...",

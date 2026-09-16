@@ -5,11 +5,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { exportTable } from "@/core/api/exportTable";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Button, Card, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
+import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
@@ -68,7 +69,10 @@ export default function StationsListScreen() {
   const [editStation, setEditStation] = useState<StationRow["station"] | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [statusActionError, setStatusActionError] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!currencyId && data.currencies.length > 0) setCurrencyId(data.currencies[0].id);
@@ -77,6 +81,7 @@ export default function StationsListScreen() {
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null);
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setExportMenuOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -153,8 +158,12 @@ export default function StationsListScreen() {
     setSearch("");
   }
 
-  function handleExport() {
-    const header = [t("list.columns.station"), "Ville", t("list.columns.status"), t("list.columns.stockByProduct"), t("list.columns.totalValue"), t("list.columns.sync")];
+  // Extrait pour être réutilisé par les 3 formats d'export (P1-3, audit
+  // module Stations 2026-09-16 : l'export était limité au CSV) — même
+  // construction de lignes, seul le rendu final (CSV côté client, XLSX/DOCX
+  // via le backend) diffère selon le format choisi.
+  function buildExportTable(): { headers: string[]; rows: string[][] } {
+    const headers = [t("list.columns.station"), "Ville", t("list.columns.status"), t("list.columns.stockByProduct"), t("list.columns.totalValue"), t("list.columns.sync")];
     const rows = filteredRows.map((row) => [
       row.station.name,
       row.station.cityId ? (cityById.get(row.station.cityId)?.name ?? "") : "",
@@ -163,7 +172,23 @@ export default function StationsListScreen() {
       row.totalValue !== null && row.totalCurrencyCode ? (formatMoney(row.totalValue, row.totalCurrencyCode) ?? `${row.totalValue} ${row.totalCurrencyCode}`) : t("list.row.valueNotCalculable"),
       row.lastMeasurementAt ? format.dateTime(new Date(row.lastMeasurementAt)) : t("list.row.syncOffline"),
     ]);
-    downloadCsv("stations.csv", [header, ...rows]);
+    return { headers, rows };
+  }
+
+  async function handleExport(exportFormat: "csv" | "xlsx" | "docx") {
+    setExportMenuOpen(false);
+    const { headers, rows } = buildExportTable();
+    if (exportFormat === "csv") {
+      downloadCsv("stations.csv", [headers, ...rows]);
+      return;
+    }
+    if (!currentOrganization) return;
+    setExporting(true);
+    try {
+      await exportTable(exportFormat, "stations", headers, rows, currentOrganization.id);
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleToggleStatus(row: StationRow) {
@@ -297,10 +322,17 @@ export default function StationsListScreen() {
                 <Select aria-label={t("list.currency")} value={currencyId} onValueChange={setCurrencyId} options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />
               </div>
             )}
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="size-4" aria-hidden />
-              {t("list.export")}
-            </Button>
+            <div ref={exportMenuRef} className="relative">
+              <Button variant="outline" size="sm" onClick={() => setExportMenuOpen((v) => !v)} loading={exporting}>
+                <Download className="size-4" aria-hidden />
+                {t("list.export")}
+              </Button>
+              <DropdownMenu open={exportMenuOpen}>
+                <DropdownMenuItem onClick={() => handleExport("csv")}>{t("list.exportFormat.csv")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("xlsx")}>{t("list.exportFormat.xlsx")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("docx")}>{t("list.exportFormat.docx")}</DropdownMenuItem>
+              </DropdownMenu>
+            </div>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" aria-hidden />
               {t("list.add")}
