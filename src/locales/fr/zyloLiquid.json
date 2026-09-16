@@ -2508,7 +2508,21 @@
         "3": "3 jours",
         "1": "24 heures"
       },
-      "waterTempNote": "L'évolution de l'eau et de la température dans le temps n'est pas encore disponible dans Zylo Liquid : seule la valeur instantanée est affichée aujourd'hui (onglet Jauge & composition)."
+      "waterTempNote": "L'évolution de l'eau et de la température dans le temps n'est pas encore disponible dans Zylo Liquid : seule la valeur instantanée est affichée aujourd'hui (onglet Jauge & composition).",
+      "table": {
+        "title": "Historique détaillé des mesures",
+        "empty": "Aucune mesure enregistrée",
+        "columns": {
+          "measuredAt": "Horodatage",
+          "rawValue": "Valeur brute",
+          "volume": "Volume",
+          "correction": "Correction"
+        },
+        "correctionYes": "Correction manuelle",
+        "pageInfo": "{from}–{to} sur {total}",
+        "previous": "Précédent",
+        "next": "Suivant"
+      }
     },
     "gaugingNote": "Le jaugeage manuel de contrôle n'est pas encore disponible dans Zylo Liquid.",
     "alerts": {

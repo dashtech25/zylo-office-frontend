@@ -16,6 +16,7 @@ import { LeaksBrowserModal } from "@/modules/zylo-liquid/components/LeaksBrowser
 import { computeTankVisualData, ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "@/modules/zylo-liquid/components/TankVisual";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { CalibrationModal } from "@/modules/zylo-liquid/components/CalibrationModal";
+import { MeasurementHistoryTable } from "@/modules/zylo-liquid/screens/tank-detail/MeasurementHistoryTable";
 import { ComingSoonTabContent } from "@/modules/zylo-liquid/screens/settings/ComingSoonTabContent";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { EditTankModal } from "./EditTankModal";
@@ -366,6 +367,13 @@ export default function TankDetailScreen() {
                     <TrendChart points={measurementPoints} formatValue={formatVolume} formatDate={formatChartTick} seriesLabel={t("history.title")} />
                   )}
                 </Card>
+
+                {currentOrganization && (
+                  <Card>
+                    <h2 className="mb-3 text-h4 font-semibold text-text">{t("history.table.title")}</h2>
+                    <MeasurementHistoryTable organizationId={currentOrganization.id} tankId={tankId} />
+                  </Card>
+                )}
 
                 <ComingSoonTabContent note={t("history.waterTempNote")} />
 
