@@ -5,6 +5,7 @@ export * from "./Badge";
 export * from "./Button";
 export * from "./Card";
 export * from "./CardSectionHeader";
+export * from "./CollapsibleSection";
 export * from "./Checkbox";
 export * from "./ColorPicker";
 export * from "./DropdownMenu";

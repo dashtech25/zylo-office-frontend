@@ -1658,6 +1658,19 @@
     "deliveryDetails": "+ {volume} reçus",
     "measurementDetails": "{tank} : {height} (mesure sonde)"
   },
+  "deliveriesWidget": {
+    "title": "Livraisons récentes",
+    "loading": "Chargement…",
+    "empty": "Aucune livraison récente.",
+    "station": "Station",
+    "type": {
+      "detected": "Détectée",
+      "declared": "Déclarée"
+    }
+  },
+  "dashboardSections": {
+    "fuelProducts": "Produits pétroliers"
+  },
   "stationDetail": {
     "backLink": "Stations du réseau",
     "sync": "Sync il y a {minutes} min",
