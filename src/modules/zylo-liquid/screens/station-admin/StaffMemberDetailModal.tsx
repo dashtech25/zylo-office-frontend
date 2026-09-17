@@ -165,33 +165,33 @@ export function StaffMemberDetailModal({
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title={t("title")} size="lg" closeLabel={tCommon("actions.close")}>
-      <div className="flex flex-col gap-5">
+    <Modal open={open} onOpenChange={onOpenChange} title={t("title")} size="xl" closeLabel={tCommon("actions.close")}>
+      <div className="flex flex-col gap-6">
         {error && <Alert tone="error">{error}</Alert>}
 
-        <div className="flex items-center gap-4">
-          <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-surface-muted">
+        <div className="flex items-center gap-5 rounded-card border border-border-subtle bg-surface-muted/40 p-4">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-surface-muted">
             {staff.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={staff.photoUrl} alt="" className="size-full object-cover" />
             ) : (
-              <Camera className="size-6 text-text-muted" aria-hidden />
+              <Camera className="size-8 text-text-muted" aria-hidden />
             )}
           </div>
           <div>
-            <h3 className="text-h4 font-semibold text-text">{staff.fullName}</h3>
-            {state.status === "ready" && state.data.role && <Badge tone="primary" className="mt-1">{state.data.role.name}</Badge>}
-            <p className="mt-1 flex items-center gap-1.5 text-body-sm text-text-muted">
-              <span className={staff.status === "active" ? "size-1.5 rounded-full bg-success" : "size-1.5 rounded-full bg-text-muted"} />
+            <h3 className="text-h3 font-semibold text-text">{staff.fullName}</h3>
+            {state.status === "ready" && state.data.role && <Badge tone="primary" className="mt-1.5">{state.data.role.name}</Badge>}
+            <p className="mt-2 flex items-center gap-1.5 text-body-md text-text-muted">
+              <span className={staff.status === "active" ? "size-2 rounded-full bg-success" : "size-2 rounded-full bg-text-muted"} />
               {t(`status.${staff.status}`)}
-              <Mail className="ml-2 size-3.5" aria-hidden />
+              <Mail className="ml-2 size-4" aria-hidden />
               {staff.email}
             </p>
           </div>
         </div>
 
         {editing ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 rounded-card border border-border-subtle p-4 sm:grid-cols-2">
             <FormField label={t("firstName")}>{(field) => <Input {...field} value={firstName} onChange={(e) => setFirstName(e.target.value)} />}</FormField>
             <FormField label={t("lastName")}>{(field) => <Input {...field} value={lastName} onChange={(e) => setLastName(e.target.value)} />}</FormField>
             <FormField label={t("phone")}>{(field) => <Input {...field} value={phone} onChange={(e) => setPhone(e.target.value)} />}</FormField>
@@ -200,18 +200,18 @@ export function StaffMemberDetailModal({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <h4 className="mb-2 text-body-sm font-semibold text-text">{t("personalInfoTitle")}</h4>
-              <dl className="flex flex-col gap-1.5 text-body-sm">
+            <div className="rounded-card border border-border-subtle p-4">
+              <h4 className="mb-3 text-body-md font-semibold text-text">{t("personalInfoTitle")}</h4>
+              <dl className="flex flex-col gap-2.5 text-body-sm">
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("firstName")}</dt><dd className="text-text">{staff.firstName ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("lastName")}</dt><dd className="text-text">{staff.lastName ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("phone")}</dt><dd className="text-text">{staff.phone ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("assignedAt")}</dt><dd className="text-text">{format.dateTime(new Date(staff.assignedAt), { day: "2-digit", month: "2-digit", year: "numeric" })}</dd></div>
               </dl>
             </div>
-            <div>
-              <h4 className="mb-2 text-body-sm font-semibold text-text">{t("jobInfoTitle")}</h4>
-              <dl className="flex flex-col gap-1.5 text-body-sm">
+            <div className="rounded-card border border-border-subtle p-4">
+              <h4 className="mb-3 text-body-md font-semibold text-text">{t("jobInfoTitle")}</h4>
+              <dl className="flex flex-col gap-2.5 text-body-sm">
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("employeeNumber")}</dt><dd className="text-text">{staff.employeeNumber ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("assignedStation")}</dt><dd className="text-text">{stationName ?? "—"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-text-muted">{t("contractType")}</dt><dd className="text-text">{staff.contractType ?? "—"}</dd></div>
@@ -223,9 +223,9 @@ export function StaffMemberDetailModal({
         <PartStateBox state={state}>
           {state.status === "ready" && (
             <>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h4 className="text-body-sm font-semibold text-text">{t("accessTitle")}</h4>
+              <div className="rounded-card border border-border-subtle p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="text-body-md font-semibold text-text">{t("accessTitle")}</h4>
                   {!roleEditing && (
                     <button
                       type="button"
@@ -273,8 +273,8 @@ export function StaffMemberDetailModal({
                 )}
               </div>
 
-              <div>
-                <h4 className="mb-2 text-body-sm font-semibold text-text">{t("securityTitle")}</h4>
+              <div className="rounded-card border border-border-subtle p-4">
+                <h4 className="mb-3 text-body-md font-semibold text-text">{t("securityTitle")}</h4>
                 {newPassword ? (
                   <div className="flex flex-col gap-2">
                     <Alert tone="warning">{t("passwordWarning")}</Alert>
@@ -299,8 +299,8 @@ export function StaffMemberDetailModal({
                 )}
               </div>
 
-              <div>
-                <h4 className="mb-2 text-body-sm font-semibold text-text">{t("activityTitle")}</h4>
+              <div className="rounded-card border border-border-subtle p-4">
+                <h4 className="mb-3 text-body-md font-semibold text-text">{t("activityTitle")}</h4>
                 {state.data.activity.length === 0 ? (
                   <p className="text-body-sm text-text-muted">{t("noActivity")}</p>
                 ) : (
