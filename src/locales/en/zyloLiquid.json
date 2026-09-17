@@ -1671,6 +1671,8 @@
     }
   },
   "dashboardSections": {
+    "alertsAndAnomalies": "Alerts & anomalies",
+    "alertsAndAnomaliesSubtitle": "Everything that needs a decision — active alerts, stock discrepancies, cash discrepancies.",
     "fuelProducts": "Fuel products"
   },
   "stationDetail": {
@@ -2291,9 +2293,11 @@
       "noOpenOrderHint": "No open order — create an order in the Order tab first.",
       "empty": "No delivery declared for this station.",
       "emptyDetected": "No automatically detected delivery for this station.",
+      "emptyReconciled": "No reconciled delivery yet.",
       "tabs": {
         "declared": "Declared",
-        "detected": "Detected"
+        "detected": "Detected",
+        "reconciled": "Reconciled"
       },
       "detectedTable": {
         "startTime": "Start",
@@ -2301,13 +2305,36 @@
         "volume": "Detected volume",
         "status": "Status"
       },
+      "reconciledTable": {
+        "declaredVolume": "Declared volume",
+        "detectedVolume": "Detected volume"
+      },
       "table": {
         "eventAt": "Received on",
         "order": "Order",
         "tanks": "Tank(s)",
         "volume": "Declared volume",
         "noteReference": "Note code",
-        "status": "Status"
+        "status": "Status",
+        "actions": "Actions",
+        "reconcileAction": "Reconcile"
+      },
+      "reconcileModal": {
+        "title": "Manual reconciliation — {tank}",
+        "titleFromDetected": "Link this detection to a declared delivery",
+        "noCandidates": "No detection available in the search window.",
+        "deltaMinutes": "Gap from declared time: {minutes} min",
+        "alreadyUsed": "Already reconciled with another line",
+        "detectedAlreadyUsed": "This detection is already reconciled with another declaration line.",
+        "confirmOverride": "I confirm I want to reconcile anyway — this may signal an error to fix on the other side.",
+        "submit": "Confirm reconciliation",
+        "currentStatus": {
+          "matched": "Currently: matched",
+          "discrepancy": "Currently: discrepancy",
+          "pending": "Currently: pending",
+          "insufficient_data": "Currently: insufficient data",
+          "not_reconciled": "Currently: not reconciled"
+        }
       },
       "lifecycle": {
         "declared": "Declared",

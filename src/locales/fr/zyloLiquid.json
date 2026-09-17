@@ -1671,6 +1671,8 @@
     }
   },
   "dashboardSections": {
+    "alertsAndAnomalies": "Alertes & anomalies",
+    "alertsAndAnomaliesSubtitle": "Tout ce qui demande une décision — alertes actives, écarts de stock, écarts de caisse.",
     "fuelProducts": "Produits pétroliers"
   },
   "stationDetail": {
@@ -2291,9 +2293,11 @@
       "noOpenOrderHint": "Aucune commande ouverte — créez d'abord une commande dans l'onglet Commande.",
       "empty": "Aucune livraison déclarée pour cette station.",
       "emptyDetected": "Aucune livraison détectée automatiquement pour cette station.",
+      "emptyReconciled": "Aucune livraison rapprochée pour l'instant.",
       "tabs": {
         "declared": "Déclarées",
-        "detected": "Détectées"
+        "detected": "Détectées",
+        "reconciled": "Rapprochées"
       },
       "detectedTable": {
         "startTime": "Début",
@@ -2301,13 +2305,36 @@
         "volume": "Volume détecté",
         "status": "Statut"
       },
+      "reconciledTable": {
+        "declaredVolume": "Volume déclaré",
+        "detectedVolume": "Volume détecté"
+      },
       "table": {
         "eventAt": "Date de réception",
         "order": "Commande",
         "tanks": "Cuve(s)",
         "volume": "Volume déclaré",
         "noteReference": "Code du bon",
-        "status": "Statut"
+        "status": "Statut",
+        "actions": "Actions",
+        "reconcileAction": "Rapprocher"
+      },
+      "reconcileModal": {
+        "title": "Rapprochement manuel — {tank}",
+        "titleFromDetected": "Rattacher cette détection à une livraison déclarée",
+        "noCandidates": "Aucune détection disponible dans la fenêtre de recherche.",
+        "deltaMinutes": "Écart avec l'heure déclarée : {minutes} min",
+        "alreadyUsed": "Déjà rapprochée avec une autre ligne",
+        "detectedAlreadyUsed": "Cette détection est déjà rapprochée avec une autre ligne de déclaration.",
+        "confirmOverride": "Je confirme vouloir rapprocher malgré tout — cela peut signaler une erreur à corriger de l'autre côté.",
+        "submit": "Confirmer le rapprochement",
+        "currentStatus": {
+          "matched": "Actuellement : rapprochée",
+          "discrepancy": "Actuellement : écart",
+          "pending": "Actuellement : en attente",
+          "insufficient_data": "Actuellement : donnée insuffisante",
+          "not_reconciled": "Actuellement : non rapprochée"
+        }
       },
       "lifecycle": {
         "declared": "Déclarée",
