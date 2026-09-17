@@ -125,12 +125,10 @@ export function StationsMap({
 
       const bounds = new mapboxgl.LngLatBounds();
       stations.forEach((s) => {
-        // Marqueur = pin neutre dont seule la BORDURE porte la couleur de
-        // criticité (vert/orange/rouge/gris) — demande commanditaire
-        // 2026-09-17 : "je ne veux pas que le point soit rouge [...] c'est
-        // plutôt la bordure [...] qui doit être rouge ou orange", surmonté
-        // d'une étiquette TOUJOURS visible (nom, produits, statut
-        // opérationnel, connectivité, alertes) plutôt qu'un point anonyme.
+        // Marqueur = badge rond coloré (criticité : vert/orange/rouge/gris)
+        // contenant une icône de station-service, surmonté d'une étiquette
+        // TOUJOURS visible (nom, produits, statut opérationnel,
+        // connectivité, alertes) plutôt qu'un point anonyme.
         const wrapper = document.createElement("div");
         wrapper.style.display = "flex";
         wrapper.style.flexDirection = "column";
@@ -165,8 +163,20 @@ export function StationsMap({
           : "";
         label.innerHTML = nameHtml + productsHtml + badgesRow;
 
+        // Icône pompe à essence (lucide "fuel") plutôt qu'un point anonyme —
+        // demande commanditaire 2026-09-17 : "les points ne sont pas
+        // toujours bien [...] remplacer par des logos de stations service".
+        // Le fond coloré du badge continue de porter la criticité, l'icône
+        // reste neutre (blanche) au-dessus.
         const pin = document.createElement("div");
-        pin.style.cssText = `width:18px;height:18px;border-radius:50%;background:#ffffff;border:3px solid ${STATUS_COLOR[s.status]};box-shadow:0 0 0 1px rgba(0,0,0,.15);`;
+        pin.style.cssText = `width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${STATUS_COLOR[s.status]};border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,.15);`;
+        pin.innerHTML =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0v-6.998a2 2 0 0 0-.59-1.42L18 5"/>' +
+          '<path d="M14 21V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16"/>' +
+          '<path d="M2 21h13"/>' +
+          '<path d="M3 9h11"/>' +
+          "</svg>";
 
         wrapper.appendChild(label);
         wrapper.appendChild(pin);
