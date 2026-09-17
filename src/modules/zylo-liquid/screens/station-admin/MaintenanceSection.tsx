@@ -17,7 +17,7 @@ import {
   type InterventionType,
   type Technician,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -55,6 +55,7 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
   const [closeDiagnosis, setCloseDiagnosis] = useState("");
   const [closeAction, setCloseAction] = useState("");
   const [closeCost, setCloseCost] = useState("");
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   async function handleCreate() {
     if (!equipmentId || !description) {
@@ -67,11 +68,17 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
       await createIntervention(organizationId, { equipmentId, stationId, priority, type, description });
       setDescription("");
       setReloadKey((k) => k + 1);
+      setAddModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
       setCreating(false);
     }
+  }
+
+  function closeAddModal() {
+    setAddModalOpen(false);
+    setError(null);
   }
 
   async function handleAssign(interventionId: string, technicianId: string) {
@@ -94,28 +101,49 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
         const { equipment, interventions, technicians }: { equipment: Equipment[]; interventions: Intervention[]; technicians: Technician[] } = state.data;
         return (
           <Stack>
-            {error && <Alert tone="error">{error}</Alert>}
-            <Card>
-              <CardSectionHeader title={t("interventions.form.title")} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <FormField label={t("interventions.form.equipment")}>
-                  {() => <Select aria-label={t("interventions.form.equipment")} value={equipmentId || undefined} onValueChange={setEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={equipment.map((e) => ({ value: e.id, label: e.name }))} />}
-                </FormField>
-                <FormField label={t("interventions.form.priority")}>
-                  {() => <Select aria-label={t("interventions.form.priority")} value={priority} onValueChange={(v) => setPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
-                </FormField>
-                <FormField label={t("interventions.form.type")}>
-                  {() => <Select aria-label={t("interventions.form.type")} value={type} onValueChange={(v) => setType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
-                </FormField>
-                <div className="sm:col-span-3">
-                  <FormField label={t("interventions.form.description")}>{(field) => <Textarea {...field} value={description} onChange={(e) => setDescription(e.target.value)} />}</FormField>
+            <Modal
+              open={addModalOpen}
+              onOpenChange={(next) => {
+                if (!next) closeAddModal();
+              }}
+              title={t("interventions.form.title")}
+              size="md"
+              closeLabel={tCommon("actions.close")}
+              footer={
+                <>
+                  <Button variant="outline" size="sm" type="button" onClick={closeAddModal}>{tCommon("actions.cancel")}</Button>
+                  <Button size="sm" type="submit" form="add-intervention-form" loading={creating}>
+                    <Plus className="size-4" aria-hidden />
+                    {t("interventions.form.submit")}
+                  </Button>
+                </>
+              }
+            >
+              <form id="add-intervention-form" onSubmit={(e) => { e.preventDefault(); void handleCreate(); }} className="flex flex-col gap-4">
+                {error && <Alert tone="error">{error}</Alert>}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <FormField label={t("interventions.form.equipment")}>
+                    {() => <Select aria-label={t("interventions.form.equipment")} value={equipmentId || undefined} onValueChange={setEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={equipment.map((e) => ({ value: e.id, label: e.name }))} />}
+                  </FormField>
+                  <FormField label={t("interventions.form.priority")}>
+                    {() => <Select aria-label={t("interventions.form.priority")} value={priority} onValueChange={(v) => setPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
+                  </FormField>
+                  <FormField label={t("interventions.form.type")}>
+                    {() => <Select aria-label={t("interventions.form.type")} value={type} onValueChange={(v) => setType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
+                  </FormField>
+                  <div className="sm:col-span-2">
+                    <FormField label={t("interventions.form.description")}>{(field) => <Textarea {...field} value={description} onChange={(e) => setDescription(e.target.value)} />}</FormField>
+                  </div>
                 </div>
-              </div>
-              <Button className="mt-4" size="sm" onClick={handleCreate} loading={creating}>
+              </form>
+            </Modal>
+
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setAddModalOpen(true)}>
                 <Plus className="size-4" aria-hidden />
                 {t("interventions.form.submit")}
               </Button>
-            </Card>
+            </div>
 
             {interventions.length === 0 ? (
               <EmptyState icon={Wrench} title={t("interventions.empty")} />

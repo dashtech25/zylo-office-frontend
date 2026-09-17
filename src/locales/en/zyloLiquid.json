@@ -971,6 +971,10 @@
         "category": "Category",
         "price": "Unit price",
         "currency": "Currency",
+        "stock": "Initial stock",
+        "lowStockThreshold": "Low-stock threshold",
+        "image": "Product image",
+        "imageUploading": "Uploading image…",
         "submit": "Add",
         "required": "Name, price and currency are required."
       },
@@ -978,10 +982,36 @@
         "name": "Name",
         "category": "Category",
         "price": "Price",
+        "stock": "Stock",
         "scope": "Scope",
         "barcode": "Barcode"
       },
-      "scopeNetwork": "Network"
+      "scopeNetwork": "Network",
+      "outOfStock": "Out of stock",
+      "lowStock": "Low stock",
+      "importExport": {
+        "template": "Download template",
+        "export": "Export catalog",
+        "import": "Import a file",
+        "importing": "Importing…",
+        "templateFilename": "shop_products_template",
+        "exportFilename": "shop_products_catalog",
+        "invalidStructure": "Invalid file structure — expected headers, in this order: {headers}.",
+        "invalidRow": "Row {row}: {message}",
+        "invalidCurrency": "unknown currency \"{value}\"",
+        "invalidStation": "unknown station \"{value}\"",
+        "invalidPrice": "invalid price",
+        "missingName": "missing name",
+        "successCount": "{count} products imported.",
+        "errorsTitle": "Rows not imported:"
+      },
+      "price": {
+        "resolvedLabel": "Price at this station",
+        "networkDefaultBadge": "Network default price — not customized here",
+        "amount": "New price",
+        "submit": "Apply",
+        "success": "Price updated for this station."
+      }
     },
     "sale": {
       "empty": "Cart is empty.",
@@ -999,6 +1029,7 @@
       "removeLine": "Remove",
       "error": "The cart cannot be empty.",
       "creditAccountRequired": "A commercial account is required for a credit sale.",
+      "insufficientStock": "Insufficient stock for this product.",
       "success": "Sale recorded."
     },
     "history": {
