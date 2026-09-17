@@ -18,6 +18,22 @@ export interface StationMapPoint {
    * pour les usages qui n'ont pas cette donnée (ex. carte d'une seule
    * station), auquel cas le popup se limite au nom. */
   popupSubtitle?: string;
+  /** Produits vendus par la station, déjà formatés par l'appelant (ex.
+   * "Diesel, Super"), affichés en permanence sous le nom dans l'étiquette du
+   * marqueur (demande commanditaire 2026-09-17 : identifier chaque station
+   * sans avoir à cliquer dessus). */
+  productsLabel?: string;
+  /** Statut opérationnel déclaré (`Station.status`, décision humaine —
+   * jamais déduit des horaires, cf. StationDetailScreen.tsx), déjà traduit
+   * par l'appelant. */
+  operationalLabel?: string;
+  operationalTone?: "success" | "warning" | "neutral";
+  /** Connectivité télémétrie (capteurs), déjà traduite par l'appelant. */
+  connectivityLabel?: string;
+  connected?: boolean;
+  /** Nombre d'alertes actives ; badge affiché seulement si > 0. */
+  alertsCount?: number;
+  alertsLabel?: string;
 }
 
 const STATUS_COLOR: Record<StationMapStatus, string> = {
@@ -25,6 +41,12 @@ const STATUS_COLOR: Record<StationMapStatus, string> = {
   alert: "#D97706",
   critical: "#DC2626",
   offline: "#6B7280",
+};
+
+const TONE_COLOR: Record<"success" | "warning" | "neutral", string> = {
+  success: "#1F9D55",
+  warning: "#D97706",
+  neutral: "#6B7280",
 };
 
 function escapeHtml(value: string): string {
@@ -41,11 +63,17 @@ function escapeHtml(value: string): string {
 export function StationsMap({
   stations,
   height = 320,
+  fill = false,
   onStationClick,
   focusStationId,
 }: {
   stations: StationMapPoint[];
   height?: number;
+  /** Occupe 100% du conteneur parent (largeur/hauteur) au lieu d'une hauteur
+   * fixe en pixels — utilisé par la vue plein écran, dont la hauteur
+   * disponible dépend de la fenêtre du navigateur plutôt que d'être connue à
+   * l'avance. `height` est alors ignoré. */
+  fill?: boolean;
   /** Quand fourni, remplace la navigation par défaut vers la page de la
    * station (ex. pour ouvrir un modal d'aperçu à la place). */
   onStationClick?: (stationId: string) => void;
@@ -72,6 +100,9 @@ export function StationsMap({
       zoom: 5,
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    // Position actuelle de l'utilisateur (demande commanditaire 2026-09-17,
+    // vue plein écran) — bouton natif Mapbox, aucune UI custom nécessaire.
+    map.addControl(new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true }), "top-right");
     mapRef.current = map;
     return () => {
       map.remove();
@@ -94,34 +125,72 @@ export function StationsMap({
 
       const bounds = new mapboxgl.LngLatBounds();
       stations.forEach((s) => {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.setAttribute("aria-label", s.name);
-        el.style.width = "16px";
-        el.style.height = "16px";
-        el.style.borderRadius = "50%";
-        el.style.border = "2px solid white";
-        el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
-        el.style.background = STATUS_COLOR[s.status];
-        el.style.cursor = "pointer";
-        el.onclick = () => (onStationClick ? onStationClick(s.id) : router.push(`/zylo-liquid/stations/${s.id}`));
+        // Marqueur = pin neutre dont seule la BORDURE porte la couleur de
+        // criticité (vert/orange/rouge/gris) — demande commanditaire
+        // 2026-09-17 : "je ne veux pas que le point soit rouge [...] c'est
+        // plutôt la bordure [...] qui doit être rouge ou orange", surmonté
+        // d'une étiquette TOUJOURS visible (nom, produits, statut
+        // opérationnel, connectivité, alertes) plutôt qu'un point anonyme.
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.flexDirection = "column";
+        wrapper.style.alignItems = "center";
+        wrapper.style.cursor = "pointer";
+        wrapper.setAttribute("role", "button");
+        wrapper.tabIndex = 0;
+        wrapper.setAttribute(
+          "aria-label",
+          [s.name, s.operationalLabel, s.connectivityLabel, s.alertsLabel].filter(Boolean).join(" — ")
+        );
 
+        const label = document.createElement("div");
+        label.style.cssText =
+          "margin-bottom:4px;max-width:180px;border-radius:8px;background:#ffffff;box-shadow:0 1px 4px rgba(0,0,0,.25);padding:4px 8px;";
+        const nameHtml = `<div style="font-size:12px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.name)}</div>`;
+        const productsHtml = s.productsLabel
+          ? `<div style="font-size:10px;color:#6B7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.productsLabel)}</div>`
+          : "";
+        const operationalBadge = s.operationalLabel
+          ? `<span style="font-size:9px;padding:1px 4px;border-radius:4px;background:${TONE_COLOR[s.operationalTone ?? "neutral"]};color:#fff;">${escapeHtml(s.operationalLabel)}</span>`
+          : "";
+        const connectivityBadge = s.connectivityLabel
+          ? `<span style="font-size:9px;padding:1px 4px;border-radius:4px;background:${s.connected ? TONE_COLOR.success : TONE_COLOR.neutral};color:#fff;">${escapeHtml(s.connectivityLabel)}</span>`
+          : "";
+        const alertsBadge =
+          s.alertsCount && s.alertsCount > 0
+            ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:9999px;background:${STATUS_COLOR.critical};color:#fff;">${s.alertsCount}</span>`
+            : "";
+        const badgesRow = operationalBadge || connectivityBadge || alertsBadge
+          ? `<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">${operationalBadge}${connectivityBadge}${alertsBadge}</div>`
+          : "";
+        label.innerHTML = nameHtml + productsHtml + badgesRow;
+
+        const pin = document.createElement("div");
+        pin.style.cssText = `width:18px;height:18px;border-radius:50%;background:#ffffff;border:3px solid ${STATUS_COLOR[s.status]};box-shadow:0 0 0 1px rgba(0,0,0,.15);`;
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(pin);
+        wrapper.onclick = () => (onStationClick ? onStationClick(s.id) : router.push(`/zylo-liquid/stations/${s.id}`));
+        wrapper.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            wrapper.click();
+          }
+        });
+
+        // Popup complémentaire au survol (ex. volume vendable/disponible) —
+        // distinct de l'étiquette permanente ci-dessus, conservé tel quel.
         const popupHtml = s.popupSubtitle
           ? `<div style="font-weight:600;">${escapeHtml(s.name)}</div><div style="color:#6B7280;margin-top:2px;">${escapeHtml(s.popupSubtitle)}</div>`
           : null;
-        // `Marker.setPopup` n'affiche le popup qu'au CLIC (togglePopup interne
-        // de Mapbox GL) — jamais au survol. La fiche brève demandée au survol
-        // est donc gérée manuellement ici (mouseenter/mouseleave), sans passer
-        // par setPopup, pour ne pas entrer en conflit avec le clic qui ouvre
-        // déjà la navigation/le modal d'aperçu.
-        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false }).setLngLat([s.longitude, s.latitude]);
-        if (popupHtml) popup.setHTML(popupHtml);
-        else popup.setText(s.name);
-        el.addEventListener("mouseenter", () => popup.addTo(map));
-        el.addEventListener("mouseleave", () => popup.remove());
-        popupsRef.current.push(popup);
+        if (popupHtml) {
+          const popup = new mapboxgl.Popup({ offset: 28, closeButton: false, closeOnClick: false }).setLngLat([s.longitude, s.latitude]).setHTML(popupHtml);
+          wrapper.addEventListener("mouseenter", () => popup.addTo(map));
+          wrapper.addEventListener("mouseleave", () => popup.remove());
+          popupsRef.current.push(popup);
+        }
 
-        const marker = new mapboxgl.Marker({ element: el }).setLngLat([s.longitude, s.latitude]).addTo(map);
+        const marker = new mapboxgl.Marker({ element: wrapper, anchor: "bottom" }).setLngLat([s.longitude, s.latitude]).addTo(map);
         markersRef.current.push(marker);
         bounds.extend([s.longitude, s.latitude]);
       });
@@ -149,11 +218,19 @@ export function StationsMap({
 
   if (!token) {
     return (
-      <div className="flex items-center justify-center rounded-card border border-dashed border-border-subtle text-body-sm text-text-muted" style={{ height }}>
+      <div
+        className="flex items-center justify-center rounded-card border border-dashed border-border-subtle text-body-sm text-text-muted"
+        style={fill ? { height: "100%" } : { height }}
+      >
         Carte indisponible — jeton Mapbox non configuré.
       </div>
     );
   }
 
-  return <div ref={containerRef} style={{ height, borderRadius: "var(--radius-card, 8px)", overflow: "hidden" }} />;
+  return (
+    <div
+      ref={containerRef}
+      style={fill ? { height: "100%", width: "100%", borderRadius: "var(--radius-card, 8px)", overflow: "hidden" } : { height, borderRadius: "var(--radius-card, 8px)", overflow: "hidden" }}
+    />
+  );
 }
