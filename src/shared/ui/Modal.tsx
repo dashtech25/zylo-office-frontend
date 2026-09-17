@@ -16,11 +16,6 @@ const contentVariants = cva("fixed z-50 bg-surface shadow-elevated transition-[o
       // presque tout l'écran sur grand écran plutôt qu'une colonne étroite
       // perdue au milieu — reste sous 100vw/100vh pour garder l'overlay visible.
       full: "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-card p-6 overflow-y-auto max-w-[96vw] w-[96vw] h-[94vh] max-h-[94vh] data-[state=closed]:scale-95",
-      // Vue plein écran sans marge ni overlay visible (ex. carte du réseau en
-      // immersion totale, demande commanditaire 2026-09-17 : "prend toute la
-      // fenêtre du navigateur") — occupe 100% du viewport, layout géré par le
-      // composant lui-même (flex-col) plutôt que par un simple scroll global.
-      fullscreen: "inset-0 flex h-screen w-screen max-w-none max-h-none flex-col rounded-none p-0",
     },
   },
   defaultVariants: { size: "md" },
@@ -46,7 +41,6 @@ export interface ModalProps extends VariantProps<typeof contentVariants> {
  * fermeture clavier/aria gérés par construction (trou d'accessibilité
  * identifié dans le rapport §21 pour les composants faits main). */
 export function Modal({ open, onOpenChange, title, description, children, footer, size, closeLabel, preventOutsideClose }: ModalProps) {
-  const isFullscreen = size === "fullscreen";
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -56,7 +50,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
           onPointerDownOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
           onInteractOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
         >
-          <div className={cn("flex items-start justify-between gap-4 border-b border-border-subtle pb-4", isFullscreen ? "px-6 pt-6" : "mb-4")}>
+          <div className="mb-4 flex items-start justify-between gap-4 border-b border-border-subtle pb-4">
             <div>
               <Dialog.Title className="text-h4 font-semibold text-text">{title}</Dialog.Title>
               {description && (
@@ -70,8 +64,8 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               <X className="size-4" aria-hidden />
             </Dialog.Close>
           </div>
-          <div className={isFullscreen ? "min-h-0 flex-1 overflow-y-auto px-6 py-4" : undefined}>{children}</div>
-          {footer && <div className={cn("flex items-center justify-end gap-3 border-t border-border-subtle pt-4", isFullscreen ? "px-6 pb-6" : "mt-6")}>{footer}</div>}
+          {children}
+          {footer && <div className="mt-6 flex items-center justify-end gap-3 border-t border-border-subtle pt-4">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
