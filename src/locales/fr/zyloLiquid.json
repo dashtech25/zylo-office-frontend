@@ -1673,6 +1673,10 @@
   "dashboardSections": {
     "alertsAndAnomalies": "Alertes & anomalies",
     "alertsAndAnomaliesSubtitle": "Tout ce qui demande une décision — alertes actives, écarts de stock, écarts de caisse.",
+    "sales": "Ventes",
+    "salesSubtitle": "Volume vendu et chiffre d'affaires, sur la période sélectionnée.",
+    "salesEmpty": "Aucune vente sur la période sélectionnée.",
+    "salesCollapse": "← Réduire",
     "fuelProducts": "Produits pétroliers"
   },
   "stationDetail": {

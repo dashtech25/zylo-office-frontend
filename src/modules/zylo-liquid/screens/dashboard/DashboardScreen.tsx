@@ -371,7 +371,7 @@
 
 import { AlertTriangle, Circle } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
@@ -383,7 +383,6 @@ import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/Netwo
 import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { CashSummaryCards } from "@/modules/zylo-liquid/screens/caisse/CashSummaryCards";
 import { NetworkCashModal } from "@/modules/zylo-liquid/screens/caisse/NetworkCashModal";
 import { useCashPeriod, useNetworkCash } from "@/modules/zylo-liquid/screens/caisse/useCashData";
 import { useCaisseStationRows } from "@/modules/zylo-liquid/screens/caisse/useCaisseStationRows";
@@ -392,6 +391,7 @@ import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-l
 import { DashboardAlertsWidget } from "./DashboardAlertsWidget";
 import { DashboardCashDiscrepanciesWidget } from "./DashboardCashDiscrepanciesWidget";
 import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
+import { DashboardSalesBlock } from "./DashboardSalesBlock";
 import { DashboardStockDiscrepanciesWidget } from "./DashboardStockDiscrepanciesWidget";
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
@@ -427,15 +427,29 @@ function NetworkDashboardScreen() {
 
   const data = useNetworkDashboard(organizationId, period, customDate);
 
-  // « Vente du jour » (Section 1, point 1) — même pipeline que la page
-  // Caisse (aujourd'hui, toutes stations actives, sans filtre), jamais une
-  // deuxième implémentation de l'agrégation réseau -> produit/devise.
-  const todayCashPeriod = useCashPeriod();
+  // « Ventes » (Rangée 2) — même pipeline que la page Caisse (toutes
+  // stations actives, sans filtre), jamais une deuxième implémentation de
+  // l'agrégation réseau -> produit/devise. Suit désormais la période du
+  // tableau de bord (barre de statut réseau) au lieu d'être figé sur
+  // "aujourd'hui" — demande explicite de l'utilisateur (Rangée 2, revue du
+  // bloc "Ventes"). "now" (instantané) n'a pas d'équivalent pour un
+  // agrégat de ventes, mappé sur "today" ; "custom" du dashboard est une
+  // date unique (snapshot), pas une plage — mappé sur "today" en repli,
+  // limitation connue et acceptée pour l'instant.
+  const salesPeriod = useCashPeriod();
+  useEffect(() => {
+    if (period === "7d" || period === "30d") {
+      salesPeriod.setQuickPeriod(period);
+    } else {
+      salesPeriod.setQuickPeriod("today");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
   const activeStations = useMemo(() => data.stations.filter((s) => s.status === "active"), [data.stations]);
-  const networkCash = useNetworkCash(organizationId, todayCashPeriod.fromDate, todayCashPeriod.toDate, todayCashPeriod.mode);
+  const networkCash = useNetworkCash(organizationId, salesPeriod.fromDate, salesPeriod.toDate, salesPeriod.mode);
   const cashRows = useCaisseStationRows(activeStations, networkCash.data);
-  const todayProductBlocks = useMemo(() => aggregateCaisseProducts(cashRows), [cashRows]);
-  const todayCurrencyBlocks = useMemo(() => aggregateCaisseCurrencyBlocks(cashRows), [cashRows]);
+  const salesProductBlocks = useMemo(() => aggregateCaisseProducts(cashRows), [cashRows]);
+  const salesCurrencyBlocks = useMemo(() => aggregateCaisseCurrencyBlocks(cashRows), [cashRows]);
   const [openCashBlock, setOpenCashBlock] = useState<CurrencyCashBlock | null>(null);
   const [openCashProductBlock, setOpenCashProductBlock] = useState<NetworkProductCashLine | null>(null);
 
@@ -545,22 +559,50 @@ function NetworkDashboardScreen() {
         </CollapsibleSection>
       )}
 
-      {/* Section 1 — Produits pétroliers (rétractable) : vente du jour,
-          synthèse stock réseau, livraisons récentes, alertes — chaque
-          consultation de détail passe par une modale, jamais une
-          redirection (contrainte explicite du commanditaire). */}
-      <CollapsibleSection title={t("dashboardSections.fuelProducts")}>
-        {networkCash.loading ? (
-          <ListSkeleton rows={2} />
-        ) : (
-          <CashSummaryCards
-            productBlocks={todayProductBlocks}
-            currencyBlocks={todayCurrencyBlocks}
+      {/* Rangée 2 — "Est-ce que je gagne de l'argent ?" : bloc "Ventes"
+          unique (pas de bloc "Rentabilité" séparé — une vraie marge
+          nécessiterait le prix d'achat, absent de l'application, jamais
+          inventée). 3 niveaux de lecture progressive : carte Total
+          compacte (toujours visible, chiffre d'affaires écrit dessus) ->
+          clic -> détail par produit -> clic -> drill-down complet (modale
+          déjà existante). Suit la période de la barre de statut réseau. */}
+      {organizationId && (
+        <CollapsibleSection title={t("dashboardSections.sales")} subtitle={t("dashboardSections.salesSubtitle")}>
+          <DashboardSalesBlock
+            loading={networkCash.loading}
+            productBlocks={salesProductBlocks}
+            currencyBlocks={salesCurrencyBlocks}
             onProductClick={setOpenCashProductBlock}
             onTotalClick={setOpenCashBlock}
           />
-        )}
+          <NetworkCashModal
+            open={openCashBlock !== null}
+            onOpenChange={(next) => !next && setOpenCashBlock(null)}
+            organizationId={organizationId ?? ""}
+            block={openCashBlock}
+            title={openCashBlock ? tCaisse("networkModal.title", { currency: openCashBlock.currencyCode }) : ""}
+            fromDate={salesPeriod.fromDate}
+            toDate={salesPeriod.toDate}
+            mode={salesPeriod.mode}
+          />
+          <NetworkCashModal
+            open={openCashProductBlock !== null}
+            onOpenChange={(next) => !next && setOpenCashProductBlock(null)}
+            organizationId={organizationId ?? ""}
+            block={openCashProductBlock}
+            title={openCashProductBlock ? tCaisse("networkModal.productTitle", { product: openCashProductBlock.fuelProductName, currency: openCashProductBlock.currencyCode ?? "—" }) : ""}
+            fromDate={salesPeriod.fromDate}
+            toDate={salesPeriod.toDate}
+            mode={salesPeriod.mode}
+          />
+        </CollapsibleSection>
+      )}
 
+      {/* Section 1 — Produits pétroliers (rétractable) : synthèse stock
+          réseau, livraisons récentes — chaque consultation de détail passe
+          par une modale, jamais une redirection (contrainte explicite du
+          commanditaire). */}
+      <CollapsibleSection title={t("dashboardSections.fuelProducts")}>
         {data.loading ? (
           <section>
             <Skeleton className="mb-3 h-6 w-48" />
@@ -590,27 +632,6 @@ function NetworkDashboardScreen() {
             <DashboardDeliveriesWidget organizationId={organizationId} stations={data.stations} fuelProducts={data.fuelProducts} tanks={data.tanks} />
           </div>
         )}
-
-        <NetworkCashModal
-          open={openCashBlock !== null}
-          onOpenChange={(next) => !next && setOpenCashBlock(null)}
-          organizationId={organizationId ?? ""}
-          block={openCashBlock}
-          title={openCashBlock ? tCaisse("networkModal.title", { currency: openCashBlock.currencyCode }) : ""}
-          fromDate={todayCashPeriod.fromDate}
-          toDate={todayCashPeriod.toDate}
-          mode={todayCashPeriod.mode}
-        />
-        <NetworkCashModal
-          open={openCashProductBlock !== null}
-          onOpenChange={(next) => !next && setOpenCashProductBlock(null)}
-          organizationId={organizationId ?? ""}
-          block={openCashProductBlock}
-          title={openCashProductBlock ? tCaisse("networkModal.productTitle", { product: openCashProductBlock.fuelProductName, currency: openCashProductBlock.currencyCode ?? "—" }) : ""}
-          fromDate={todayCashPeriod.fromDate}
-          toDate={todayCashPeriod.toDate}
-          mode={todayCashPeriod.mode}
-        />
       </CollapsibleSection>
 
       {/* Zone C — graphique de tendance : garde son propre `chartLoading`

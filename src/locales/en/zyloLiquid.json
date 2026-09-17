@@ -1673,6 +1673,10 @@
   "dashboardSections": {
     "alertsAndAnomalies": "Alerts & anomalies",
     "alertsAndAnomaliesSubtitle": "Everything that needs a decision — active alerts, stock discrepancies, cash discrepancies.",
+    "sales": "Sales",
+    "salesSubtitle": "Volume sold and revenue, for the selected period.",
+    "salesEmpty": "No sales for the selected period.",
+    "salesCollapse": "← Collapse",
     "fuelProducts": "Fuel products"
   },
   "stationDetail": {
