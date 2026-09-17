@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -81,6 +81,19 @@ export default function StationsListScreen() {
   useEffect(() => {
     if (!currencyId && data.currencies.length > 0) setCurrencyId(data.currencies[0].id);
   }, [currencyId, data.currencies]);
+
+  // Vue carte plein écran (demande commanditaire 2026-09-17 : "la carte
+  // prend tout [...] tout le reste n'est qu'au-dessus de la carte", pas un
+  // modal avec header/marge) — Échap ferme, comme n'importe quel overlay
+  // plein écran.
+  useEffect(() => {
+    if (!mapOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMapOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [mapOpen]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -448,45 +461,70 @@ export default function StationsListScreen() {
         </StationsTable>
       )}
 
-      <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="fullscreen" closeLabel={tCommon("actions.close")}>
-        <div className="flex h-full min-h-0 flex-col gap-3">
-          <Card>
-            <StationsFilterBar {...filterBarProps} />
-          </Card>
-          {/* Synthèse réseau — mêmes cartes que sur la page Stations, pour ne
-              pas perdre les calculs déjà disponibles en passant en vue carte
-              plein écran (demande commanditaire 2026-09-17). */}
-          {networkProducts.length > 0 && (
-            <NetworkStockSummaryCards
-              products={networkProducts}
-              totalVolumeLiters={networkVolumeLiters}
-              totalCapacityLiters={networkCapacityLiters}
-              totalSellableVolumeLiters={networkTotalSellableVolumeLiters}
-              totalMonetaryValue={networkTotalValue}
-              totalSellableMonetaryValue={networkTotalSellableValue}
-              totalCurrencyCode={[...networkCurrencies][0] ?? null}
-              formatMoney={formatMoney}
-              onProductClick={setBreakdownFilter}
-              onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("list.footer.networkTotal") })}
+      {/* Vue carte plein écran : la carte EST le fond de tout l'écran (pas de
+          modal, pas de marge, pas de header) — tout le reste (recherche,
+          filtres, liste des stations, calques) flotte par-dessus, comme une
+          carte de suivi (demande commanditaire 2026-09-17). */}
+      {mapOpen && (
+        <div className="fixed inset-0 z-50 bg-surface">
+          <div className="absolute inset-0">
+            <StationsMap
+              fill
+              onStationClick={setPreviewStationId}
+              focusStationId={focusedStationId}
+              stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+                id: r.station.id,
+                name: r.station.name,
+                latitude: r.station.latitude as number,
+                longitude: r.station.longitude as number,
+                status: r.state,
+                popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
+                  sellable: formatVolume(r.totalSellableVolumeLiters),
+                  available: formatVolume(r.totalVolumeLiters),
+                }),
+                productsLabel: r.products.map((p) => p.fuelProductName).join(", "),
+                operationalLabel: t(`status.${r.station.status}`),
+                operationalTone: r.station.status === "active" ? "success" : r.station.status === "maintenance" ? "warning" : "neutral",
+                connectivityLabel: t(r.online ? "status.online" : "status.offline"),
+                connected: r.online,
+                alertsCount: r.alertsCount,
+                alertsLabel: t("list.badges.alerts", { count: r.alertsCount }),
+              }))}
             />
-          )}
-          {/* Panneau liste + carte synchronisés (P1-4, audit module Stations
-             2026-09-16) : la liste réutilise `filteredRows`, donc les mêmes
-             filtres que le reste de la page ; cliquer une ligne zoome la
-             carte dessus (StationsMap.focusStationId) au lieu de rouvrir un
-             modal d'aperçu, pour rester dans le flux liste↔carte. */}
-          <div className="flex min-h-0 flex-1 gap-3">
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMapOpen(false)}
+            aria-label={tCommon("actions.close")}
+            className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full border border-border-subtle bg-surface text-text-muted shadow-elevated hover:bg-surface-muted hover:text-text"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+
+          {/* Recherche + filtres, flottants — plus de bloc plein-largeur ni
+              de cartes de synthèse (retirées, jugées inutiles ici). */}
+          <div className="absolute left-4 top-4 z-10 w-[min(92vw,380px)] rounded-card border border-border-subtle bg-surface p-3 shadow-elevated">
+            <StationsFilterBar {...filterBarProps} />
+          </div>
+
+          {/* Liste des stations, flottante et rétractable (P1-4, audit
+             module Stations 2026-09-16) : cliquer une ligne zoome la carte
+             dessus (StationsMap.focusStationId) au lieu de rouvrir un modal
+             d'aperçu, pour rester dans le flux liste↔carte. */}
+          <div className="absolute bottom-4 left-4 z-10">
             {mapPanelCollapsed ? (
               <button
                 type="button"
                 onClick={() => setMapPanelCollapsed(false)}
                 aria-label={t("list.map.expandPanel")}
-                className="flex h-fit items-center rounded-card border border-border-subtle p-2 text-text-muted hover:bg-surface-muted"
+                className="flex items-center gap-2 rounded-card border border-border-subtle bg-surface px-3 py-2 text-body-sm font-medium text-text shadow-elevated hover:bg-surface-muted"
               >
                 <ChevronRight className="size-4" aria-hidden />
+                {t("list.map.panelTitle", { count: filteredRows.length })}
               </button>
             ) : (
-              <div className="flex w-64 shrink-0 flex-col gap-2 rounded-card border border-border-subtle">
+              <div className="flex max-h-[50vh] w-64 flex-col gap-2 rounded-card border border-border-subtle bg-surface shadow-elevated">
                 <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
                   <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
                   <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
@@ -511,34 +549,9 @@ export default function StationsListScreen() {
                 </div>
               </div>
             )}
-            <div className="min-h-0 flex-1">
-              <StationsMap
-                fill
-                onStationClick={setPreviewStationId}
-                focusStationId={focusedStationId}
-                stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
-                  id: r.station.id,
-                  name: r.station.name,
-                  latitude: r.station.latitude as number,
-                  longitude: r.station.longitude as number,
-                  status: r.state,
-                  popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
-                    sellable: formatVolume(r.totalSellableVolumeLiters),
-                    available: formatVolume(r.totalVolumeLiters),
-                  }),
-                  productsLabel: r.products.map((p) => p.fuelProductName).join(", "),
-                  operationalLabel: t(`status.${r.station.status}`),
-                  operationalTone: r.station.status === "active" ? "success" : r.station.status === "maintenance" ? "warning" : "neutral",
-                  connectivityLabel: t(r.online ? "status.online" : "status.offline"),
-                  connected: r.online,
-                  alertsCount: r.alertsCount,
-                  alertsLabel: t("list.badges.alerts", { count: r.alertsCount }),
-                }))}
-              />
-            </div>
           </div>
         </div>
-      </Modal>
+      )}
 
       {previewStationId &&
         (() => {
