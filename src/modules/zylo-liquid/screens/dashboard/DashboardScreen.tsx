@@ -528,16 +528,21 @@ function NetworkDashboardScreen() {
 
       {/* Rangée 1 — "Est-ce que je dois agir maintenant ?" : tout ce qui
           demande une décision, réuni en premier, avant même le stock/les
-          ventes. 3 cartes au même patron visuel (titre + compteur + liste
-          de 5 max) — alertes déjà existantes, écarts de stock et écarts de
-          caisse nouveaux, tous deux lecture seule (lien vers l'écran dédié,
-          jamais de modale ici, cf. widgets eux-mêmes). */}
+          ventes. Bloc rétractable (même patron que la section "Produits
+          pétroliers" plus bas — chaque rangée du dashboard doit avoir son
+          propre gros bloc titré et repliable, demande explicite de
+          l'utilisateur) contenant 3 cartes au même style visuel (titre +
+          compteur + liste de 5 max) — alertes déjà existantes, écarts de
+          stock et écarts de caisse nouveaux, tous deux lecture seule (lien
+          vers l'écran dédié, jamais de modale ici, cf. widgets eux-mêmes). */}
       {organizationId && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
-          <DashboardStockDiscrepanciesWidget organizationId={organizationId} stations={data.stations} tanks={data.tanks} />
-          <DashboardCashDiscrepanciesWidget organizationId={organizationId} stations={data.stations} />
-        </div>
+        <CollapsibleSection title={t("dashboardSections.alertsAndAnomalies")} subtitle={t("dashboardSections.alertsAndAnomaliesSubtitle")}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
+            <DashboardStockDiscrepanciesWidget organizationId={organizationId} stations={data.stations} tanks={data.tanks} />
+            <DashboardCashDiscrepanciesWidget organizationId={organizationId} stations={data.stations} />
+          </div>
+        </CollapsibleSection>
       )}
 
       {/* Section 1 — Produits pétroliers (rétractable) : vente du jour,
