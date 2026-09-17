@@ -1,0 +1,21 @@
+{
+  "hero": {
+    "title": "Communauté",
+    "subtitle": "Zylo Office est un produit récent et propriétaire : nous n'avons pas (encore) de forum public ni de communauté de développeurs. Ce que nous construisons, c'est une relation directe avec nos premiers clients — et votre retour compte plus que jamais à ce stade."
+  },
+  "feedback": {
+    "title": "Partagez votre retour",
+    "body": "En tant que client des premiers jours, votre avis façonne directement les prochaines évolutions de Zylo Liquid et Zylo Tanker. Dites-nous ce qui fonctionne, ce qui manque, ce qui vous ferait gagner du temps.",
+    "cta": "Nous écrire"
+  },
+  "updates": {
+    "title": "Suivez les nouveautés",
+    "description": "Une newsletter et un journal des nouveautés sont à venir. En attendant, contactez-nous directement pour être informé des prochaines évolutions.",
+    "badge": "À venir"
+  },
+  "partner": {
+    "title": "Devenez partenaire",
+    "body": "Vous accompagnez des stations-service ou des flottes de transport et souhaitez explorer un partenariat avec Zylo Office ? Parlons-en.",
+    "cta": "Nous contacter"
+  }
+}

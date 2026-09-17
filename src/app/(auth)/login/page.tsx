@@ -31,7 +31,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push(nextPath && nextPath.startsWith("/") ? nextPath : "/");
+      router.push(nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("genericError"));
     } finally {

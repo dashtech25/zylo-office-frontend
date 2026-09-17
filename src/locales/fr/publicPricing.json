@@ -1,0 +1,91 @@
+{
+  "hero": {
+    "title": "Une tarification adaptée à votre organisation",
+    "subtitle": "Zylo Office s'active module par module, station par station : le prix dépend des modules retenus (Zylo Liquid, Zylo Tanker), du nombre de sites et de la configuration de votre organisation. Nous établissons un devis avec vous plutôt que d'afficher un tarif standard qui ne correspondrait à personne."
+  },
+  "tiers": {
+    "sectionTitle": "Des formules pensées pour votre activité",
+    "sectionSubtitle": "Ces formules illustrent les combinaisons de modules les plus courantes. Chaque organisation reste libre d'activer ou de désactiver des modules selon ses besoins.",
+    "priceLabel": "Sur devis",
+    "priceNote": "Tarif établi selon vos modules et votre nombre de sites",
+    "cta": "Demander un devis",
+    "station": {
+      "name": "Une station",
+      "description": "Pour une station-service unique qui démarre avec Zylo Liquid.",
+      "features": [
+        "Suivi des cuves et des niveaux de carburant",
+        "Gestion de caisse et des ventes au poste",
+        "Grille tarifaire et configuration de la station",
+        "Alertes sur les stocks et les anomalies"
+      ]
+    },
+    "network": {
+      "name": "Plusieurs stations / réseau",
+      "description": "Pour un réseau de stations supervisé depuis une vue centralisée.",
+      "features": [
+        "Tout ce qui est inclus dans la formule « Une station »",
+        "Tableau de bord réseau avec vue consolidée des stocks",
+        "Suivi des cuves et livraisons sur l'ensemble du réseau",
+        "Grille tarifaire réseau et caisse consolidée",
+        "Alertes centralisées multi-stations"
+      ]
+    },
+    "fleet": {
+      "name": "Stations + flotte de camions",
+      "description": "Pour les organisations qui exploitent aussi des camions-citernes avec Zylo Tanker.",
+      "features": [
+        "Tout ce qui est inclus dans la formule « Plusieurs stations / réseau »",
+        "Suivi de flotte et supervision des camions-citernes",
+        "Suivi de consommation et des documents de transport",
+        "Positions et destinations des véhicules",
+        "Vue supervision combinée stations + flotte"
+      ]
+    }
+  },
+  "comparison": {
+    "title": "Comparer les formules",
+    "subtitle": "Un aperçu des fonctionnalités incluses dans chaque formule illustrative.",
+    "featureColumn": "Fonctionnalité",
+    "rows": {
+      "tankMonitoring": "Suivi des cuves et niveaux",
+      "cashManagement": "Gestion de caisse et ventes",
+      "pricingGrid": "Grille tarifaire",
+      "alerts": "Alertes stocks et anomalies",
+      "networkDashboard": "Tableau de bord réseau consolidé",
+      "networkPricing": "Grille tarifaire réseau",
+      "fleetTracking": "Suivi de flotte de camions-citernes",
+      "fleetDocuments": "Documents de transport et consommation",
+      "combinedSupervision": "Supervision combinée stations + flotte"
+    }
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "items": {
+      "whyNoPrice": {
+        "question": "Pourquoi n'y a-t-il pas de prix affiché ?",
+        "answer": "Le tarif dépend des modules activés, du nombre de stations ou de véhicules suivis, et de la configuration propre à votre organisation. Plutôt que d'afficher un chiffre qui ne correspondrait à personne, nous établissons un devis avec vous après avoir compris votre activité."
+      },
+      "howQuoteWorks": {
+        "question": "Comment obtenir un devis ?",
+        "answer": "Faites-nous part de votre activité via le formulaire d'essai gratuit ou en nous contactant directement. Notre équipe revient vers vous pour comprendre vos besoins et vous proposer une configuration adaptée."
+      },
+      "canChangeLater": {
+        "question": "Puis-je changer de formule plus tard ?",
+        "answer": "Les modules peuvent être activés ou désactivés selon l'évolution de votre organisation. Pour ajuster votre périmètre, le plus simple est d'en discuter avec notre équipe."
+      },
+      "selfService": {
+        "question": "Puis-je m'inscrire et payer en ligne immédiatement ?",
+        "answer": "Pas pour le moment. Zylo Office ne propose pas encore d'inscription ni de paiement en libre-service : chaque organisation est configurée avec l'aide de notre équipe."
+      },
+      "whichModules": {
+        "question": "Quels modules existent aujourd'hui ?",
+        "answer": "Zylo Liquid couvre la gestion des stations-service (cuves, caisse, tarifs, réseau) et Zylo Tanker couvre la gestion de flotte de camions-citernes. D'autres modules pourront s'ajouter au fil du temps."
+      }
+    }
+  },
+  "closing": {
+    "title": "Discutons de votre organisation",
+    "subtitle": "Décrivez-nous votre activité, nous revenons vers vous avec une configuration et un devis adaptés.",
+    "cta": "Demander un devis"
+  }
+}

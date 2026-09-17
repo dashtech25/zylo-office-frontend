@@ -1,0 +1,70 @@
+{
+  "hero": {
+    "title": "L'ERP pensé pour la distribution de carburant en Afrique",
+    "subtitle": "Zylo Office réunit vos stations-service et votre flotte de camions-citernes dans une seule plateforme : cuves, livraisons, caisse et alertes suivis en temps réel, sans jongler entre plusieurs outils.",
+    "primaryCta": "Essai gratuit",
+    "secondaryCta": "Se connecter",
+    "visualPlaceholder": "Aperçu produit à venir"
+  },
+  "appShowcase": {
+    "title": "Deux métiers, une plateforme",
+    "subtitle": "Zylo Office est composé de deux applications, chacune conçue pour un métier précis de la distribution de carburant.",
+    "viewAll": "Voir toutes les applications",
+    "zyloLiquid": {
+      "name": "Zylo Liquid",
+      "tagline": "Pour les stations-service",
+      "description": "Suivi des cuves et de la télémétrie, détection automatique des livraisons, tarification par produit, rapprochement de caisse et alertes (niveau, eau, fuite, sonde déconnectée).",
+      "cta": "Découvrir Zylo Liquid"
+    },
+    "zyloTanker": {
+      "name": "Zylo Tanker",
+      "tagline": "Pour les flottes de camions-citernes",
+      "description": "Supervision des camions-citernes, suivi de la consommation et gestion des documents de transport.",
+      "cta": "Découvrir Zylo Tanker"
+    }
+  },
+  "valueProp": {
+    "title": "Un outil construit pour la réalité du terrain, pas adapté après coup",
+    "body": "La distribution de carburant a ses propres contraintes : des cuves qu'il faut surveiller en continu pour ne jamais tomber en rupture, une caisse qu'il faut pouvoir rapprocher sans ambiguïté à la fin de chaque service, et des livraisons qu'il faut pouvoir vérifier sans dépendre uniquement d'un bon papier. Zylo Office est conçu directement autour de ces besoins, plutôt que d'être un ERP généraliste auquel on tente d'ajouter le carburant après coup.",
+    "why": {
+      "title": "Pourquoi Zylo Office",
+      "body": "Zylo Office est développé avec des opérateurs de stations et de flottes de camions-citernes pour coller à leurs processus réels — pas à une vision théorique de leur métier. La plateforme évolue avec les retours du terrain."
+    }
+  },
+  "screenshots": {
+    "title": "Vos opérations, visibles d'un coup d'œil",
+    "subtitle": "Les captures ci-dessous seront mises à jour au fil du développement du produit.",
+    "items": {
+      "network": { "caption": "Vue réseau des stations — capture d'écran à venir" },
+      "tank": { "caption": "Détail d'une cuve et de sa télémétrie — capture d'écran à venir" },
+      "cash": { "caption": "Rapprochement de caisse — capture d'écran à venir" }
+    }
+  },
+  "positioning": {
+    "title": "Ce qui distingue Zylo Office",
+    "items": {
+      "africa": {
+        "title": "Pensé pour l'Afrique",
+        "body": "Chaque organisation configure sa propre devise pour les montants affichés — la plateforme n'impose pas de devise unique."
+      },
+      "twoBusinesses": {
+        "title": "Deux métiers, une plateforme",
+        "body": "Stations-service et camions-citernes sont gérés dans le même socle, avec une organisation et des accès communs, plutôt que deux outils séparés à faire communiquer."
+      },
+      "realtime": {
+        "title": "Données en temps réel",
+        "body": "La télémétrie des cuves (sondes Holykell) est synchronisée en continu, avec un statut de synchronisation visible à tout moment — pas une donnée saisie manuellement une fois par jour."
+      },
+      "alerts": {
+        "title": "Alertes et détections automatiques",
+        "body": "Niveau haut, niveau bas, eau détectée, fuite, sonde déconnectée : les alertes sont levées automatiquement à partir des mesures de cuve, et les livraisons sont détectées par variation de niveau plutôt que déclarées à la main."
+      }
+    }
+  },
+  "finalCta": {
+    "title": "Prêt à centraliser la gestion de vos stations et de votre flotte ?",
+    "subtitle": "Parlons de votre réseau : notre équipe configure votre organisation avec vous pour un démarrage sans friction.",
+    "primaryCta": "Essai gratuit",
+    "secondaryCta": "Se connecter"
+  }
+}

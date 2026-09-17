@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "title": "Centre d'aide",
+    "subtitle": "Zylo Office est un produit jeune, accompagné par une petite équipe. Vous ne trouverez pas ici une base de connaissances géante, mais des réponses honnêtes aux questions les plus courantes — et un moyen simple de nous contacter directement."
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "items": {
+      "start": {
+        "question": "Comment démarrer avec Zylo Office ?",
+        "answer": "Il n'existe pas encore d'inscription en libre-service : notre équipe configure votre organisation avec vous, étape par étape. Laissez-nous vos coordonnées depuis la page « C'est gratuit » et nous revenons vers vous pour organiser une démonstration et un démarrage accompagné."
+      },
+      "modules": {
+        "question": "Quels modules sont disponibles ?",
+        "answer": "Deux applications aujourd'hui : Zylo Liquid pour la gestion des stations-service, et Zylo Tanker pour le suivi des flottes de camions-citernes. Le détail de chacune est présenté sur la page Applications."
+      },
+      "contact": {
+        "question": "Comment contacter le support ?",
+        "answer": "Le plus simple est d'utiliser le bloc de contact ci-dessous : nous n'avons pas encore de ligne téléphonique dédiée ni de chat en direct, mais nous répondons personnellement à chaque demande."
+      },
+      "security": {
+        "question": "Mes données sont-elles sécurisées ?",
+        "answer": "L'accès à Zylo Office est protégé par authentification et par une gestion fine des rôles et permissions, propre à chaque organisation. Nous restons transparents : nous n'affichons pas de certification qui n'existe pas encore, et nous partageons volontiers les détails techniques sur demande."
+      },
+      "pricing": {
+        "question": "Combien coûte Zylo Office ?",
+        "answer": "La tarification dépend des modules et du volume d'activité de votre entreprise. Consultez la page Tarification pour une vue d'ensemble, ou contactez-nous pour un chiffrage adapté à votre station ou votre flotte."
+      },
+      "multiUser": {
+        "question": "Plusieurs personnes de mon équipe peuvent-elles utiliser Zylo Office ?",
+        "answer": "Oui. Chaque organisation peut inviter ses collaborateurs et leur attribuer des rôles adaptés (gestion, saisie, consultation), configurés avec vous lors de la mise en place."
+      }
+    }
+  },
+  "contact": {
+    "title": "Nous contacter",
+    "body": "Une question qui n'a pas de réponse ici ? Écrivez-nous directement : notre équipe vous répond personnellement, sans robot ni file d'attente.",
+    "cta": "Nous écrire"
+  }
+}
