@@ -226,7 +226,10 @@ function FleetMapCard({
   selectedVesselId: string | null;
   onSelectVessel: (vesselId: string | null) => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Étendue par défaut : la carte flotte s'ouvre directement en mode
+  // agrandi à l'arrivée sur l'écran Localisation (demande explicite),
+  // l'utilisateur peut toujours réduire via le bouton ou Échap.
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -244,6 +247,7 @@ function FleetMapCard({
     latitude: vessel.latitude,
     longitude: vessel.longitude,
     status: toTruckMapStatus(vessel.status),
+    headingDeg: vessel.headingDeg,
   }));
 
   const selectedVessel = selectedVesselId ? displayedVessels.find((vessel) => vessel.id === selectedVesselId) : undefined;
@@ -258,6 +262,7 @@ function FleetMapCard({
       height={isExpanded ? "100vh" : 320}
       selectedTruckId={selectedVesselId}
       onTruckClick={(vesselId) => onSelectVessel(vesselId === selectedVesselId ? null : vesselId)}
+      markerKind="ship"
     />
   );
 

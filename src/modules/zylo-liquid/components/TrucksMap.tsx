@@ -36,6 +36,10 @@ export interface TruckMapPoint {
   latitude: number;
   longitude: number;
   status: TruckMapStatus;
+  /** Cap en degrés (0 = nord), utilisé uniquement par le marqueur
+   * `markerKind="ship"` pour orienter la silhouette — ignoré par les
+   * marqueurs "dot" (camions). */
+  headingDeg?: number;
 }
 
 export interface TruckMapStop {
@@ -57,6 +61,46 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 }
 
+function createDotMarkerElement(point: TruckMapPoint, selected: boolean): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.style.width = selected ? "20px" : "16px";
+  el.style.height = selected ? "20px" : "16px";
+  el.style.borderRadius = "50%";
+  el.style.border = selected ? "3px solid #1D4ED8" : "2px solid white";
+  el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
+  el.style.background = STATUS_COLOR[point.status];
+  return el;
+}
+
+/** Silhouette de navire vue du dessus (proue pointue, poupe plate),
+ * orientée selon `headingDeg` (0° = nord = pointe vers le haut du SVG
+ * avant rotation) — même principe que les icônes de navire des trackers
+ * AIS réels (MarineTraffic), aucun asset externe : tracé SVG inline. */
+function createShipMarkerElement(point: TruckMapPoint, selected: boolean): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  const size = selected ? 32 : 26;
+  el.style.width = `${size}px`;
+  el.style.height = `${size}px`;
+  el.style.border = "none";
+  el.style.background = "transparent";
+  el.style.padding = "0";
+  el.style.display = "flex";
+  el.style.alignItems = "center";
+  el.style.justifyContent = "center";
+  el.style.filter = selected ? "drop-shadow(0 0 0 2px #1D4ED8) drop-shadow(0 1px 2px rgba(0,0,0,.4))" : "drop-shadow(0 1px 2px rgba(0,0,0,.4))";
+
+  const heading = point.headingDeg ?? 0;
+  const fill = STATUS_COLOR[point.status];
+  el.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="transform: rotate(${heading}deg);">
+      <path d="M12 1.5 L18 15 Q12 19 6 15 Z" fill="${fill}" stroke="white" stroke-width="1.5" stroke-linejoin="round" />
+    </svg>
+  `;
+  return el;
+}
+
 /** Carte de tracking des camions-citernes (mission « tracking », étape 1
  * — position + arrêts sur carte, 2026-09-11) — même composant mapbox que
  * `StationsMap`, étendu pour un tracé de trajet (polyligne) et des
@@ -70,6 +114,7 @@ export function TrucksMap({
   height = 480,
   selectedTruckId,
   onTruckClick,
+  markerKind = "dot",
 }: {
   trucks: TruckMapPoint[];
   /** Trajet du camion sélectionné — [longitude, latitude][] triés
@@ -79,6 +124,11 @@ export function TrucksMap({
   height?: number | string;
   selectedTruckId?: string | null;
   onTruckClick?: (truckId: string) => void;
+  /** "dot" (défaut, camions) = pastille ronde colorée. "ship" (navires,
+   * Zylo Tanker) = silhouette de navire vue du dessus, orientée selon
+   * `TruckMapPoint.headingDeg`. Additif — aucun changement de comportement
+   * pour les appelants existants qui omettent cette prop. */
+  markerKind?: "dot" | "ship";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -128,16 +178,9 @@ export function TrucksMap({
       const bounds = new mapboxgl.LngLatBounds();
       let hasBounds = false;
       trucks.forEach((t) => {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.setAttribute("aria-label", t.label);
         const selected = t.id === selectedTruckId;
-        el.style.width = selected ? "20px" : "16px";
-        el.style.height = selected ? "20px" : "16px";
-        el.style.borderRadius = "50%";
-        el.style.border = selected ? "3px solid #1D4ED8" : "2px solid white";
-        el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.15)";
-        el.style.background = STATUS_COLOR[t.status];
+        const el = markerKind === "ship" ? createShipMarkerElement(t, selected) : createDotMarkerElement(t, selected);
+        el.setAttribute("aria-label", t.label);
         el.style.cursor = "pointer";
         el.onclick = () => onTruckClick?.(t.id);
 
@@ -214,7 +257,7 @@ export function TrucksMap({
     return () => {
       map.off("style.load", placeAll);
     };
-  }, [trucks, route, stops, selectedTruckId, token, onTruckClick]);
+  }, [trucks, route, stops, selectedTruckId, token, onTruckClick, markerKind]);
 
   function recenter() {
     const map = mapRef.current;
