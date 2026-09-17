@@ -624,12 +624,14 @@
       "selectStation": "Select a station",
       "product": "Product",
       "selectProduct": "Select a product",
+      "tank": "Tank",
+      "selectTank": "Select a tank",
       "eventAt": "Delivery date",
       "volume": "Declared volume (liters)",
       "supplier": "Supplier",
       "reference": "Delivery note reference",
       "submit": "Declare",
-      "required": "Station, product and volume are required."
+      "required": "Station, tank and volume are required."
     },
     "table": {
       "station": "Station",
@@ -2202,26 +2204,28 @@
     },
     "orders": {
       "pageTitle": "Order",
-      "pageSubtitle": "Order from a supplier already linked to this station, for an existing tank.",
+      "pageSubtitle": "Order from a supplier already linked to this station, one or more products — the tank is chosen at delivery time.",
       "newOrder": "New order",
       "prerequisiteHint": "Link a supplier first (Suppliers tab) and create at least one tank before placing an order.",
       "empty": "No order for this station.",
       "table": {
         "reference": "Reference",
         "tank": "Tank",
+        "products": "Products",
         "supplier": "Supplier",
-        "volume": "Ordered volume",
+        "volume": "Total ordered volume",
         "orderedAt": "Ordered on",
         "expectedAt": "Expected on",
         "status": "Status"
       },
       "status": {
         "open": "Open",
+        "partially_received": "Partially received",
         "received": "Received"
       },
       "form": {
         "title": "New order",
-        "required": "Product, tank, supplier, reference and volume are required.",
+        "required": "Supplier, reference and at least one product with a valid volume are required.",
         "fuelProduct": "Product",
         "selectFuelProduct": "Select a product",
         "tank": "Tank",
@@ -2241,7 +2245,12 @@
         "volume": "Ordered volume (L)",
         "expectedAt": "Expected date",
         "exceedsCapacity": "This volume exceeds the available space in the selected tank.",
-        "nearsCapacityWarning": "This volume is close to the tank's available space limit — check before confirming."
+        "nearsCapacityWarning": "This volume is close to the tank's available space limit — check before confirming.",
+        "lines": "Ordered products",
+        "lineFuelProduct": "Product",
+        "lineVolume": "Volume (L)",
+        "addLine": "Add a product",
+        "removeLine": "Remove this product"
       },
       "detail": {
         "fuelProduct": "Product",
@@ -2253,6 +2262,8 @@
         "tankCapacity": "Tank capacity",
         "tankAvailable": "Available space",
         "unknown": "Unknown",
+        "lines": "Order lines",
+        "lineDelivered": "Delivered",
         "linkedDeliveries": "Linked deliveries",
         "noLinkedDelivery": "No delivery declared for this order.",
         "assignedTrucks": "Assigned trucks",
@@ -2293,6 +2304,7 @@
       "table": {
         "eventAt": "Received on",
         "order": "Order",
+        "tanks": "Tank(s)",
         "volume": "Declared volume",
         "noteReference": "Note code",
         "status": "Status"
@@ -2303,14 +2315,24 @@
       },
       "form": {
         "title": "Declare a delivery",
-        "required": "Order, date and volume are required.",
+        "required": "Each line needs a tank and a volume, and the received date is required.",
         "order": "Order",
         "selectOrder": "Select an open order",
         "orderHint": "Supplier and product come from the selected order — nothing to re-enter.",
         "eventAt": "Received on",
+        "supplier": "Supplier (optional)",
+        "selectSupplier": "Select a supplier",
         "volume": "Delivered volume (L)",
         "noteReference": "Delivery note code",
         "noteReferencePlaceholder": "E.g. DN-778812",
+        "lines": "Lines (one per filled tank)",
+        "lineTitle": "Line {index}",
+        "tank": "Tank",
+        "selectTank": "Select a tank",
+        "orderLine": "Order (optional)",
+        "selectOrderLine": "No linked order",
+        "addLine": "Add a line",
+        "removeLine": "Remove this line",
         "attachments": "Scanned delivery note",
         "dropZone": "Drag and drop or click to scan/upload"
       },
@@ -2318,6 +2340,22 @@
         "title": "Delivery detail",
         "order": "Order",
         "fuelProduct": "Product",
+        "reevaluate": "Re-evaluate reconciliation",
+        "lines": "Delivery lines",
+        "line": {
+          "tank": "Tank",
+          "selectTank": "Select a tank",
+          "volume": "Volume",
+          "order": "Linked order",
+          "noOrder": "No linked order",
+          "reconciliation": "Reconciliation",
+          "corrected": "Corrected",
+          "correctAction": "Correct this line",
+          "correctRequired": "Tank and volume are required.",
+          "correctionReason": "Correction reason (optional)",
+          "correctionReasonPlaceholder": "E.g. wrong volume entered",
+          "submitCorrection": "Save correction"
+        },
         "supplier": "Supplier",
         "eventAt": "Received on",
         "declaredVolume": "Declared volume",

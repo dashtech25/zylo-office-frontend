@@ -1,8 +1,8 @@
 "use client";
 
-import { Plus, RefreshCw, ShoppingCart } from "lucide-react";
+import { Plus, RefreshCw, ShoppingCart, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { resolveStorageUrl } from "@/core/api/storage";
 import {
@@ -19,15 +19,18 @@ import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
 
 const PURCHASE_ORDER_ENTITY_TYPE = "PurchaseOrder";
 
-const STATUS_TONE = { open: "warning", received: "success" } as const;
+const STATUS_TONE = { open: "warning", partially_received: "info", received: "success" } as const;
 
 /** Onglet « Commande » (mission « flux de livraison station », 2026-09-10)
  * — étape 1 du flux : le gérant (ou toute personne habilitée,
  * `PURCHASE_ORDER_MANAGE`) commande auprès d'un fournisseur déjà rattaché
- * à la station, sur une cuve déjà existante — jamais une saisie libre de
- * fournisseur ou de cuve (décision explicite du commanditaire : réutiliser
- * ce qui est déjà défini plutôt que de le ressaisir). Le produit est celui
- * de la cuve choisie (jamais un second champ, même règle que le backend). */
+ * à la station, un ou plusieurs produits — jamais une saisie libre de
+ * fournisseur. Refonte 2026-09-17 (validée scénario par scénario avec le
+ * commanditaire) : la cuve se choisit à la LIVRAISON, jamais à la commande
+ * — un `PurchaseOrder` est désormais une en-tête portant plusieurs
+ * `PurchaseOrderLine` (un produit + un volume + un statut par ligne), pour
+ * représenter un camion compartimenté livrant plusieurs produits en une
+ * seule visite. */
 export function OrdersSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.orders");
   const data = useDeliveryFlow(organizationId, station.id);
@@ -91,7 +94,7 @@ export function OrdersSection({ organizationId, station }: { organizationId: str
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>{t("table.reference")}</TableHeaderCell>
-                  <TableHeaderCell>{t("table.tank")}</TableHeaderCell>
+                  <TableHeaderCell>{t("table.products")}</TableHeaderCell>
                   <TableHeaderCell>{t("table.supplier")}</TableHeaderCell>
                   <TableHeaderCell>{t("table.volume")}</TableHeaderCell>
                   <TableHeaderCell>{t("table.orderedAt")}</TableHeaderCell>
@@ -101,14 +104,17 @@ export function OrdersSection({ organizationId, station }: { organizationId: str
               </TableHead>
               <TableBody>
                 {data.purchaseOrders.map((order) => {
-                  const tank = data.tanks.find((tk) => tk.id === order.tankId);
                   const supplier = data.stationSuppliers.find((s) => s.id === order.supplierId);
+                  const totalVolume = order.lines.reduce((sum, line) => sum + line.orderedVolumeLiters, 0);
+                  const productsLabel = order.lines
+                    .map((line) => data.fuelProducts.find((fp) => fp.id === line.fuelProductId)?.name ?? "—")
+                    .join(", ");
                   return (
                     <TableRow key={order.id} clickable onClick={() => setSelectedOrderId(order.id)}>
                       <TableCell className="font-medium text-text underline decoration-dotted">{order.orderReference}</TableCell>
-                      <TableCell>{tank?.displayName ?? "—"}</TableCell>
+                      <TableCell>{productsLabel || "—"}</TableCell>
                       <TableCell>{supplier?.name ?? "—"}</TableCell>
-                      <TableCell className="tabular-nums">{order.orderedVolumeLiters.toLocaleString()} L</TableCell>
+                      <TableCell className="tabular-nums">{totalVolume.toLocaleString()} L</TableCell>
                       <TableCell className="text-text-muted">{new Date(order.orderedAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-text-muted">{order.expectedAt ? new Date(order.expectedAt).toLocaleDateString() : "—"}</TableCell>
                       <TableCell>
@@ -231,11 +237,28 @@ function OrderDetailModal({
 
   if (!order) return null;
 
-  const tank = data.tanks.find((tk) => tk.id === order.tankId);
-  const fuelProduct = tank ? data.fuelProducts.find((fp) => fp.id === tank.fuelProductId) : undefined;
   const supplier = data.stationSuppliers.find((s) => s.id === order.supplierId);
-  const tankState = tank ? data.tankStateById.get(tank.id) : undefined;
-  const linkedDeliveries = data.declarations.filter((d) => d.purchaseOrderId === order.id);
+  const totalOrderedVolume = order.lines.reduce((sum, line) => sum + line.orderedVolumeLiters, 0);
+  // Volume livré par ligne : somme des lignes de déclaration de livraison
+  // dont `purchaseOrderLineId` référence cette ligne de commande — jamais
+  // via un `purchaseOrderId` unique sur la déclaration (obsolète depuis la
+  // refonte cuve-à-la-livraison, cf. commentaire de tête de fichier).
+  const deliveredByLineId = new Map<string, number>();
+  for (const declaration of data.declarations) {
+    for (const line of declaration.lines) {
+      if (!line.purchaseOrderLineId) continue;
+      deliveredByLineId.set(line.purchaseOrderLineId, (deliveredByLineId.get(line.purchaseOrderLineId) ?? 0) + line.volumeLiters);
+    }
+  }
+  const orderLineIds = new Set(order.lines.map((line) => line.id));
+  const linkedDeliveries = data.declarations
+    .map((declaration) => ({
+      declaration,
+      matchedVolume: declaration.lines
+        .filter((line) => line.purchaseOrderLineId && orderLineIds.has(line.purchaseOrderLineId))
+        .reduce((sum, line) => sum + line.volumeLiters, 0),
+    }))
+    .filter((entry) => entry.matchedVolume > 0);
   const previewDoc = documents.find((doc) => doc.id === previewDocId) ?? null;
 
   async function handleGenerate(format: "pdf" | "docx") {
@@ -259,22 +282,30 @@ function OrderDetailModal({
         </div>
 
         <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
-          <div><dt className="text-text-muted">{t("fuelProduct")}</dt><dd className="text-text">{fuelProduct?.name ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("tank")}</dt><dd className="text-text">{tank?.displayName ?? "—"}</dd></div>
           <div><dt className="text-text-muted">{t("supplier")}</dt><dd className="text-text">{supplier?.name ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("orderedVolume")}</dt><dd className="tabular-nums text-text">{order.orderedVolumeLiters.toLocaleString()} L</dd></div>
+          <div><dt className="text-text-muted">{t("orderedVolume")}</dt><dd className="tabular-nums text-text">{totalOrderedVolume.toLocaleString()} L</dd></div>
           <div><dt className="text-text-muted">{t("orderedAt")}</dt><dd className="text-text">{new Date(order.orderedAt).toLocaleString()}</dd></div>
           <div><dt className="text-text-muted">{t("expectedAt")}</dt><dd className="text-text">{order.expectedAt ? new Date(order.expectedAt).toLocaleDateString() : "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("tankCapacity")}</dt><dd className="tabular-nums text-text">{tank ? `${tank.capacityLiters.toLocaleString()} L` : "—"}</dd></div>
-          <div>
-            <dt className="text-text-muted">{t("tankAvailable")}</dt>
-            <dd className="tabular-nums text-text">
-              {tankState?.emptyVolumeLiters !== null && tankState?.emptyVolumeLiters !== undefined
-                ? `${Math.round(tankState.emptyVolumeLiters).toLocaleString()} L`
-                : t("unknown")}
-            </dd>
-          </div>
         </dl>
+
+        <div>
+          <p className="mb-2 text-body-sm font-semibold text-text">{t("lines")}</p>
+          <ul className="flex flex-col gap-2">
+            {order.lines.map((line) => {
+              const fuelProduct = data.fuelProducts.find((fp) => fp.id === line.fuelProductId);
+              const delivered = deliveredByLineId.get(line.id) ?? 0;
+              return (
+                <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-border-subtle px-3 py-2 text-body-sm">
+                  <span className="font-medium text-text">{fuelProduct?.name ?? "—"}</span>
+                  <span className="tabular-nums text-text-muted">
+                    {t("lineDelivered")}: {delivered.toLocaleString()} / {line.orderedVolumeLiters.toLocaleString()} L
+                  </span>
+                  <Badge tone={STATUS_TONE[line.status]}>{tOrders(`status.${line.status}`)}</Badge>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
         <div>
           <p className="mb-2 text-body-sm font-semibold text-text">{t("linkedDeliveries")}</p>
@@ -282,10 +313,10 @@ function OrderDetailModal({
             <p className="text-body-sm text-text-muted">{t("noLinkedDelivery")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {linkedDeliveries.map((delivery) => (
-                <li key={delivery.id} className="flex items-center justify-between rounded-card border border-border-subtle px-3 py-2 text-body-sm">
-                  <span className="text-text">{new Date(delivery.eventAt).toLocaleString()}</span>
-                  <span className="tabular-nums text-text">{delivery.declaredVolumeLiters.toLocaleString()} L</span>
+              {linkedDeliveries.map(({ declaration, matchedVolume }) => (
+                <li key={declaration.id} className="flex items-center justify-between rounded-card border border-border-subtle px-3 py-2 text-body-sm">
+                  <span className="text-text">{new Date(declaration.eventAt).toLocaleString()}</span>
+                  <span className="tabular-nums text-text">{matchedVolume.toLocaleString()} L</span>
                 </li>
               ))}
             </ul>
@@ -402,11 +433,17 @@ function generateOrderReference(): string {
   return `CMD-${datePart}-${suffix}`;
 }
 
-/** Seuil de l'avertissement non bloquant (décision du commanditaire,
- * 2026-09-10) : au-delà de 90% de l'espace disponible, le volume saisi
- * reste accepté mais signalé — le blocage strict ne s'applique qu'au
- * dépassement réel de l'espace disponible. */
-const CAPACITY_WARNING_RATIO = 0.9;
+interface OrderLineDraft {
+  key: number;
+  fuelProductId: string;
+  volume: string;
+}
+
+let orderLineDraftSeq = 0;
+function newOrderLineDraft(): OrderLineDraft {
+  orderLineDraftSeq += 1;
+  return { key: orderLineDraftSeq, fuelProductId: "", volume: "" };
+}
 
 function OrderFormModal({
   data,
@@ -420,12 +457,10 @@ function OrderFormModal({
   const t = useTranslations("zyloLiquid.stationAdmin.orders.form");
   const tCommon = useTranslations("common");
 
-  const [fuelProductId, setFuelProductId] = useState("");
-  const [tankId, setTankId] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [reference, setReference] = useState("");
-  const [volume, setVolume] = useState("");
   const [expectedAt, setExpectedAt] = useState("");
+  const [lines, setLines] = useState<OrderLineDraft[]>([newOrderLineDraft()]);
   const [submitting, setSubmitting] = useState(false);
   // Erreur de soumission (réseau/serveur) uniquement — l'erreur "champs
   // requis" est dérivée à chaque rendu (voir `missingRequired` plus bas),
@@ -435,44 +470,42 @@ function OrderFormModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
 
-  const tanksForProduct = useMemo(
-    () => data.tanks.filter((tk) => tk.active && (!fuelProductId || tk.fuelProductId === fuelProductId)),
-    [data.tanks, fuelProductId]
-  );
-  const selectedTank = data.tanks.find((tk) => tk.id === tankId);
-  const selectedTankState = selectedTank ? data.tankStateById.get(selectedTank.id) : undefined;
-  const availableLiters = selectedTankState?.emptyVolumeLiters ?? null;
-
-  const volumeNumber = volume ? Number(volume) : null;
-  const exceedsCapacity = availableLiters !== null && volumeNumber !== null && volumeNumber > availableLiters;
-  const nearsCapacity =
-    !exceedsCapacity && availableLiters !== null && availableLiters > 0 && volumeNumber !== null && volumeNumber >= availableLiters * CAPACITY_WARNING_RATIO;
-  const missingRequired = !tankId || !supplierId || !reference || !volume;
-  const displayError = attempted && missingRequired ? t("required") : exceedsCapacity ? t("exceedsCapacity") : submitError;
+  const validLines = lines.filter((line) => line.fuelProductId && Number(line.volume) > 0);
+  const missingRequired = !supplierId || !reference || validLines.length === 0;
+  const displayError = attempted && missingRequired ? t("required") : submitError;
 
   function reset() {
-    setFuelProductId("");
-    setTankId("");
     setSupplierId("");
     setReference("");
-    setVolume("");
     setExpectedAt("");
+    setLines([newOrderLineDraft()]);
     setSubmitError(null);
     setAttempted(false);
+  }
+
+  function updateLine(key: number, patch: Partial<OrderLineDraft>) {
+    setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
+  }
+
+  function addLine() {
+    setLines((prev) => [...prev, newOrderLineDraft()]);
+  }
+
+  function removeLine(key: number) {
+    setLines((prev) => (prev.length <= 1 ? prev : prev.filter((line) => line.key !== key)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setAttempted(true);
-    if (missingRequired || exceedsCapacity) return;
+    if (missingRequired) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
       await data.addPurchaseOrder({
-        tankId,
         supplierId,
         orderReference: reference,
-        orderedVolumeLiters: Number(volume),
+        lines: validLines.map((line) => ({ fuelProductId: line.fuelProductId, orderedVolumeLiters: Number(line.volume) })),
         expectedAt: expectedAt || undefined,
       });
       reset();
@@ -497,62 +530,12 @@ function OrderFormModal({
       footer={
         <>
           <Button variant="outline" size="sm" type="button" onClick={() => onOpenChange(false)}>{tCommon("actions.cancel")}</Button>
-          <Button size="sm" type="submit" form="order-form" loading={submitting} disabled={exceedsCapacity}>{tCommon("actions.save")}</Button>
+          <Button size="sm" type="submit" form="order-form" loading={submitting}>{tCommon("actions.save")}</Button>
         </>
       }
     >
       <form id="order-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {displayError && <Alert tone="error">{displayError}</Alert>}
-        <FormField label={t("fuelProduct")}>
-          {() => (
-            <SearchableSelect
-              aria-label={t("fuelProduct")}
-              value={fuelProductId || undefined}
-              onValueChange={(next) => {
-                setFuelProductId(next);
-                if (selectedTank && selectedTank.fuelProductId !== next) setTankId("");
-              }}
-              placeholder={t("selectFuelProduct")}
-              searchPlaceholder={t("searchPlaceholder")}
-              emptyLabel={t("noResult")}
-              options={data.fuelProducts.map((fp) => ({ value: fp.id, label: fp.name }))}
-            />
-          )}
-        </FormField>
-        <FormField label={t("tank")}>
-          {() => (
-            <SearchableSelect
-              aria-label={t("tank")}
-              value={tankId || undefined}
-              onValueChange={setTankId}
-              placeholder={fuelProductId ? t("selectTank") : t("selectFuelProductFirst")}
-              searchPlaceholder={t("searchPlaceholder")}
-              emptyLabel={t("noResult")}
-              disabled={!fuelProductId}
-              options={tanksForProduct.map((tk) => {
-                const state = data.tankStateById.get(tk.id);
-                const fuelProductName = data.fuelProducts.find((fp) => fp.id === tk.fuelProductId)?.name ?? "";
-                const capacity = `${tk.capacityLiters.toLocaleString()} L`;
-                const available = state?.emptyVolumeLiters !== null && state?.emptyVolumeLiters !== undefined
-                  ? t("availableSuffix", { volume: Math.round(state.emptyVolumeLiters).toLocaleString() })
-                  : t("availableUnknown");
-                return {
-                  value: tk.id,
-                  label: tk.displayName,
-                  description: `${fuelProductName} · ${t("capacityPrefix")} ${capacity} · ${available}`,
-                };
-              })}
-            />
-          )}
-        </FormField>
-        {selectedTank && (
-          <p className="text-caption text-text-muted">
-            {t("tankContext", {
-              capacity: selectedTank.capacityLiters.toLocaleString(),
-              available: availableLiters !== null ? `${Math.round(availableLiters).toLocaleString()} L` : t("availableUnknown"),
-            })}
-          </p>
-        )}
         <FormField label={t("supplier")}>
           {() => (
             <SearchableSelect
@@ -587,13 +570,63 @@ function OrderFormModal({
             />
           )}
         </FormField>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label={t("volume")} error={exceedsCapacity ? t("exceedsCapacity") : undefined}>
-            {(f) => <Input {...f} type="number" invalid={exceedsCapacity} value={volume} onChange={(e) => setVolume(e.target.value)} />}
-          </FormField>
-          <FormField label={t("expectedAt")}>{(f) => <Input {...f} type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} />}</FormField>
+
+        {/* Refonte 2026-09-17 : une commande porte une ou plusieurs lignes
+         * (une par produit), jamais une cuve unique — la cuve se choisit à
+         * la livraison (camion compartimenté = plusieurs lignes, un seul
+         * bon de commande). */}
+        <div className="flex flex-col gap-3">
+          <p className="text-body-sm font-semibold text-text">{t("lines")}</p>
+          {lines.map((line) => (
+            <div key={line.key} className="flex items-end gap-2">
+              <div className="flex-1">
+                <FormField label={t("lineFuelProduct")}>
+                  {() => (
+                    <SearchableSelect
+                      aria-label={t("lineFuelProduct")}
+                      value={line.fuelProductId || undefined}
+                      onValueChange={(next) => updateLine(line.key, { fuelProductId: next })}
+                      placeholder={t("selectFuelProduct")}
+                      searchPlaceholder={t("searchPlaceholder")}
+                      emptyLabel={t("noResult")}
+                      options={data.fuelProducts.map((fp) => ({ value: fp.id, label: fp.name }))}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="w-32">
+                <FormField label={t("lineVolume")}>
+                  {(f) => (
+                    <Input
+                      {...f}
+                      type="number"
+                      value={line.volume}
+                      onChange={(e) => updateLine(line.key, { volume: e.target.value })}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={t("removeLine")}
+                title={t("removeLine")}
+                disabled={lines.length <= 1}
+                onClick={() => removeLine(line.key)}
+                className="mb-0.5"
+              >
+                <X className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addLine} className="self-start">
+            <Plus className="size-4" aria-hidden />
+            {t("addLine")}
+          </Button>
         </div>
-        {nearsCapacity && <Alert tone="warning">{t("nearsCapacityWarning")}</Alert>}
+
+        <FormField label={t("expectedAt")}>{(f) => <Input {...f} type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} />}</FormField>
       </form>
     </Modal>
   );

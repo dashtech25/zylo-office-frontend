@@ -954,37 +954,80 @@ export function getTankCash(
 // ligne référençant l'originale via correctsDeclarationId).
 // ================================================================
 
-export interface DeliveryDeclaration {
+// Refonte 2026-09-17 (validee scenario par scenario avec le commanditaire) :
+// la cuve se choisit a la LIVRAISON, jamais a la commande — une declaration
+// devient une en-tete + plusieurs lignes (une par cuve reellement remplie),
+// pour representer une visite de camion touchant plusieurs cuves et/ou
+// plusieurs produits (camion compartimente). `purchaseOrderLineId` par
+// ligne, jamais un `purchaseOrderId` unique sur l'en-tete.
+export interface DeliveryDeclarationLine {
   id: string;
-  stationId: string;
-  authorUserId: string;
-  fuelProductId: string;
-  eventAt: string;
-  declaredAt: string;
-  declaredVolumeLiters: number;
-  supplierName: string | null;
-  supplierId: string | null;
-  truckId: string | null;
-  purchaseOrderId: string | null;
-  deliveryNoteReference: string | null;
-  lifecycleStatus: "declared" | "locked";
-  changeReason: string | null;
-  correctsDeclarationId: string | null;
+  declarationId: string;
+  tankId: string;
+  purchaseOrderLineId: string | null;
+  volumeLiters: number;
+  correctsLineId: string | null;
   reconciledWithId: string | null;
   reconciledWithType: string | null;
 }
 
+export interface DeliveryDeclaration {
+  id: string;
+  stationId: string;
+  authorUserId: string;
+  eventAt: string;
+  declaredAt: string;
+  supplierName: string | null;
+  supplierId: string | null;
+  truckId: string | null;
+  deliveryNoteReference: string | null;
+  lifecycleStatus: "declared" | "locked";
+  changeReason: string | null;
+  correctsDeclarationId: string | null;
+  lines: DeliveryDeclarationLine[];
+}
+
+export interface CreateDeliveryDeclarationLineInput {
+  tankId: string;
+  volumeLiters: number;
+  /** undefined = pas de commande liee (livraison sans commande prealable). */
+  purchaseOrderLineId?: string;
+}
+
 export interface CreateDeliveryDeclarationInput {
   stationId: string;
-  fuelProductId: string;
   eventAt: string;
-  declaredVolumeLiters: number;
+  lines: CreateDeliveryDeclarationLineInput[];
   supplierId?: string;
   truckId?: string;
-  purchaseOrderId?: string;
   supplierName?: string;
   deliveryNoteReference?: string;
   changeReason?: string;
+}
+
+/** Correction CIBLEE d'une ou plusieurs lignes (jamais toute la
+ * declaration) : les lignes non concernees de l'originale restent valables
+ * telles quelles. */
+export interface CorrectDeliveryDeclarationLineInput {
+  correctsLineId: string;
+  tankId: string;
+  volumeLiters: number;
+  purchaseOrderLineId?: string;
+}
+
+export interface CorrectDeliveryDeclarationLinesInput {
+  declarationId: string;
+  eventAt?: string;
+  supplierName?: string;
+  supplierId?: string;
+  truckId?: string;
+  deliveryNoteReference?: string;
+  changeReason?: string;
+  lines: CorrectDeliveryDeclarationLineInput[];
+}
+
+export function correctDeliveryDeclarationLines(organizationId: string, data: CorrectDeliveryDeclarationLinesInput): Promise<DeliveryDeclaration> {
+  return apiFetch<DeliveryDeclaration>("/zylo-liquid/delivery-declarations/correct-lines", { method: "POST", organizationId, body: JSON.stringify(data) });
 }
 
 export function listDeliveryDeclarations(organizationId: string, params: { stationId?: string; limit?: number } = {}): Promise<Page<DeliveryDeclaration>> {
@@ -1316,28 +1359,44 @@ export function listTruckStops(organizationId: string, truckId: string, params: 
 }
 
 // Approvisionnement — commandes fournisseur (PurchaseOrder), portée
-// station, produit/fournisseur/cuve toujours en sélection depuis le
-// référentiel déjà défini pour la station — jamais une saisie libre
-// (mission « flux de livraison station »).
+// station, fournisseur toujours en sélection depuis le référentiel déjà
+// défini pour la station — jamais une saisie libre (mission « flux de
+// livraison station »). Refonte 2026-09-17 : plus de cuve/produit/volume
+// uniques sur la commande — une commande porte une ou plusieurs lignes
+// (une par produit), la cuve se choisit à la livraison, jamais ici
+// (camion compartimenté = plusieurs lignes de commande, un seul bon).
+export interface PurchaseOrderLine {
+  id: string;
+  purchaseOrderId: string;
+  fuelProductId: string;
+  orderedVolumeLiters: number;
+  status: "open" | "partially_received" | "received";
+}
+
 export interface PurchaseOrder {
   id: string;
   stationId: string;
-  tankId: string;
   supplierId: string;
   authorUserId: string;
   orderReference: string;
-  orderedVolumeLiters: number;
   orderedAt: string;
   expectedAt: string | null;
-  status: "open" | "received";
+  /** Agrégé depuis les lignes : "received" si toutes reçues, "open" si
+   * aucune, "partially_received" sinon (ex. Super livré, Gasoil attendu). */
+  status: "open" | "partially_received" | "received";
+  lines: PurchaseOrderLine[];
+}
+
+export interface CreatePurchaseOrderLineInput {
+  fuelProductId: string;
+  orderedVolumeLiters: number;
 }
 
 export interface CreatePurchaseOrderInput {
   stationId: string;
-  tankId: string;
   supplierId: string;
   orderReference: string;
-  orderedVolumeLiters: number;
+  lines: CreatePurchaseOrderLineInput[];
   expectedAt?: string;
 }
 
@@ -1369,8 +1428,10 @@ export function lockDeliveryDeclaration(organizationId: string, id: string): Pro
   return apiFetch<DeliveryDeclaration>(`/zylo-liquid/delivery-declarations/${id}/lock`, { method: "POST", organizationId });
 }
 
-export function reconcileDeliveryDeclaration(organizationId: string, id: string): Promise<ReconciliationRecord> {
-  return apiFetch<ReconciliationRecord>(`/zylo-liquid/delivery-declarations/${id}/reconcile`, { method: "POST", organizationId });
+/** Une déclaration peut porter plusieurs lignes (refonte 2026-09-17) —
+ * chacune se rapproche indépendamment, la liste complète est retournée. */
+export function reconcileDeliveryDeclaration(organizationId: string, id: string): Promise<ReconciliationRecord[]> {
+  return apiFetch<ReconciliationRecord[]>(`/zylo-liquid/delivery-declarations/${id}/reconcile`, { method: "POST", organizationId });
 }
 
 export interface ShiftCashDeclaration {

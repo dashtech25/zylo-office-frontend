@@ -566,7 +566,7 @@ function NetworkDashboardScreen() {
 
         {organizationId && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <DashboardDeliveriesWidget organizationId={organizationId} stations={data.stations} fuelProducts={data.fuelProducts} />
+            <DashboardDeliveriesWidget organizationId={organizationId} stations={data.stations} fuelProducts={data.fuelProducts} tanks={data.tanks} />
             <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
           </div>
         )}
