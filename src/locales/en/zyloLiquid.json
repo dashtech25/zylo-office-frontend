@@ -1677,6 +1677,8 @@
     "salesSubtitle": "Volume sold and revenue, for the selected period.",
     "salesEmpty": "No sales for the selected period.",
     "salesCollapse": "← Collapse",
+    "stationsMap": "Where are my stations?",
+    "stationsMapSubtitle": "Location and status of every station in the network — map and table stay in sync.",
     "fuelProducts": "Fuel products"
   },
   "stationDetail": {

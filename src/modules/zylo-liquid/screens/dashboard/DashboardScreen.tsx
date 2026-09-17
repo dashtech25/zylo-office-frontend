@@ -375,8 +375,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { Badge, Card, CollapsibleSection } from "@/shared/ui";
-import { KpiSkeleton, ListSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
+import { Card, CollapsibleSection } from "@/shared/ui";
+import { KpiSkeleton, ListSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 import { cn } from "@/shared/lib/cn";
 
 import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
@@ -392,8 +392,8 @@ import { DashboardAlertsWidget } from "./DashboardAlertsWidget";
 import { DashboardCashDiscrepanciesWidget } from "./DashboardCashDiscrepanciesWidget";
 import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
 import { DashboardSalesBlock } from "./DashboardSalesBlock";
+import { DashboardStationsMapBlock } from "./DashboardStationsMapBlock";
 import { DashboardStockDiscrepanciesWidget } from "./DashboardStockDiscrepanciesWidget";
-import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
 import PompisteDashboard from "./PompisteDashboard";
 
@@ -598,6 +598,21 @@ function NetworkDashboardScreen() {
         </CollapsibleSection>
       )}
 
+      {/* Rangée 3 — « Où sont mes stations ? » : table compacte + carte
+          synchronisées (StationsMap, déjà utilisée sur la page Stations,
+          jamais dupliquée). Mêmes données que l'ancien tableau autonome
+          plus bas dans ce fichier (data.stationAggregates), simplement
+          déplacé ici à côté de la carte. */}
+      <CollapsibleSection title={t("dashboardSections.stationsMap")} subtitle={t("dashboardSections.stationsMapSubtitle")}>
+        <DashboardStationsMapBlock
+          loading={data.statesLoading}
+          stationAggregates={data.stationAggregates}
+          totalStationsCount={data.stations.length}
+          formatVolume={formatVolume}
+          formatMoney={formatMoney}
+        />
+      </CollapsibleSection>
+
       {/* Section 1 — Produits pétroliers (rétractable) : synthèse stock
           réseau, livraisons récentes — chaque consultation de détail passe
           par une modale, jamais une redirection (contrainte explicite du
@@ -674,76 +689,6 @@ function NetworkDashboardScreen() {
               </div>
             </div>
           )}
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        {/* Stations du réseau : dépend des états courants par station
-            (`statesLoading`), qui se chargent après la base — reste en
-            squelette même quand la synthèse et le graphique sont déjà
-            affichés. */}
-        <Card padding="none">
-          <div className="flex items-center justify-between p-5 pb-0">
-            <h3 className="text-h3 font-semibold text-text">{t("stations.title")}</h3>
-          </div>
-          <div className="overflow-x-auto p-5">
-            {data.statesLoading ? (
-              <table className="w-full border-collapse text-body-sm">
-                <tbody>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <TableRowSkeleton key={i} columns={7} />
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <>
-                <table className="w-full border-collapse text-body-sm">
-                  <thead>
-                    <tr className="border-b border-border-subtle text-caption font-semibold uppercase tracking-wide text-text-muted">
-                      <th className="py-2 text-left">{t("stations.columns.station")}</th>
-                      <th className="py-2 text-left">{t("stations.columns.status")}</th>
-                      <th className="py-2 text-left">{t("stations.columns.mainProduct")}</th>
-                      <th className="py-2 text-right">{t("stations.columns.currentStock")}</th>
-                      <th className="py-2 text-right">{t("stations.columns.capacity")}</th>
-                      <th className="py-2 pl-4 text-left">{t("stations.columns.rate")}</th>
-                      <th className="py-2 text-right">{t("stations.columns.value")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.stationAggregates.map(({ station, online, volumeLiters, capacityLiters, monetaryValue, currencyCode, mainProductName }) => {
-                      const rate = capacityLiters > 0 ? (volumeLiters / capacityLiters) * 100 : 0;
-                      return (
-                        <tr key={station.id} className="border-b border-border-subtle/60">
-                          <td className="py-2 text-text">{station.name}</td>
-                          <td className="py-2">
-                            <Badge tone={online ? "success" : "neutral"} size="sm" dot>
-                              {online ? t("stations.status.online") : t("stations.status.offline")}
-                            </Badge>
-                          </td>
-                          <td className="py-2 text-text-muted">{mainProductName ?? "—"}</td>
-                          <td className="py-2 text-right tabular-nums text-text">{formatVolume(volumeLiters)}</td>
-                          <td className="py-2 text-right tabular-nums text-text-muted">{formatVolume(capacityLiters)}</td>
-                          <td className="py-2 pl-4">
-                            <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-16 overflow-hidden rounded-pill bg-surface-muted">
-                                <div className="h-full rounded-pill bg-primary" style={{ width: `${Math.min(100, rate)}%` }} />
-                              </div>
-                              <span className="tabular-nums text-caption text-text-muted">{formatPercent(rate)}%</span>
-                            </div>
-                          </td>
-                          <td className="py-2 text-right tabular-nums text-text">
-                            {monetaryValue !== null && currencyCode ? formatMoney(monetaryValue, currencyCode) : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {data.stationAggregates.length === 0 && <p className="py-4 text-body-sm text-text-muted">{t("stations.empty")}</p>}
-                <p className="mt-3 text-caption text-text-muted">{t("stations.totalStations", { count: data.stations.length })}</p>
-              </>
-            )}
-          </div>
         </Card>
       </div>
 
