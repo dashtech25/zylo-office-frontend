@@ -1,31 +1,85 @@
 "use client";
 
-import { File as FileIcon, Paperclip, Plus, Truck, Upload } from "lucide-react";
+import { File as FileIcon, Paperclip, Plus, RefreshCcw, Trash2, Truck, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
-import { listReconciliationRecords, type Delivery, type ReconciliationRecord, type Station, type ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import {
+  correctDeliveryDeclarationLines,
+  listReconciliationRecords,
+  type CorrectDeliveryDeclarationLineInput,
+  type CreateDeliveryDeclarationLineInput,
+  type Delivery,
+  type DeliveryDeclaration,
+  type DeliveryDeclarationLine,
+  type PurchaseOrder,
+  type PurchaseOrderLine,
+  type ReconciliationRecord,
+  type Station,
+  type Tank,
+  type ZyloDocument,
+} from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { Tabs } from "@/shared/ui/Tabs";
 
 import { useDeliveryFlow } from "../station-detail/useDeliveryFlow";
 
-// "not_reconciled" : une livraison détectée sans aucun enregistrement de
-// rapprochement pointant vers elle (aucune déclaration trouvée dans la
-// fenêtre — ne préjuge pas d'une alerte `delivery_undeclared`, c'est un
-// statut d'affichage honnête, pas une garantie qu'une alerte existe).
+// "not_reconciled" : une livraison détectée (ou une ligne de déclaration)
+// sans aucun enregistrement de rapprochement pointant vers elle — ne
+// préjuge pas d'une alerte `delivery_undeclared`, c'est un statut
+// d'affichage honnête, pas une garantie qu'une alerte existe.
 const RECONCILIATION_TONE = { matched: "success", discrepancy: "error", pending: "warning", insufficient_data: "neutral", not_reconciled: "neutral" } as const;
+type ReconciliationTone = keyof typeof RECONCILIATION_TONE;
 
-/** Onglet « Livraison » (mission « flux de livraison station », 2026-09-10)
- * — étape 2 du flux : la personne habilitée à réceptionner
+type OpenOrderLine = { order: PurchaseOrder; line: PurchaseOrderLine };
+
+/** Récupère l'enregistrement de rapprochement le plus récent de chaque
+ * LIGNE de déclaration (refonte 2026-09-17 : le rapprochement se fait
+ * désormais par ligne/cuve, plus par déclaration entière — `subjectType`
+ * est maintenant `"DeliveryDeclarationLine"`, `subjectId` l'id de la
+ * ligne). Best-effort par ligne : une ligne dont le rapprochement échoue à
+ * charger ne doit pas empêcher les autres de s'afficher (même stratégie
+ * que `fetchReconciliationMaps` dans `useDeliveryFlow`, ici recentrée sur
+ * la ligne puisque le hook partagé n'a pas encore été mis à jour). */
+async function fetchLineReconciliationRecords(organizationId: string, lines: DeliveryDeclarationLine[]): Promise<Map<string, ReconciliationRecord>> {
+  const byLineId = new Map<string, ReconciliationRecord>();
+  await Promise.all(
+    lines.map(async (line) => {
+      try {
+        const page = await listReconciliationRecords(organizationId, { subjectType: "DeliveryDeclarationLine", subjectId: line.id, limit: 1 });
+        const record = page.data[0];
+        if (record) byLineId.set(line.id, record);
+      } catch {
+        // best-effort — cf. commentaire ci-dessus
+      }
+    })
+  );
+  return byLineId;
+}
+
+function aggregateDeclarationStatus(declaration: DeliveryDeclaration, byLineId: Map<string, ReconciliationRecord>): ReconciliationTone {
+  if (declaration.lines.length === 0) return "not_reconciled";
+  const statuses = declaration.lines.map((line) => byLineId.get(line.id)?.status ?? "not_reconciled");
+  if (statuses.includes("discrepancy")) return "discrepancy";
+  if (statuses.includes("insufficient_data")) return "insufficient_data";
+  if (statuses.includes("pending")) return "pending";
+  if (statuses.every((s) => s === "matched")) return "matched";
+  return "not_reconciled";
+}
+
+/** Onglet « Livraison » (mission « flux de livraison station », 2026-09-10,
+ * refonte 2026-09-17 validée scénario par scénario avec le commanditaire) —
+ * étape 2 du flux : la personne habilitée à réceptionner
  * (`DELIVERY_DECLARATION_CREATE`, un droit distinct de celui de commander)
- * déclare la livraison reçue en la rattachant à une commande ouverte de
- * cette station — produit et fournisseur en découlent automatiquement
- * (jamais ressaisis), seuls le volume réellement livré et le code du bon
- * de livraison sont saisis. Le rapprochement avec la télémétrie (détection
- * automatique) se déclenche tout seul côté backend dès l'enregistrement —
- * rien à faire ici pour ça. */
+ * déclare la livraison reçue, cuve par cuve (la cuve se choisit désormais à
+ * la LIVRAISON, jamais à la commande — un même passage de camion peut
+ * remplir plusieurs cuves et/ou plusieurs produits). Chaque ligne peut,
+ * optionnellement, être rattachée à une ligne de commande ouverte — une
+ * déclaration peut aussi n'en avoir aucune (livraison spot/urgence). Le
+ * rapprochement avec la télémétrie se déclenche tout seul côté backend,
+ * PAR LIGNE, dès l'enregistrement — rien à faire ici pour ça, sauf la
+ * ré-évaluation manuelle proposée dans le détail. */
 export function DeliveriesSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.deliveries");
   const data = useDeliveryFlow(organizationId, station.id);
@@ -35,7 +89,38 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
   const selectedDeclaration = data.declarations.find((d) => d.id === selectedDeclarationId) ?? null;
   const selectedDelivery = data.deliveries.find((d) => d.id === selectedDeliveryId) ?? null;
 
-  const openOrders = data.purchaseOrders.filter((o) => o.status === "open");
+  // Toutes les lignes de commande encore ouvertes de cette station, tous
+  // bons de commande confondus (une commande "partially_received" peut
+  // encore avoir des lignes "open" — ex. Super livré, Gasoil attendu) :
+  // c'est cette liste, filtrée par produit de la cuve choisie, qui alimente
+  // le sélecteur "commande" optionnel de chaque ligne du formulaire.
+  const openOrderLines: OpenOrderLine[] = data.purchaseOrders.flatMap((order) => order.lines.filter((line) => line.status === "open").map((line) => ({ order, line })));
+
+  // Rapprochement par ligne, chargé en une passe pour toutes les
+  // déclarations affichées dans le tableau (cf. commentaire de
+  // `fetchLineReconciliationRecords` ci-dessus).
+  const [lineReconciliation, setLineReconciliation] = useState<Map<string, ReconciliationRecord>>(new Map());
+  useEffect(() => {
+    if (!data.organizationId) return;
+    const allLines = data.declarations.flatMap((d) => d.lines);
+    if (allLines.length === 0) {
+      setLineReconciliation(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchLineReconciliationRecords(data.organizationId, allLines).then((map) => {
+      if (!cancelled) setLineReconciliation(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.organizationId, data.declarations]);
+
+  const detectedReconciliationByDetectedId = new Map<string, ReconciliationRecord>();
+  lineReconciliation.forEach((record) => {
+    if (record.counterpartType === "DeliveryDetected" && record.counterpartId) detectedReconciliationByDetectedId.set(record.counterpartId, record);
+  });
 
   // Silhouette de tableau plutôt qu'un spinner plein écran — cette section
   // est démontée/remontée à chaque bascule du Centre administratif (cf.
@@ -74,13 +159,11 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
           <h2 className="text-h4 font-semibold text-text">{t("pageTitle")}</h2>
           <p className="text-body-sm text-text-muted">{t("pageSubtitle")}</p>
         </div>
-        <Button size="sm" onClick={() => setFormOpen(true)} disabled={openOrders.length === 0}>
+        <Button size="sm" onClick={() => setFormOpen(true)}>
           <Plus className="size-4" aria-hidden />
           {t("declareDelivery")}
         </Button>
       </div>
-
-      {openOrders.length === 0 && <Alert tone="warning">{t("noOpenOrderHint")}</Alert>}
 
       <Tabs
         items={[
@@ -97,7 +180,7 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
                       <TableHead>
                         <TableRow>
                           <TableHeaderCell>{t("table.eventAt")}</TableHeaderCell>
-                          <TableHeaderCell>{t("table.order")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.tanks")}</TableHeaderCell>
                           <TableHeaderCell>{t("table.volume")}</TableHeaderCell>
                           <TableHeaderCell>{t("table.noteReference")}</TableHeaderCell>
                           <TableHeaderCell>{t("table.status")}</TableHeaderCell>
@@ -105,14 +188,16 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
                       </TableHead>
                       <TableBody>
                         {data.declarations.map((declaration) => {
-                          const order = data.purchaseOrders.find((o) => o.id === declaration.purchaseOrderId);
-                          const reconciliation = data.reconciliationByDeclarationId.get(declaration.id);
-                          const reconciliationStatus = reconciliation?.status ?? "pending";
+                          const tankNames = declaration.lines
+                            .map((line) => data.tanks.find((tk) => tk.id === line.tankId)?.displayName ?? "?")
+                            .join(", ");
+                          const totalVolume = declaration.lines.reduce((sum, line) => sum + line.volumeLiters, 0);
+                          const reconciliationStatus = aggregateDeclarationStatus(declaration, lineReconciliation);
                           return (
                             <TableRow key={declaration.id} clickable onClick={() => setSelectedDeclarationId(declaration.id)}>
                               <TableCell className="text-text-muted underline decoration-dotted">{new Date(declaration.eventAt).toLocaleString()}</TableCell>
-                              <TableCell className="font-medium text-text">{order?.orderReference ?? "—"}</TableCell>
-                              <TableCell className="tabular-nums">{declaration.declaredVolumeLiters.toLocaleString()} L</TableCell>
+                              <TableCell className="font-medium text-text">{tankNames || "—"}</TableCell>
+                              <TableCell className="tabular-nums">{totalVolume.toLocaleString()} L</TableCell>
                               <TableCell>{declaration.deliveryNoteReference ?? "—"}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1.5">
@@ -150,7 +235,7 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
                       </TableHead>
                       <TableBody>
                         {data.deliveries.map((delivery) => {
-                          const reconciliationStatus = data.reconciliationByDetectedId.get(delivery.id)?.status ?? "not_reconciled";
+                          const reconciliationStatus = detectedReconciliationByDetectedId.get(delivery.id)?.status ?? "not_reconciled";
                           return (
                             <TableRow key={delivery.id} clickable onClick={() => setSelectedDeliveryId(delivery.id)}>
                               <TableCell className="text-text-muted underline decoration-dotted">{new Date(delivery.startTime).toLocaleString()}</TableCell>
@@ -172,7 +257,7 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
         ]}
       />
 
-      <DeliveryFormModal data={data} openOrders={openOrders} open={formOpen} onOpenChange={setFormOpen} />
+      <DeliveryFormModal data={data} openOrderLines={openOrderLines} open={formOpen} onOpenChange={setFormOpen} />
       <DeliveryDetailModal
         data={data}
         declaration={selectedDeclaration}
@@ -182,6 +267,7 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
       <DetectedDeliveryDetailModal
         data={data}
         delivery={selectedDelivery}
+        reconciliationByDetectedId={detectedReconciliationByDetectedId}
         open={selectedDelivery !== null}
         onOpenChange={(next) => { if (!next) setSelectedDeliveryId(null); }}
         onOpenDeclaration={(declarationId) => {
@@ -200,7 +286,7 @@ function DeliveryDetailModal({
   onOpenChange,
 }: {
   data: ReturnType<typeof useDeliveryFlow>;
-  declaration: ReturnType<typeof useDeliveryFlow>["declarations"][number] | null;
+  declaration: DeliveryDeclaration | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -209,8 +295,22 @@ function DeliveryDetailModal({
   const tCommon = useTranslations("common");
 
   const [files, setFiles] = useState<ZyloDocument[]>([]);
-  const [reconciliation, setReconciliation] = useState<ReconciliationRecord | null>(null);
+  const [lineRecords, setLineRecords] = useState<Map<string, ReconciliationRecord>>(new Map());
   const [loadingExtra, setLoadingExtra] = useState(false);
+  const [reevaluating, setReevaluating] = useState(false);
+
+  // Correction ciblée d'UNE ligne à la fois (interaction volontairement
+  // simple — décision validée du commanditaire : la correction par ligne
+  // est le flux primaire, pas la fantaisie). `editingLineId` désigne la
+  // ligne d'origine (`correctsLineId` envoyé au backend).
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [editTankId, setEditTankId] = useState("");
+  const [editVolume, setEditVolume] = useState("");
+  const [editOrderLineId, setEditOrderLineId] = useState("");
+  const [editChangeReason, setEditChangeReason] = useState("");
+  const [correctAttempted, setCorrectAttempted] = useState(false);
+  const [correctSubmitting, setCorrectSubmitting] = useState(false);
+  const [correctError, setCorrectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !declaration) return;
@@ -218,12 +318,12 @@ function DeliveryDetailModal({
     setLoadingExtra(true);
     Promise.all([
       data.listDeliveryFiles(declaration.id),
-      listReconciliationRecords(data.organizationId ?? "", { subjectType: "DeliveryDeclaration", subjectId: declaration.id, limit: 1 }).catch(() => ({ data: [] })),
+      data.organizationId ? fetchLineReconciliationRecords(data.organizationId, declaration.lines) : Promise.resolve(new Map<string, ReconciliationRecord>()),
     ])
-      .then(([docs, recRes]) => {
+      .then(([docs, records]) => {
         if (cancelled) return;
         setFiles(docs);
-        setReconciliation((recRes.data[0] as ReconciliationRecord | undefined) ?? null);
+        setLineRecords(records);
       })
       .finally(() => { if (!cancelled) setLoadingExtra(false); });
     return () => {
@@ -232,41 +332,213 @@ function DeliveryDetailModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, declaration?.id]);
 
+  // Réinitialise l'édition de correction à chaque changement de déclaration
+  // affichée — jamais une correction "orpheline" laissée ouverte sur la
+  // déclaration suivante.
+  useEffect(() => {
+    setEditingLineId(null);
+    setCorrectError(null);
+    setCorrectAttempted(false);
+  }, [declaration?.id]);
+
   if (!declaration) return null;
 
-  const order = data.purchaseOrders.find((o) => o.id === declaration.purchaseOrderId);
   const supplier = data.stationSuppliers.find((s) => s.id === declaration.supplierId);
-  const fuelProduct = data.fuelProducts.find((fp) => fp.id === declaration.fuelProductId);
+  // Toute ligne d'une AUTRE déclaration dont `correctsLineId` pointe vers
+  // une ligne d'ici signale que cette ligne d'origine a déjà été
+  // supplantée par une correction — jamais rouvrable une deuxième fois
+  // depuis cette même ligne (il faudrait corriger la ligne corrective).
+  const supersededLineIds = new Set(data.declarations.flatMap((d) => d.lines).map((l) => l.correctsLineId).filter((id): id is string => id !== null));
+
+  const openOrderLinesForEdit: OpenOrderLine[] = data.purchaseOrders.flatMap((order) => order.lines.filter((line) => line.status === "open").map((line) => ({ order, line })));
+
+  function orderLineLabel(purchaseOrderLineId: string | null): string {
+    if (!purchaseOrderLineId) return t("line.noOrder");
+    for (const order of data.purchaseOrders) {
+      const line = order.lines.find((l) => l.id === purchaseOrderLineId);
+      if (line) {
+        const product = data.fuelProducts.find((fp) => fp.id === line.fuelProductId);
+        return `${order.orderReference} — ${product?.name ?? "?"}`;
+      }
+    }
+    return t("line.noOrder");
+  }
 
   async function handleDownload(fileId: string) {
     const url = await data.downloadDeliveryFile(fileId);
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  async function handleReevaluate() {
+    if (!declaration) return;
+    setReevaluating(true);
+    try {
+      const records = await data.reevaluateReconciliation(declaration.id);
+      if (records) {
+        setLineRecords((prev) => {
+          const next = new Map(prev);
+          records.forEach((record) => next.set(record.subjectId, record));
+          return next;
+        });
+      }
+    } finally {
+      setReevaluating(false);
+    }
+  }
+
+  function startCorrection(line: DeliveryDeclarationLine) {
+    setEditingLineId(line.id);
+    setEditTankId(line.tankId);
+    setEditVolume(String(line.volumeLiters));
+    setEditOrderLineId(line.purchaseOrderLineId ?? "");
+    setEditChangeReason("");
+    setCorrectAttempted(false);
+    setCorrectError(null);
+  }
+
+  function cancelCorrection() {
+    setEditingLineId(null);
+    setCorrectAttempted(false);
+    setCorrectError(null);
+  }
+
+  const editMissingRequired = !editTankId || !editVolume || Number(editVolume) <= 0;
+
+  async function submitCorrection(e: React.FormEvent) {
+    e.preventDefault();
+    setCorrectAttempted(true);
+    if (!declaration || !editingLineId || editMissingRequired) return;
+    setCorrectSubmitting(true);
+    setCorrectError(null);
+    try {
+      const line: CorrectDeliveryDeclarationLineInput = {
+        correctsLineId: editingLineId,
+        tankId: editTankId,
+        volumeLiters: Number(editVolume),
+        purchaseOrderLineId: editOrderLineId || undefined,
+      };
+      await correctDeliveryDeclarationLines(data.organizationId ?? "", {
+        declarationId: declaration.id,
+        changeReason: editChangeReason || undefined,
+        lines: [line],
+      });
+      await data.reload();
+      setEditingLineId(null);
+      onOpenChange(false);
+    } catch (err) {
+      setCorrectError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setCorrectSubmitting(false);
+    }
+  }
+
+  const editTank = data.tanks.find((tk) => tk.id === editTankId);
+  const editOrderLineOptions = openOrderLinesForEdit.filter((entry) => !editTank || entry.line.fuelProductId === editTank.fuelProductId);
+
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={t("title")} closeLabel={tCommon("actions.close")} size="lg">
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-2">
-          <Badge tone={declaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{tDeliveries(`lifecycle.${declaration.lifecycleStatus}`)}</Badge>
-          {reconciliation && (
-            <Badge tone={RECONCILIATION_TONE[reconciliation.status]}>{t(`reconciliation.${reconciliation.status}`)}</Badge>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Badge tone={declaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{tDeliveries(`lifecycle.${declaration.lifecycleStatus}`)}</Badge>
+          </div>
+          <Button variant="outline" size="sm" type="button" onClick={handleReevaluate} loading={reevaluating}>
+            <RefreshCcw className="size-4" aria-hidden />
+            {t("reevaluate")}
+          </Button>
         </div>
 
         <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
-          <div><dt className="text-text-muted">{t("order")}</dt><dd className="text-text">{order?.orderReference ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("fuelProduct")}</dt><dd className="text-text">{fuelProduct?.name ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("supplier")}</dt><dd className="text-text">{supplier?.name ?? "—"}</dd></div>
+          <div><dt className="text-text-muted">{t("supplier")}</dt><dd className="text-text">{supplier?.name ?? declaration.supplierName ?? "—"}</dd></div>
           <div><dt className="text-text-muted">{t("eventAt")}</dt><dd className="text-text">{new Date(declaration.eventAt).toLocaleString()}</dd></div>
-          <div><dt className="text-text-muted">{t("declaredVolume")}</dt><dd className="tabular-nums text-text">{declaration.declaredVolumeLiters.toLocaleString()} L</dd></div>
           <div><dt className="text-text-muted">{t("noteReference")}</dt><dd className="text-text">{declaration.deliveryNoteReference ?? "—"}</dd></div>
         </dl>
 
-        {reconciliation && reconciliation.discrepancyValue !== null && (
-          <p className="text-caption text-text-muted">
-            {t("discrepancy", { value: Math.round(reconciliation.discrepancyValue).toLocaleString(), tolerance: reconciliation.toleranceApplied !== null ? Math.round(reconciliation.toleranceApplied).toLocaleString() : "—" })}
-          </p>
-        )}
+        <div>
+          <p className="mb-2 text-body-sm font-semibold text-text">{t("lines")}</p>
+          {loadingExtra ? (
+            <Skeleton className="h-24 w-full" variant="rectangular" />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {declaration.lines.map((line) => {
+                const tank = data.tanks.find((tk) => tk.id === line.tankId);
+                const record = lineRecords.get(line.id);
+                const status = record?.status ?? "not_reconciled";
+                const superseded = supersededLineIds.has(line.id);
+                const editing = editingLineId === line.id;
+                return (
+                  <div key={line.id} className="rounded-card border border-border-subtle p-3">
+                    {editing ? (
+                      <form onSubmit={submitCorrection} className="flex flex-col gap-3">
+                        {correctAttempted && editMissingRequired && <Alert tone="error">{t("line.correctRequired")}</Alert>}
+                        {correctError && <Alert tone="error">{correctError}</Alert>}
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <FormField label={t("line.tank")}>
+                            {() => (
+                              <Select
+                                aria-label={t("line.tank")}
+                                value={editTankId || undefined}
+                                onValueChange={(value) => setEditTankId(value)}
+                                placeholder={t("line.selectTank")}
+                                options={data.tanks.map((tk: Tank) => ({ value: tk.id, label: tk.displayName }))}
+                              />
+                            )}
+                          </FormField>
+                          <FormField label={t("line.volume")}>{(f) => <Input {...f} type="number" value={editVolume} onChange={(e) => setEditVolume(e.target.value)} />}</FormField>
+                        </div>
+                        <FormField label={t("line.order")}>
+                          {() => (
+                            <Select
+                              aria-label={t("line.order")}
+                              value={editOrderLineId || undefined}
+                              onValueChange={(value) => setEditOrderLineId(value)}
+                              placeholder={t("line.noOrder")}
+                              disabled={!editTankId}
+                              options={editOrderLineOptions.map((entry) => ({
+                                value: entry.line.id,
+                                label: `${entry.order.orderReference} — ${entry.line.orderedVolumeLiters.toLocaleString()} L`,
+                              }))}
+                            />
+                          )}
+                        </FormField>
+                        <FormField label={t("line.correctionReason")}>{(f) => <Input {...f} value={editChangeReason} onChange={(e) => setEditChangeReason(e.target.value)} placeholder={t("line.correctionReasonPlaceholder")} />}</FormField>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" type="button" onClick={cancelCorrection}>{tCommon("actions.cancel")}</Button>
+                          <Button size="sm" type="submit" loading={correctSubmitting}>{t("line.submitCorrection")}</Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex items-start justify-between gap-3">
+                        <dl className="grid grid-cols-1 gap-2 text-body-sm sm:grid-cols-2">
+                          <div><dt className="text-text-muted">{t("line.tank")}</dt><dd className="text-text">{tank?.displayName ?? "—"}</dd></div>
+                          <div><dt className="text-text-muted">{t("line.volume")}</dt><dd className="tabular-nums text-text">{line.volumeLiters.toLocaleString()} L</dd></div>
+                          <div><dt className="text-text-muted">{t("line.order")}</dt><dd className="text-text">{orderLineLabel(line.purchaseOrderLineId)}</dd></div>
+                          <div>
+                            <dt className="text-text-muted">{t("line.reconciliation")}</dt>
+                            <dd>
+                              <Badge tone={RECONCILIATION_TONE[status]}>{t(`reconciliation.${status}`)}</Badge>
+                              {superseded && <Badge tone="neutral" className="ml-1.5">{t("line.corrected")}</Badge>}
+                            </dd>
+                          </div>
+                        </dl>
+                        {!superseded && (
+                          <Button variant="outline" size="sm" type="button" onClick={() => startCorrection(line)}>
+                            {t("line.correctAction")}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {!editing && record && record.discrepancyValue !== null && (
+                      <p className="mt-2 text-caption text-text-muted">
+                        {t("discrepancy", { value: Math.round(record.discrepancyValue).toLocaleString(), tolerance: record.toleranceApplied !== null ? Math.round(record.toleranceApplied).toLocaleString() : "—" })}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div>
           <p className="mb-2 text-body-sm font-semibold text-text">{t("attachments")}</p>
@@ -306,16 +578,19 @@ function DeliveryDetailModal({
  * modale des livraisons déclarées ci-dessus (correction explicite : les deux
  * flux restent visuellement et fonctionnellement séparés). Si un
  * rapprochement existe et pointe vers une déclaration, un lien permet de
- * rouvrir directement cette déclaration dans son propre détail. */
+ * rouvrir directement la déclaration (et sa ligne) correspondante dans son
+ * propre détail. */
 function DetectedDeliveryDetailModal({
   data,
   delivery,
+  reconciliationByDetectedId,
   open,
   onOpenChange,
   onOpenDeclaration,
 }: {
   data: ReturnType<typeof useDeliveryFlow>;
   delivery: Delivery | null;
+  reconciliationByDetectedId: Map<string, ReconciliationRecord>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenDeclaration: (declarationId: string) => void;
@@ -325,9 +600,16 @@ function DetectedDeliveryDetailModal({
 
   if (!delivery) return null;
 
-  const reconciliation = data.reconciliationByDetectedId.get(delivery.id) ?? null;
+  const reconciliation = reconciliationByDetectedId.get(delivery.id) ?? null;
   const reconciliationStatus = reconciliation?.status ?? "not_reconciled";
-  const linkedDeclaration = reconciliation && reconciliation.subjectType === "DeliveryDeclaration" ? data.declarations.find((d) => d.id === reconciliation.subjectId) : undefined;
+  // `subjectId` du rapprochement désigne désormais une LIGNE de
+  // déclaration (`DeliveryDeclarationLine.id`), pas la déclaration
+  // elle-même — on retrouve la déclaration parente en cherchant celle qui
+  // porte cette ligne.
+  const linkedDeclaration =
+    reconciliation && reconciliation.subjectType === "DeliveryDeclarationLine"
+      ? data.declarations.find((d) => d.lines.some((l) => l.id === reconciliation.subjectId))
+      : undefined;
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={t("detectedTitle")} closeLabel={tCommon("actions.close")} size="lg">
@@ -368,14 +650,20 @@ function DetectedDeliveryDetailModal({
   );
 }
 
+type DraftLine = { key: string; tankId: string; volume: string; purchaseOrderLineId: string };
+
+function makeDraftLine(): DraftLine {
+  return { key: Math.random().toString(36).slice(2), tankId: "", volume: "", purchaseOrderLineId: "" };
+}
+
 function DeliveryFormModal({
   data,
-  openOrders,
+  openOrderLines,
   open,
   onOpenChange,
 }: {
   data: ReturnType<typeof useDeliveryFlow>;
-  openOrders: ReturnType<typeof useDeliveryFlow>["purchaseOrders"];
+  openOrderLines: OpenOrderLine[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -383,10 +671,10 @@ function DeliveryFormModal({
   const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [purchaseOrderId, setPurchaseOrderId] = useState("");
   const [eventAt, setEventAt] = useState("");
-  const [volume, setVolume] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [noteReference, setNoteReference] = useState("");
+  const [lines, setLines] = useState<DraftLine[]>([makeDraftLine()]);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   // Erreur de soumission (réseau/serveur) uniquement — le message "champs
@@ -396,35 +684,47 @@ function DeliveryFormModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
 
-  const selectedOrder = openOrders.find((o) => o.id === purchaseOrderId);
-  const selectedTank = selectedOrder ? data.tanks.find((tk) => tk.id === selectedOrder.tankId) : undefined;
-  const missingRequired = !selectedOrder || !eventAt || !volume || !selectedTank;
+  const missingRequired = !eventAt || lines.length === 0 || lines.some((l) => !l.tankId || !l.volume || Number(l.volume) <= 0);
   const displayError = attempted && missingRequired ? t("required") : submitError;
 
   function reset() {
-    setPurchaseOrderId("");
     setEventAt("");
-    setVolume("");
+    setSupplierId("");
     setNoteReference("");
+    setLines([makeDraftLine()]);
     setStagedFiles([]);
     setSubmitError(null);
     setAttempted(false);
   }
 
+  function updateLine(key: string, patch: Partial<DraftLine>) {
+    setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  }
+
+  function addLine() {
+    setLines((prev) => [...prev, makeDraftLine()]);
+  }
+
+  function removeLine(key: string) {
+    setLines((prev) => (prev.length > 1 ? prev.filter((l) => l.key !== key) : prev));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setAttempted(true);
-    if (missingRequired || !selectedOrder || !selectedTank) return;
-    const tank = selectedTank;
+    if (missingRequired) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const declarationLines: CreateDeliveryDeclarationLineInput[] = lines.map((l) => ({
+        tankId: l.tankId,
+        volumeLiters: Number(l.volume),
+        purchaseOrderLineId: l.purchaseOrderLineId || undefined,
+      }));
       const declaration = await data.declareDelivery({
-        fuelProductId: tank.fuelProductId,
         eventAt,
-        declaredVolumeLiters: Number(volume),
-        supplierId: selectedOrder.supplierId,
-        purchaseOrderId: selectedOrder.id,
+        lines: declarationLines,
+        supplierId: supplierId || undefined,
         deliveryNoteReference: noteReference || undefined,
       });
       if (declaration && stagedFiles.length > 0) {
@@ -447,7 +747,7 @@ function DeliveryFormModal({
         onOpenChange(next);
       }}
       title={t("title")}
-      size="md"
+      size="lg"
       closeLabel={tCommon("actions.close")}
       footer={
         <>
@@ -458,27 +758,78 @@ function DeliveryFormModal({
     >
       <form id="delivery-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {displayError && <Alert tone="error">{displayError}</Alert>}
-        <FormField label={t("order")}>
-          {() => (
-            <Select
-              aria-label={t("order")}
-              value={purchaseOrderId || undefined}
-              onValueChange={(value) => {
-                setPurchaseOrderId(value);
-                const order = openOrders.find((o) => o.id === value);
-                if (order) setVolume(String(order.orderedVolumeLiters));
-              }}
-              placeholder={t("selectOrder")}
-              options={openOrders.map((o) => ({ value: o.id, label: o.orderReference }))}
-            />
-          )}
-        </FormField>
-        <p className="text-caption text-text-muted">{t("orderHint")}</p>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField label={t("eventAt")}>{(f) => <Input {...f} type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />}</FormField>
-          <FormField label={t("volume")}>{(f) => <Input {...f} type="number" value={volume} onChange={(e) => setVolume(e.target.value)} />}</FormField>
+          <FormField label={t("supplier")}>
+            {() => (
+              <Select
+                aria-label={t("supplier")}
+                value={supplierId || undefined}
+                onValueChange={setSupplierId}
+                placeholder={t("selectSupplier")}
+                options={data.stationSuppliers.map((s) => ({ value: s.id, label: s.name }))}
+              />
+            )}
+          </FormField>
         </div>
         <FormField label={t("noteReference")}>{(f) => <Input {...f} value={noteReference} onChange={(e) => setNoteReference(e.target.value)} placeholder={t("noteReferencePlaceholder")} />}</FormField>
+
+        <div className="flex flex-col gap-3">
+          <p className="text-body-sm font-medium text-text">{t("lines")}</p>
+          {lines.map((line, index) => {
+            const tank = data.tanks.find((tk) => tk.id === line.tankId);
+            const lineOrderOptions = openOrderLines.filter((entry) => !tank || entry.line.fuelProductId === tank.fuelProductId);
+            return (
+              <div key={line.key} className="rounded-card border border-border-subtle p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-caption font-medium text-text-muted">{t("lineTitle", { index: index + 1 })}</span>
+                  {lines.length > 1 && (
+                    <button type="button" onClick={() => removeLine(line.key)} className="text-text-muted hover:text-error" aria-label={t("removeLine")}>
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <FormField label={t("tank")}>
+                    {() => (
+                      <Select
+                        aria-label={t("tank")}
+                        value={line.tankId || undefined}
+                        onValueChange={(value) => updateLine(line.key, { tankId: value, purchaseOrderLineId: "" })}
+                        placeholder={t("selectTank")}
+                        options={data.tanks.map((tk: Tank) => ({ value: tk.id, label: tk.displayName }))}
+                      />
+                    )}
+                  </FormField>
+                  <FormField label={t("volume")}>{(f) => <Input {...f} type="number" value={line.volume} onChange={(e) => updateLine(line.key, { volume: e.target.value })} />}</FormField>
+                </div>
+                <FormField label={t("orderLine")}>
+                  {() => (
+                    <Select
+                      aria-label={t("orderLine")}
+                      value={line.purchaseOrderLineId || undefined}
+                      onValueChange={(value) => {
+                        const entry = lineOrderOptions.find((o) => o.line.id === value);
+                        updateLine(line.key, { purchaseOrderLineId: value, volume: line.volume || (entry ? String(entry.line.orderedVolumeLiters) : line.volume) });
+                      }}
+                      placeholder={t("selectOrderLine")}
+                      disabled={!line.tankId}
+                      options={lineOrderOptions.map((entry) => ({
+                        value: entry.line.id,
+                        label: `${entry.order.orderReference} — ${entry.line.orderedVolumeLiters.toLocaleString()} L`,
+                      }))}
+                    />
+                  )}
+                </FormField>
+              </div>
+            );
+          })}
+          <Button variant="outline" size="sm" type="button" onClick={addLine} className="self-start">
+            <Plus className="size-4" aria-hidden />
+            {t("addLine")}
+          </Button>
+        </div>
 
         <div>
           <p className="mb-2 text-body-sm font-medium text-text">{t("attachments")}</p>

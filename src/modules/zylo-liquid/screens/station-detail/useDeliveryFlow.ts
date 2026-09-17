@@ -38,34 +38,37 @@ import {
 
 const DELIVERY_DECLARATION_ENTITY_TYPE = "DeliveryDeclaration";
 
-/** Récupère, pour chaque déclaration, son dernier enregistrement de
- * rapprochement (même appel que celui déjà fait à la demande dans
- * `DeliveryDetailModal`, ici généralisé à toutes les déclarations en une
- * passe). Un enregistrement dont le `counterpartType` est
- * `"DeliveryDetected"` est la SEULE source de statut pour la livraison
- * détectée correspondante — il n'existe pas d'enregistrement de
- * rapprochement indépendant côté détecté (le mécanisme backend n'en crée
- * qu'un par déclaration, cf. `_evaluate_delivery_declaration_reconciliation_core`,
- * réutilisé par le rapprochement inverse). Best-effort par déclaration :
- * une déclaration dont le rapprochement échoue à charger ne doit pas
- * empêcher les autres de s'afficher. */
+/** Récupère, pour chaque LIGNE de chaque déclaration, son dernier
+ * enregistrement de rapprochement (refonte 2026-09-17 — le rapprochement se
+ * fait désormais par ligne/cuve précise, plus par déclaration entière : une
+ * livraison touchant plusieurs cuves a un rapprochement distinct par cuve,
+ * `subjectType: "DeliveryDeclarationLine"`, cf. `_evaluate_delivery_declaration_line_reconciliation_core`
+ * côté backend). `byDeclarationId` reste indexé par ligne (pas par
+ * déclaration — le nom historique est conservé pour ne pas casser l'API du
+ * hook, mais la clé est bien `line.id`). Un enregistrement dont le
+ * `counterpartType` est `"DeliveryDetected"` est la SEULE source de statut
+ * pour la livraison détectée correspondante. Best-effort par ligne : une
+ * ligne dont le rapprochement échoue à charger ne doit pas empêcher les
+ * autres de s'afficher. */
 async function fetchReconciliationMaps(organizationId: string, declarations: DeliveryDeclaration[]) {
   const byDeclarationId = new Map<string, ReconciliationRecord>();
   const byDetectedId = new Map<string, ReconciliationRecord>();
   await Promise.all(
-    declarations.map(async (declaration) => {
-      try {
-        const page = await listReconciliationRecords(organizationId, { subjectType: "DeliveryDeclaration", subjectId: declaration.id, limit: 1 });
-        const record = page.data[0];
-        if (!record) return;
-        byDeclarationId.set(declaration.id, record);
-        if (record.counterpartType === "DeliveryDetected" && record.counterpartId) {
-          byDetectedId.set(record.counterpartId, record);
+    declarations.flatMap((declaration) =>
+      declaration.lines.map(async (line) => {
+        try {
+          const page = await listReconciliationRecords(organizationId, { subjectType: "DeliveryDeclarationLine", subjectId: line.id, limit: 1 });
+          const record = page.data[0];
+          if (!record) return;
+          byDeclarationId.set(line.id, record);
+          if (record.counterpartType === "DeliveryDetected" && record.counterpartId) {
+            byDetectedId.set(record.counterpartId, record);
+          }
+        } catch {
+          // best-effort — cf. commentaire ci-dessus
         }
-      } catch {
-        // best-effort — cf. commentaire ci-dessus
-      }
-    })
+      })
+    )
   );
   return { byDeclarationId, byDetectedId };
 }

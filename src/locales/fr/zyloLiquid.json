@@ -624,12 +624,14 @@
       "selectStation": "Sélectionner une station",
       "product": "Produit",
       "selectProduct": "Sélectionner un produit",
+      "tank": "Cuve",
+      "selectTank": "Sélectionner une cuve",
       "eventAt": "Date de la livraison",
       "volume": "Volume déclaré (litres)",
       "supplier": "Fournisseur",
       "reference": "Référence du bon de livraison",
       "submit": "Déclarer",
-      "required": "Station, produit et volume sont obligatoires."
+      "required": "Station, cuve et volume sont obligatoires."
     },
     "table": {
       "station": "Station",
@@ -2202,26 +2204,28 @@
     },
     "orders": {
       "pageTitle": "Commande",
-      "pageSubtitle": "Commandez auprès d'un fournisseur déjà rattaché à cette station, sur une cuve existante.",
+      "pageSubtitle": "Commandez auprès d'un fournisseur déjà rattaché à cette station, un ou plusieurs produits — la cuve se choisit à la livraison.",
       "newOrder": "Nouvelle commande",
       "prerequisiteHint": "Rattachez d'abord un fournisseur (onglet Fournisseurs) et créez au moins une cuve avant de passer une commande.",
       "empty": "Aucune commande pour cette station.",
       "table": {
         "reference": "Référence",
         "tank": "Cuve",
+        "products": "Produits",
         "supplier": "Fournisseur",
-        "volume": "Volume commandé",
+        "volume": "Volume total commandé",
         "orderedAt": "Commandée le",
         "expectedAt": "Attendue le",
         "status": "Statut"
       },
       "status": {
         "open": "Ouverte",
+        "partially_received": "Partiellement réceptionnée",
         "received": "Réceptionnée"
       },
       "form": {
         "title": "Nouvelle commande",
-        "required": "Produit, cuve, fournisseur, référence et volume sont requis.",
+        "required": "Fournisseur, référence et au moins un produit avec un volume valide sont requis.",
         "fuelProduct": "Produit",
         "selectFuelProduct": "Sélectionner un produit",
         "tank": "Cuve",
@@ -2241,7 +2245,12 @@
         "volume": "Volume commandé (L)",
         "expectedAt": "Date attendue",
         "exceedsCapacity": "Ce volume dépasse l'espace disponible dans la cuve sélectionnée.",
-        "nearsCapacityWarning": "Ce volume approche la limite de l'espace disponible dans la cuve — vérifiez avant de confirmer."
+        "nearsCapacityWarning": "Ce volume approche la limite de l'espace disponible dans la cuve — vérifiez avant de confirmer.",
+        "lines": "Produits commandés",
+        "lineFuelProduct": "Produit",
+        "lineVolume": "Volume (L)",
+        "addLine": "Ajouter un produit",
+        "removeLine": "Retirer ce produit"
       },
       "detail": {
         "fuelProduct": "Produit",
@@ -2253,6 +2262,8 @@
         "tankCapacity": "Capacité de la cuve",
         "tankAvailable": "Espace disponible",
         "unknown": "Inconnu",
+        "lines": "Lignes de commande",
+        "lineDelivered": "Livré",
         "linkedDeliveries": "Livraisons rattachées",
         "noLinkedDelivery": "Aucune livraison déclarée pour cette commande.",
         "assignedTrucks": "Camions associés",
@@ -2293,6 +2304,7 @@
       "table": {
         "eventAt": "Date de réception",
         "order": "Commande",
+        "tanks": "Cuve(s)",
         "volume": "Volume déclaré",
         "noteReference": "Code du bon",
         "status": "Statut"
@@ -2303,14 +2315,24 @@
       },
       "form": {
         "title": "Déclarer une livraison",
-        "required": "Commande, date et volume sont requis.",
+        "required": "Chaque ligne doit avoir une cuve et un volume, et la date de réception est requise.",
         "order": "Commande",
         "selectOrder": "Sélectionner une commande ouverte",
         "orderHint": "Le fournisseur et le produit sont ceux de la commande sélectionnée — rien à ressaisir.",
         "eventAt": "Date de réception",
+        "supplier": "Fournisseur (optionnel)",
+        "selectSupplier": "Sélectionner un fournisseur",
         "volume": "Volume livré (L)",
         "noteReference": "Code du bon de livraison",
         "noteReferencePlaceholder": "Ex. BL-778812",
+        "lines": "Lignes (une par cuve remplie)",
+        "lineTitle": "Ligne {index}",
+        "tank": "Cuve",
+        "selectTank": "Sélectionner une cuve",
+        "orderLine": "Commande (optionnel)",
+        "selectOrderLine": "Aucune commande liée",
+        "addLine": "Ajouter une ligne",
+        "removeLine": "Retirer cette ligne",
         "attachments": "Bon de livraison scanné",
         "dropZone": "Glisser-déposer ou cliquer pour scanner/uploader"
       },
@@ -2318,6 +2340,22 @@
         "title": "Détail de la livraison",
         "order": "Commande",
         "fuelProduct": "Produit",
+        "reevaluate": "Réévaluer le rapprochement",
+        "lines": "Lignes de la livraison",
+        "line": {
+          "tank": "Cuve",
+          "selectTank": "Sélectionner une cuve",
+          "volume": "Volume",
+          "order": "Commande liée",
+          "noOrder": "Aucune commande liée",
+          "reconciliation": "Rapprochement",
+          "corrected": "Corrigée",
+          "correctAction": "Corriger cette ligne",
+          "correctRequired": "Cuve et volume sont requis.",
+          "correctionReason": "Motif de la correction (optionnel)",
+          "correctionReasonPlaceholder": "Ex. erreur de saisie du volume",
+          "submitCorrection": "Enregistrer la correction"
+        },
         "supplier": "Fournisseur",
         "eventAt": "Date de réception",
         "declaredVolume": "Volume déclaré",

@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Truck } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { reconcileDeliveryDeclaration } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { listTanks, reconcileDeliveryDeclaration, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 import { useApprovisionnement } from "./useApprovisionnement";
@@ -19,10 +20,26 @@ export default function ApprovisionnementScreen() {
   const tCommon = useTranslations("common");
   const format = useFormatter();
   const { currentOrganization } = useOrganization();
-  const data = useApprovisionnement(currentOrganization?.id ?? null);
+  const organizationId = currentOrganization?.id ?? null;
+  const data = useApprovisionnement(organizationId);
+
+  // Réseau entier : les cuves de toutes les stations sont chargées une fois
+  // ici (le hook `useApprovisionnement` ne les connaît pas), pour (1)
+  // alimenter le sélecteur de cuve du formulaire, filtré par station/produit
+  // sélectionnés, et (2) retrouver le produit d'une ligne de déclaration
+  // existante (`DeliveryDeclarationLine.tankId` -> `Tank.fuelProductId`)
+  // dans le tableau historique, quelle que soit la station de la ligne.
+  const tanksQuery = useQuery({
+    queryKey: ["zylo-liquid", "approvisionnement-tanks", organizationId],
+    queryFn: () => listTanks(organizationId as string, 200),
+    enabled: !!organizationId,
+  });
+  const tanks: Tank[] = tanksQuery.data?.data ?? [];
+  const tanksById = useMemo(() => new Map(tanks.map((tk) => [tk.id, tk])), [tanks]);
 
   const [stationId, setStationId] = useState("");
   const [fuelProductId, setFuelProductId] = useState("");
+  const [tankId, setTankId] = useState("");
   const [eventAt, setEventAt] = useState(() => new Date().toISOString().slice(0, 16));
   const [declaredVolumeLiters, setDeclaredVolumeLiters] = useState("");
   const [supplierName, setSupplierName] = useState("");
@@ -31,8 +48,24 @@ export default function ApprovisionnementScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [reconcilingId, setReconcilingId] = useState<string | null>(null);
 
+  const stationTanks = useMemo(
+    () => tanks.filter((tk) => tk.stationId === stationId && (!fuelProductId || tk.fuelProductId === fuelProductId)),
+    [tanks, stationId, fuelProductId]
+  );
+
+  function handleStationChange(value: string) {
+    setStationId(value);
+    setFuelProductId("");
+    setTankId("");
+  }
+
+  function handleProductChange(value: string) {
+    setFuelProductId(value);
+    setTankId("");
+  }
+
   async function handleCreate() {
-    if (!stationId || !fuelProductId || !declaredVolumeLiters) {
+    if (!stationId || !tankId || !declaredVolumeLiters) {
       setFormError(t("form.required"));
       return;
     }
@@ -41,12 +74,12 @@ export default function ApprovisionnementScreen() {
     try {
       await data.create({
         stationId,
-        fuelProductId,
         eventAt: new Date(eventAt).toISOString(),
-        declaredVolumeLiters: Number(declaredVolumeLiters),
+        lines: [{ tankId, volumeLiters: Number(declaredVolumeLiters) }],
         supplierName: supplierName.trim() || undefined,
         deliveryNoteReference: deliveryNoteReference.trim() || undefined,
       });
+      setTankId("");
       setDeclaredVolumeLiters("");
       setSupplierName("");
       setDeliveryNoteReference("");
@@ -81,10 +114,13 @@ export default function ApprovisionnementScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.station")}>
-            {() => <Select aria-label={t("form.station")} value={stationId || undefined} onValueChange={setStationId} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <Select aria-label={t("form.station")} value={stationId || undefined} onValueChange={handleStationChange} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("form.product")}>
-            {() => <Select aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={setFuelProductId} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
+            {() => <Select aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={handleProductChange} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
+          </FormField>
+          <FormField label={t("form.tank")}>
+            {() => <Select aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={stationTanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
           </FormField>
           <FormField label={t("form.eventAt")}>
             {(field) => <Input {...field} type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />}
@@ -140,12 +176,26 @@ export default function ApprovisionnementScreen() {
           <TableBody>
             {data.declarations.map((d) => {
               const station = data.stations.find((s) => s.id === d.stationId);
-              const product = data.fuelProducts.find((p) => p.id === d.fuelProductId);
+              // Une déclaration peut désormais porter plusieurs lignes
+              // (plusieurs cuves/produits pour une même visite de camion,
+              // créées ailleurs dans l'app, ex. `DeliveriesSection`) : le
+              // volume affiché ici est la somme des lignes, et le produit
+              // la liste des produits distincts touchés.
+              const productNames = Array.from(
+                new Set(
+                  d.lines
+                    .map((line) => tanksById.get(line.tankId)?.fuelProductId)
+                    .filter((id): id is string => !!id)
+                    .map((productId) => data.fuelProducts.find((p) => p.id === productId)?.name)
+                    .filter((name): name is string => !!name)
+                )
+              );
+              const totalVolumeLiters = d.lines.reduce((sum, line) => sum + line.volumeLiters, 0);
               return (
                 <TableRow key={d.id}>
                   <TableCell>{station?.name ?? "—"}</TableCell>
-                  <TableCell>{product?.name ?? "—"}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{d.declaredVolumeLiters} L</TableCell>
+                  <TableCell>{productNames.length > 0 ? productNames.join(", ") : "—"}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{totalVolumeLiters} L</TableCell>
                   <TableCell>{format.dateTime(new Date(d.eventAt), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</TableCell>
                   <TableCell>
                     <Badge tone={d.lifecycleStatus === "locked" ? "neutral" : "info"}>{t(`status.${d.lifecycleStatus}`)}</Badge>

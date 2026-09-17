@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { listDeliveryDeclarations, type DeliveryDeclaration, type FuelProduct, type Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { listDeliveryDeclarations, type DeliveryDeclaration, type FuelProduct, type Station, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Badge, Card, Modal } from "@/shared/ui";
 
 import { DeliveryDetailModal } from "../deliveries/DeliveryDetailModal";
@@ -26,9 +26,10 @@ type MergedRow =
  * vers /zylo-liquid/livraisons) — `DeliveryDetailModal` (avec mesures) pour
  * une livraison détectée, une modale déclarative plus simple (pas de mesure
  * télémétrique associée à une simple déclaration) pour une déclarée. */
-export function DashboardDeliveriesWidget({ organizationId, stations, fuelProducts }: { organizationId: string; stations: Station[]; fuelProducts: FuelProduct[] }) {
+export function DashboardDeliveriesWidget({ organizationId, stations, fuelProducts, tanks }: { organizationId: string; stations: Station[]; fuelProducts: FuelProduct[]; tanks: Tank[] }) {
   const t = useTranslations("zyloLiquid.deliveriesWidget");
   const tDeliveries = useTranslations("zyloLiquid.stationAdmin.deliveries");
+  const tOrders = useTranslations("zyloLiquid.stationAdmin.orders");
   const tCommon = useTranslations("common");
   const format = useFormatter();
 
@@ -70,7 +71,8 @@ export function DashboardDeliveriesWidget({ organizationId, stations, fuelProduc
         <ul className="flex flex-col gap-1">
           {merged.map((item) => {
             const station = item.kind === "detected" ? item.row.station : stations.find((s) => s.id === item.declaration.stationId);
-            const volume = item.kind === "detected" ? item.row.delivery.volumeLiters : item.declaration.declaredVolumeLiters;
+            const volume =
+              item.kind === "detected" ? item.row.delivery.volumeLiters : item.declaration.lines.reduce((sum, line) => sum + line.volumeLiters, 0);
             return (
               <li key={`${item.kind}-${item.kind === "detected" ? item.row.delivery.id : item.declaration.id}`}>
                 <button
@@ -102,20 +104,12 @@ export function DashboardDeliveriesWidget({ organizationId, stations, fuelProduc
             <Badge tone={selectedDeclaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{tDeliveries(`lifecycle.${selectedDeclaration.lifecycleStatus}`)}</Badge>
             <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
               <div>
-                <dt className="text-text-muted">{tDeliveries("detail.fuelProduct")}</dt>
-                <dd className="text-text">{fuelProducts.find((p) => p.id === selectedDeclaration.fuelProductId)?.name ?? "—"}</dd>
-              </div>
-              <div>
                 <dt className="text-text-muted">{tDeliveries("detail.supplier")}</dt>
                 <dd className="text-text">{selectedDeclaration.supplierName ?? "—"}</dd>
               </div>
               <div>
                 <dt className="text-text-muted">{tDeliveries("detail.eventAt")}</dt>
                 <dd className="text-text">{format.dateTime(new Date(selectedDeclaration.eventAt), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</dd>
-              </div>
-              <div>
-                <dt className="text-text-muted">{tDeliveries("detail.declaredVolume")}</dt>
-                <dd className="tabular-nums text-text">{selectedDeclaration.declaredVolumeLiters.toLocaleString()} L</dd>
               </div>
               <div>
                 <dt className="text-text-muted">{tDeliveries("detail.noteReference")}</dt>
@@ -126,6 +120,31 @@ export function DashboardDeliveriesWidget({ organizationId, stations, fuelProduc
                 <dd className="text-text">{stations.find((s) => s.id === selectedDeclaration.stationId)?.name ?? "—"}</dd>
               </div>
             </dl>
+
+            <div className="overflow-hidden rounded-card border border-border">
+              <table className="w-full text-body-sm">
+                <thead>
+                  <tr className="border-b border-border bg-surface-muted text-caption text-text-muted">
+                    <th className="px-3 py-2 text-left font-medium">{tOrders("form.tank")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{tDeliveries("detail.fuelProduct")}</th>
+                    <th className="px-3 py-2 text-right font-medium">{tOrders("form.lineVolume")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedDeclaration.lines.map((line) => {
+                    const tank = tanks.find((tk) => tk.id === line.tankId);
+                    const product = tank ? fuelProducts.find((p) => p.id === tank.fuelProductId) : undefined;
+                    return (
+                      <tr key={line.id} className="border-b border-border last:border-b-0">
+                        <td className="px-3 py-2 text-text">{tank?.displayName ?? "—"}</td>
+                        <td className="px-3 py-2 text-text">{product?.name ?? "—"}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-text">{line.volumeLiters.toLocaleString()} L</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </Modal>
       )}
