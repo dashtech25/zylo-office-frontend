@@ -369,13 +369,13 @@
 
 "use client";
 
-import { AlertTriangle, Circle, Truck, Wrench } from "lucide-react";
+import { AlertTriangle, Circle } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { Badge, Card } from "@/shared/ui";
+import { Badge, Card, CollapsibleSection } from "@/shared/ui";
 import { KpiSkeleton, ListSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { cn } from "@/shared/lib/cn";
 
@@ -383,6 +383,14 @@ import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/Netwo
 import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
+import { CashSummaryCards } from "@/modules/zylo-liquid/screens/caisse/CashSummaryCards";
+import { NetworkCashModal } from "@/modules/zylo-liquid/screens/caisse/NetworkCashModal";
+import { useCashPeriod, useNetworkCash } from "@/modules/zylo-liquid/screens/caisse/useCashData";
+import { useCaisseStationRows } from "@/modules/zylo-liquid/screens/caisse/useCaisseStationRows";
+import { aggregateCaisseCurrencyBlocks, aggregateCaisseProducts } from "@/modules/zylo-liquid/screens/caisse/cashAggregation";
+import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { DashboardAlertsWidget } from "./DashboardAlertsWidget";
+import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
 import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
 import PompisteDashboard from "./PompisteDashboard";
@@ -406,14 +414,28 @@ export default function DashboardScreen() {
 
 function NetworkDashboardScreen() {
   const t = useTranslations("zyloLiquid");
+  const tCaisse = useTranslations("zyloLiquid.caisse");
   const format = useFormatter();
   const { currentOrganization, loading: organizationLoading } = useOrganization();
+  const organizationId = currentOrganization?.id ?? null;
 
   const [period, setPeriod] = useState<Period>("now");
   const [customDate, setCustomDate] = useState<string | null>(null);
   const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
 
-  const data = useNetworkDashboard(currentOrganization?.id ?? null, period, customDate);
+  const data = useNetworkDashboard(organizationId, period, customDate);
+
+  // « Vente du jour » (Section 1, point 1) — même pipeline que la page
+  // Caisse (aujourd'hui, toutes stations actives, sans filtre), jamais une
+  // deuxième implémentation de l'agrégation réseau -> produit/devise.
+  const todayCashPeriod = useCashPeriod();
+  const activeStations = useMemo(() => data.stations.filter((s) => s.status === "active"), [data.stations]);
+  const networkCash = useNetworkCash(organizationId, todayCashPeriod.fromDate, todayCashPeriod.toDate, todayCashPeriod.mode);
+  const cashRows = useCaisseStationRows(activeStations, networkCash.data);
+  const todayProductBlocks = useMemo(() => aggregateCaisseProducts(cashRows), [cashRows]);
+  const todayCurrencyBlocks = useMemo(() => aggregateCaisseCurrencyBlocks(cashRows), [cashRows]);
+  const [openCashBlock, setOpenCashBlock] = useState<CurrencyCashBlock | null>(null);
+  const [openCashProductBlock, setOpenCashProductBlock] = useState<NetworkProductCashLine | null>(null);
 
   function formatVolume(liters: number): string {
     return `${formatLiters(liters)} L`;
@@ -429,10 +451,6 @@ function NetworkDashboardScreen() {
 
   function formatDateShort(iso: string): string {
     return format.dateTime(new Date(iso), { day: "2-digit", month: "short" });
-  }
-
-  function formatRelativeTime(iso: string): string {
-    return format.dateTime(new Date(iso), { hour: "2-digit", minute: "2-digit" });
   }
 
   if (organizationLoading) {
@@ -506,37 +524,79 @@ function NetworkDashboardScreen() {
         </Card>
       )}
 
-      {/* Zone B — synthèse stock réseau : dépend uniquement de la requête de
-          base (produits/synthèse réseau), indépendante des états par station
-          et du graphique. */}
-      {data.loading ? (
-        <section>
-          <Skeleton className="mb-3 h-6 w-48" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <KpiSkeleton key={i} />
-            ))}
-          </div>
-        </section>
-      ) : (
-        <NetworkStockSummaryCards
-          products={data.products}
-          totalVolumeLiters={data.networkSummary?.totalVolumeLiters ?? 0}
-          totalCapacityLiters={data.totalCapacityLiters}
-          totalSellableVolumeLiters={data.totalSellableVolumeLiters}
-          totalMonetaryValue={data.totalMonetaryValue}
-          totalSellableMonetaryValue={data.totalSellableMonetaryValue}
-          totalCurrencyCode={data.totalMonetaryCurrencyCode}
-          formatMoney={formatMoney}
-          onProductClick={setBreakdownFilter}
-          onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
-        />
-      )}
+      {/* Section 1 — Produits pétroliers (rétractable) : vente du jour,
+          synthèse stock réseau, livraisons récentes, alertes — chaque
+          consultation de détail passe par une modale, jamais une
+          redirection (contrainte explicite du commanditaire). */}
+      <CollapsibleSection title={t("dashboardSections.fuelProducts")}>
+        {networkCash.loading ? (
+          <ListSkeleton rows={2} />
+        ) : (
+          <CashSummaryCards
+            productBlocks={todayProductBlocks}
+            currencyBlocks={todayCurrencyBlocks}
+            onProductClick={setOpenCashProductBlock}
+            onTotalClick={setOpenCashBlock}
+          />
+        )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Zone C — graphique de tendance : garde son propre `chartLoading`
-            (requête indépendante, déjà exposée par le hook). */}
-        <Card className="lg:col-span-2">
+        {data.loading ? (
+          <section>
+            <Skeleton className="mb-3 h-6 w-48" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <KpiSkeleton key={i} />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <NetworkStockSummaryCards
+            products={data.products}
+            totalVolumeLiters={data.networkSummary?.totalVolumeLiters ?? 0}
+            totalCapacityLiters={data.totalCapacityLiters}
+            totalSellableVolumeLiters={data.totalSellableVolumeLiters}
+            totalMonetaryValue={data.totalMonetaryValue}
+            totalSellableMonetaryValue={data.totalSellableMonetaryValue}
+            totalCurrencyCode={data.totalMonetaryCurrencyCode}
+            formatMoney={formatMoney}
+            onProductClick={setBreakdownFilter}
+            onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("stockSynthesis.totalNetwork") })}
+          />
+        )}
+
+        {organizationId && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <DashboardDeliveriesWidget organizationId={organizationId} stations={data.stations} fuelProducts={data.fuelProducts} />
+            <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
+          </div>
+        )}
+
+        <NetworkCashModal
+          open={openCashBlock !== null}
+          onOpenChange={(next) => !next && setOpenCashBlock(null)}
+          organizationId={organizationId ?? ""}
+          block={openCashBlock}
+          title={openCashBlock ? tCaisse("networkModal.title", { currency: openCashBlock.currencyCode }) : ""}
+          fromDate={todayCashPeriod.fromDate}
+          toDate={todayCashPeriod.toDate}
+          mode={todayCashPeriod.mode}
+        />
+        <NetworkCashModal
+          open={openCashProductBlock !== null}
+          onOpenChange={(next) => !next && setOpenCashProductBlock(null)}
+          organizationId={organizationId ?? ""}
+          block={openCashProductBlock}
+          title={openCashProductBlock ? tCaisse("networkModal.productTitle", { product: openCashProductBlock.fuelProductName, currency: openCashProductBlock.currencyCode ?? "—" }) : ""}
+          fromDate={todayCashPeriod.fromDate}
+          toDate={todayCashPeriod.toDate}
+          mode={todayCashPeriod.mode}
+        />
+      </CollapsibleSection>
+
+      {/* Zone C — graphique de tendance : garde son propre `chartLoading`
+          (requête indépendante, déjà exposée par le hook). */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-h3 font-semibold text-text">{t("chart.title")}</h3>
             <span className="text-caption text-text-muted">{t("chart.unit")}</span>
@@ -574,43 +634,14 @@ function NetworkDashboardScreen() {
             </div>
           )}
         </Card>
-
-        {/* Alertes actives — vient de la requête de base. */}
-        <Card>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-h3 font-semibold text-text">{t("alerts.title")}</h3>
-          </div>
-          {data.loading ? (
-            <ListSkeleton rows={4} />
-          ) : data.activeAlerts.length === 0 ? (
-            <p className="text-body-sm text-text-muted">{t("alerts.empty")}</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {data.activeAlerts.slice(0, 6).map((alert) => {
-                const station = data.stations.find((s) => s.id === alert.stationId);
-                const tone = alert.type === "leak" || alert.type === "sensor_offline" ? "error" : "warning";
-                return (
-                  <li key={alert.id} className="flex items-start gap-2">
-                    <AlertTriangle className={cn("mt-0.5 size-4", tone === "error" ? "text-error" : "text-warning")} aria-hidden />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-body-sm font-medium text-text">{t(`alerts.types.${alert.type}`)}</p>
-                      <p className="truncate text-caption text-text-muted">{station?.name}</p>
-                    </div>
-                    <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(alert.triggeredAt)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6">
         {/* Stations du réseau : dépend des états courants par station
             (`statesLoading`), qui se chargent après la base — reste en
             squelette même quand la synthèse et le graphique sont déjà
             affichés. */}
-        <Card className="lg:col-span-2" padding="none">
+        <Card padding="none">
           <div className="flex items-center justify-between p-5 pb-0">
             <h3 className="text-h3 font-semibold text-text">{t("stations.title")}</h3>
           </div>
@@ -672,38 +703,6 @@ function NetworkDashboardScreen() {
               </>
             )}
           </div>
-        </Card>
-
-        {/* Activité récente : combine base (livraisons/alertes) et états par
-            station (mesures) — reste en squelette tant que l'un des deux
-            n'est pas prêt. */}
-        <Card>
-          <h3 className="mb-3 text-h3 font-semibold text-text">{t("activity.title")}</h3>
-          {data.loading || data.statesLoading ? (
-            <ListSkeleton rows={5} />
-          ) : data.recentActivity.length === 0 ? (
-            <p className="text-body-sm text-text-muted">{t("activity.empty")}</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {data.recentActivity.map((event, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  {event.kind === "delivery" && <Truck className="mt-0.5 size-4 text-success" aria-hidden />}
-                  {event.kind === "alert" && <AlertTriangle className="mt-0.5 size-4 text-warning" aria-hidden />}
-                  {event.kind === "measurement" && <Wrench className="mt-0.5 size-4 text-info" aria-hidden />}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-body-sm font-medium text-text">{t(`activity.events.${event.kind}`)}</p>
-                    <p className="truncate text-caption text-text-muted">
-                      {event.kind === "delivery" && `${event.stationName} — ${t("activity.deliveryDetails", { volume: formatVolume(event.delivery.volumeLiters ?? 0) })}`}
-                      {event.kind === "alert" && `${event.stationName} — ${t(`alerts.types.${event.alert.type}`)}`}
-                      {event.kind === "measurement" &&
-                        t("activity.measurementDetails", { tank: `${event.stationName} / ${event.tankName}`, height: `${Math.round(event.heightMm)} mm` })}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(event.at)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </Card>
       </div>
 
