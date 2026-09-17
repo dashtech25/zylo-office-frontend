@@ -11,7 +11,7 @@ import {
   type SecurityEquipmentCategory,
   type SecurityEquipmentConformityStatus,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -41,6 +41,7 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
   const [nextControlDueAt, setNextControlDueAt] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   async function handleCreate() {
     if (!label) {
@@ -55,11 +56,17 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
       setLastControlAt("");
       setNextControlDueAt("");
       setReloadKey((k) => k + 1);
+      setAddModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
       setCreating(false);
     }
+  }
+
+  function closeAddModal() {
+    setAddModalOpen(false);
+    setError(null);
   }
 
   async function handleUpdateStatus(id: string, conformityStatus: SecurityEquipmentConformityStatus) {
@@ -69,22 +76,43 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
 
   return (
     <div className="flex flex-col gap-4">
-      {error && <Alert tone="error">{error}</Alert>}
-      <Card>
-        <CardSectionHeader title={t("form.title")} />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-          <FormField label={t("form.category")}>
-            {() => <Select aria-label={t("form.category")} value={category} onValueChange={(v) => setCategory(v as SecurityEquipmentCategory)} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
-          </FormField>
-          <FormField label={t("form.label")}>{(field) => <Input {...field} value={label} onChange={(e) => setLabel(e.target.value)} />}</FormField>
-          <FormField label={t("form.lastControlAt")}>{(field) => <Input {...field} type="date" value={lastControlAt} onChange={(e) => setLastControlAt(e.target.value)} />}</FormField>
-          <FormField label={t("form.nextControlDueAt")}>{(field) => <Input {...field} type="date" value={nextControlDueAt} onChange={(e) => setNextControlDueAt(e.target.value)} />}</FormField>
-        </div>
-        <Button className="mt-4" size="sm" onClick={handleCreate} loading={creating}>
+      <Modal
+        open={addModalOpen}
+        onOpenChange={(next) => {
+          if (!next) closeAddModal();
+        }}
+        title={t("form.title")}
+        size="md"
+        closeLabel={tCommon("actions.close")}
+        footer={
+          <>
+            <Button variant="outline" size="sm" type="button" onClick={closeAddModal}>{tCommon("actions.cancel")}</Button>
+            <Button size="sm" type="submit" form="add-security-equipment-form" loading={creating}>
+              <Plus className="size-4" aria-hidden />
+              {t("form.submit")}
+            </Button>
+          </>
+        }
+      >
+        <form id="add-security-equipment-form" onSubmit={(e) => { e.preventDefault(); void handleCreate(); }} className="flex flex-col gap-4">
+          {error && <Alert tone="error">{error}</Alert>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label={t("form.category")}>
+              {() => <Select aria-label={t("form.category")} value={category} onValueChange={(v) => setCategory(v as SecurityEquipmentCategory)} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
+            </FormField>
+            <FormField label={t("form.label")}>{(field) => <Input {...field} value={label} onChange={(e) => setLabel(e.target.value)} />}</FormField>
+            <FormField label={t("form.lastControlAt")}>{(field) => <Input {...field} type="date" value={lastControlAt} onChange={(e) => setLastControlAt(e.target.value)} />}</FormField>
+            <FormField label={t("form.nextControlDueAt")}>{(field) => <Input {...field} type="date" value={nextControlDueAt} onChange={(e) => setNextControlDueAt(e.target.value)} />}</FormField>
+          </div>
+        </form>
+      </Modal>
+
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setAddModalOpen(true)}>
           <Plus className="size-4" aria-hidden />
           {t("form.submit")}
         </Button>
-      </Card>
+      </div>
 
       <Card padding="none">
         <PartStateBox state={state}>

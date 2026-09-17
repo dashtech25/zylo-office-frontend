@@ -3,16 +3,21 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  bulkImportSellableProducts,
   cancelProductSaleTransaction,
   createProductSaleTransaction,
   createSellableProduct,
+  createSellableProductPrice,
   listCommercialAccounts,
   listCurrencies,
   listProductSaleTransactions,
   listSellableProducts,
   listStations,
+  updateSellableProduct,
+  type BulkImportSellableProductRow,
   type CreateProductSaleTransactionInput,
   type CreateSellableProductInput,
+  type CreateSellableProductPriceInput,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 async function fetchProduitsData(organizationId: string, stationId: string | null) {
@@ -72,6 +77,25 @@ export function useProduits(organizationId: string | null, stationId: string | n
     await invalidate();
   }
 
+  async function editProduct(productId: string, data: Partial<CreateSellableProductInput> & { active?: boolean }) {
+    if (!organizationId) return;
+    await updateSellableProduct(organizationId, productId, data);
+    await invalidate();
+  }
+
+  async function setPrice(productId: string, data: CreateSellableProductPriceInput) {
+    if (!organizationId) return;
+    await createSellableProductPrice(organizationId, productId, data);
+    await invalidate();
+  }
+
+  async function importProducts(rows: BulkImportSellableProductRow[]) {
+    if (!organizationId) return { createdCount: 0, errors: [] };
+    const result = await bulkImportSellableProducts(organizationId, rows);
+    await invalidate();
+    return result;
+  }
+
   return {
     loading: !!organizationId && query.isPending,
     error: query.error ? (query.error instanceof Error ? query.error.message : String(query.error)) : null,
@@ -81,6 +105,9 @@ export function useProduits(organizationId: string | null, stationId: string | n
     currencies: query.data?.currencies ?? [],
     commercialAccounts: query.data?.commercialAccounts ?? [],
     addProduct,
+    editProduct,
+    setPrice,
+    importProducts,
     submitSale,
     cancelSale,
     reload: invalidate,

@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { createEquipment, listEquipment, type Equipment } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -36,6 +36,7 @@ export function EquipmentSection({ organizationId, stationId }: { organizationId
   const [serialNumber, setSerialNumber] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   async function handleCreate() {
     if (!name) {
@@ -51,6 +52,7 @@ export function EquipmentSection({ organizationId, stationId }: { organizationId
       setModel("");
       setSerialNumber("");
       setReloadKey((k) => k + 1);
+      setAddModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
@@ -58,25 +60,51 @@ export function EquipmentSection({ organizationId, stationId }: { organizationId
     }
   }
 
+  function closeAddModal() {
+    setAddModalOpen(false);
+    setError(null);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {error && <Alert tone="error">{error}</Alert>}
-      <Card>
-        <CardSectionHeader title={t("form.title")} />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <FormField label={t("form.type")}>
-            {() => <Select aria-label={t("form.type")} value={type} onValueChange={(v) => setType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: v }))} />}
-          </FormField>
-          <FormField label={t("form.name")}>{(field) => <Input {...field} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
-          <FormField label={t("form.manufacturer")}>{(field) => <Input {...field} value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />}</FormField>
-          <FormField label={t("form.model")}>{(field) => <Input {...field} value={model} onChange={(e) => setModel(e.target.value)} />}</FormField>
-          <FormField label={t("form.serialNumber")}>{(field) => <Input {...field} value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />}</FormField>
-        </div>
-        <Button className="mt-4" size="sm" onClick={handleCreate} loading={creating}>
+      <Modal
+        open={addModalOpen}
+        onOpenChange={(next) => {
+          if (!next) closeAddModal();
+        }}
+        title={t("form.title")}
+        size="md"
+        closeLabel={tCommon("actions.close")}
+        footer={
+          <>
+            <Button variant="outline" size="sm" type="button" onClick={closeAddModal}>{tCommon("actions.cancel")}</Button>
+            <Button size="sm" type="submit" form="add-equipment-form" loading={creating}>
+              <Plus className="size-4" aria-hidden />
+              {t("form.submit")}
+            </Button>
+          </>
+        }
+      >
+        <form id="add-equipment-form" onSubmit={(e) => { e.preventDefault(); void handleCreate(); }} className="flex flex-col gap-4">
+          {error && <Alert tone="error">{error}</Alert>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label={t("form.type")}>
+              {() => <Select aria-label={t("form.type")} value={type} onValueChange={(v) => setType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: v }))} />}
+            </FormField>
+            <FormField label={t("form.name")}>{(field) => <Input {...field} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
+            <FormField label={t("form.manufacturer")}>{(field) => <Input {...field} value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />}</FormField>
+            <FormField label={t("form.model")}>{(field) => <Input {...field} value={model} onChange={(e) => setModel(e.target.value)} />}</FormField>
+            <FormField label={t("form.serialNumber")}>{(field) => <Input {...field} value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />}</FormField>
+          </div>
+        </form>
+      </Modal>
+
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setAddModalOpen(true)}>
           <Plus className="size-4" aria-hidden />
           {t("form.submit")}
         </Button>
-      </Card>
+      </div>
 
       <Card padding="none">
         <PartStateBox state={state}>

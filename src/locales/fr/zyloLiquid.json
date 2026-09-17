@@ -971,6 +971,10 @@
         "category": "Catégorie",
         "price": "Prix unitaire",
         "currency": "Devise",
+        "stock": "Stock initial",
+        "lowStockThreshold": "Seuil de stock bas",
+        "image": "Image du produit",
+        "imageUploading": "Envoi de l'image…",
         "submit": "Ajouter",
         "required": "Nom, prix et devise sont obligatoires."
       },
@@ -978,10 +982,36 @@
         "name": "Nom",
         "category": "Catégorie",
         "price": "Prix",
+        "stock": "Stock",
         "scope": "Portée",
         "barcode": "Code-barres"
       },
-      "scopeNetwork": "Réseau"
+      "scopeNetwork": "Réseau",
+      "outOfStock": "Rupture",
+      "lowStock": "Stock bas",
+      "importExport": {
+        "template": "Télécharger le modèle",
+        "export": "Exporter le catalogue",
+        "import": "Importer un fichier",
+        "importing": "Import en cours…",
+        "templateFilename": "modele_produits_boutique",
+        "exportFilename": "catalogue_produits_boutique",
+        "invalidStructure": "Structure du fichier invalide — en-têtes attendus, dans cet ordre : {headers}.",
+        "invalidRow": "Ligne {row} : {message}",
+        "invalidCurrency": "devise inconnue \"{value}\"",
+        "invalidStation": "station inconnue \"{value}\"",
+        "invalidPrice": "prix invalide",
+        "missingName": "nom manquant",
+        "successCount": "{count} produits importés.",
+        "errorsTitle": "Lignes non importées :"
+      },
+      "price": {
+        "resolvedLabel": "Prix pour cette station",
+        "networkDefaultBadge": "Prix par défaut du réseau — non personnalisé ici",
+        "amount": "Nouveau prix",
+        "submit": "Appliquer",
+        "success": "Prix mis à jour pour cette station."
+      }
     },
     "sale": {
       "empty": "Panier vide.",
@@ -999,6 +1029,7 @@
       "removeLine": "Retirer",
       "error": "Le panier ne peut pas être vide.",
       "creditAccountRequired": "Un compte client est requis pour une vente à crédit.",
+      "insufficientStock": "Stock insuffisant pour ce produit.",
       "success": "Vente enregistrée."
     },
     "history": {

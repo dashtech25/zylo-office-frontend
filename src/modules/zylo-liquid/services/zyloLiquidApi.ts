@@ -1590,6 +1590,10 @@ export interface SellableProduct {
   active: boolean;
   stockQuantity: number;
   lowStockThreshold: number | null;
+  imageUrl: string | null;
+  resolvedUnitPriceAmount: number | null;
+  resolvedCurrencyId: string | null;
+  priceNotCalculableReason: string | null;
 }
 
 export interface CreateSellableProductInput {
@@ -1602,6 +1606,7 @@ export interface CreateSellableProductInput {
   currencyId: string;
   stockQuantity?: number;
   lowStockThreshold?: number;
+  imageStorageReference?: string;
 }
 
 export function listSellableProducts(organizationId: string, params: { stationId?: string; search?: string; limit?: number } = {}): Promise<Page<SellableProduct>> {
@@ -1618,6 +1623,58 @@ export function createSellableProduct(organizationId: string, data: CreateSellab
 
 export function updateSellableProduct(organizationId: string, productId: string, data: Partial<CreateSellableProductInput> & { active?: boolean }): Promise<SellableProduct> {
   return apiFetch<SellableProduct>(`/zylo-liquid/sellable-products/${productId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
+}
+
+export interface SellableProductPrice {
+  id: string;
+  stationId: string | null;
+  sellableProductId: string;
+  currencyId: string;
+  priceAmount: number;
+  costAmount: number | null;
+  effectiveFrom: string;
+  changeReason: string | null;
+  createdBy: string;
+  isFuture: boolean;
+}
+
+export interface CreateSellableProductPriceInput {
+  stationId?: string;
+  priceAmount: number;
+  costAmount?: number;
+  currencyId?: string;
+  effectiveFrom: string;
+  changeReason?: string;
+}
+
+export function createSellableProductPrice(organizationId: string, productId: string, data: CreateSellableProductPriceInput): Promise<SellableProductPrice> {
+  return apiFetch<SellableProductPrice>(`/zylo-liquid/sellable-products/${productId}/prices`, { method: "POST", organizationId, body: JSON.stringify(data) });
+}
+
+export function listSellableProductPrices(organizationId: string, productId: string): Promise<SellableProductPrice[]> {
+  return apiFetch<SellableProductPrice[]>(`/zylo-liquid/sellable-products/${productId}/prices`, withOrg(organizationId));
+}
+
+export interface BulkImportSellableProductRow {
+  rowNumber: number;
+  stationId?: string;
+  name: string;
+  sku?: string;
+  barcodeValue?: string;
+  category?: string;
+  unitPriceAmount: number;
+  currencyId: string;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+}
+
+export interface BulkImportSellableProductsResult {
+  createdCount: number;
+  errors: { rowNumber: number; message: string }[];
+}
+
+export function bulkImportSellableProducts(organizationId: string, rows: BulkImportSellableProductRow[]): Promise<BulkImportSellableProductsResult> {
+  return apiFetch<BulkImportSellableProductsResult>("/zylo-liquid/sellable-products/bulk-import", { method: "POST", organizationId, body: JSON.stringify({ rows }) });
 }
 
 // ================================================================

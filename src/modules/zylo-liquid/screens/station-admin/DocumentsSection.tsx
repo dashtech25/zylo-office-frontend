@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { resolveStorageUrl, uploadFile } from "@/core/api/storage";
 import { createDocument, deleteDocument, getDocumentDownloadUrl, listDocumentsByEntity } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -33,6 +33,7 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
   const [sensitivityLevel, setSensitivityLevel] = useState<"normal" | "restreint">("normal");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   async function handleFileSelected(file: File) {
     setUploading(true);
@@ -48,12 +49,18 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
         linkedEntityId: stationId,
       });
       setReloadKey((k) => k + 1);
+      setAddModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : tCommon("states.error"));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  function closeAddModal() {
+    setAddModalOpen(false);
+    setError(null);
   }
 
   async function handleDelete(documentId: string) {
@@ -72,11 +79,19 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
 
   return (
     <div className="flex flex-col gap-4">
-      {error && <Alert tone="error">{error}</Alert>}
-      <Card>
-        <CardSectionHeader title={t("form.title")} />
-        <p className="-mt-3 mb-3 text-body-sm text-text-muted">{t("form.hint")}</p>
-        <div className="flex flex-wrap items-end gap-3">
+      <Modal
+        open={addModalOpen}
+        onOpenChange={(next) => {
+          if (!next) closeAddModal();
+        }}
+        title={t("form.title")}
+        size="sm"
+        closeLabel={tCommon("actions.close")}
+        footer={<Button variant="outline" size="sm" type="button" onClick={closeAddModal}>{tCommon("actions.cancel")}</Button>}
+      >
+        <div className="flex flex-col gap-4">
+          {error && <Alert tone="error">{error}</Alert>}
+          <p className="text-body-sm text-text-muted">{t("form.hint")}</p>
           <FormField label={t("form.sensitivityLevel")}>
             {() => (
               <Select
@@ -104,7 +119,14 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
             {t("form.submit")}
           </Button>
         </div>
-      </Card>
+      </Modal>
+
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setAddModalOpen(true)}>
+          <Upload className="size-4" aria-hidden />
+          {t("form.submit")}
+        </Button>
+      </div>
 
       <Card padding="none">
         <PartStateBox state={state}>
