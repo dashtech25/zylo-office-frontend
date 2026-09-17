@@ -53,7 +53,7 @@ const NAV: NavEntry[] = [
   { label: "Gestion des pompes", href: "/zylo-tanker/pompes", icon: Gauge },
   { label: "Réseau de tuyauterie", icon: Plug, comingSoon: true },
   { label: "Consommation carburant", href: "/zylo-tanker/consommation", icon: Fuel },
-  { label: "Navigation", icon: Map, comingSoon: true },
+  { label: "Localisation", href: "/zylo-tanker/localisation", icon: Map },
   { label: "Optimisation énergétique", icon: Sparkles, comingSoon: true },
   { label: "Vidéosurveillance IA", icon: Camera, comingSoon: true },
   { label: "Contrôle d'accès", icon: BadgeCheck, comingSoon: true },
