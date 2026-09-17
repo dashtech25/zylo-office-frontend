@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { AlertTriangle, Compass, Gauge, MapPin, Radio, Ship } from "lucide-react";
 
 import { TrucksMap, type TruckMapPoint, type TruckMapStatus } from "@/modules/zylo-liquid/components/TrucksMap";
@@ -12,6 +13,7 @@ import {
   EmptyState,
   Kpi,
   PageHeader,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -24,9 +26,11 @@ import {
   MOCK_ALARMS,
   MOCK_FLEET_KPIS,
   MOCK_VESSELS,
+  mockVesselRoute,
   type MockAlarm,
   type MockVessel,
 } from "@/modules/zylo-tanker/mock/fleetMock";
+import { useLiveVesselPositions } from "@/modules/zylo-tanker/hooks/useLiveVesselPositions";
 
 /** Écran "Centre de supervision" (module 19 SMART TANKER) — vue flotte,
  * un niveau au-dessus du tableau de bord d'un seul navire. Frontend-only :
@@ -79,20 +83,110 @@ function formatTriggeredAt(iso: string): string {
   return dateFormatter.format(new Date(iso));
 }
 
-function vesselById(id: string): MockVessel | undefined {
-  return MOCK_VESSELS.find((vessel) => vessel.id === id);
-}
-
 function activeAlarmCount(vesselId: string): number {
   return MOCK_ALARMS.filter((alarm) => alarm.vesselId === vesselId).length;
 }
 
+/** Formate une durée en minutes en "Xh Ymin" (ou "Ymin" si < 1h), "—" si
+ * pas d'ETA calculable (pas de destination ou navire à l'arrêt). */
+function formatEta(etaMinutes: number | null): string {
+  if (etaMinutes === null) return "—";
+  const hours = Math.floor(etaMinutes / 60);
+  const minutes = etaMinutes % 60;
+  if (hours === 0) return `${minutes}min`;
+  return `${hours}h ${minutes}min`;
+}
+
+type StatusFilter = "all" | MockVessel["status"];
+type AlarmFilter = "all" | "active";
+type SpeedFilter = "all" | "stopped" | "slow" | "normal" | "fast";
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Tous" },
+  { value: "underway", label: "En route" },
+  { value: "moored", label: "À quai" },
+  { value: "anchored", label: "Au mouillage" },
+];
+
+const ALARM_FILTER_OPTIONS = [
+  { value: "all", label: "Tous" },
+  { value: "active", label: "Avec alarme active" },
+];
+
+const SPEED_FILTER_OPTIONS = [
+  { value: "all", label: "Toutes" },
+  { value: "stopped", label: "Arrêté (0 nd)" },
+  { value: "slow", label: "Lent (< 5 nds)" },
+  { value: "normal", label: "Normal (5–15 nds)" },
+  { value: "fast", label: "Rapide (> 15 nds)" },
+];
+
+function matchesSpeedFilter(speedKnots: number, filter: SpeedFilter): boolean {
+  switch (filter) {
+    case "stopped":
+      return speedKnots === 0;
+    case "slow":
+      return speedKnots > 0 && speedKnots < 5;
+    case "normal":
+      return speedKnots >= 5 && speedKnots <= 15;
+    case "fast":
+      return speedKnots > 15;
+    default:
+      return true;
+  }
+}
+
 export default function SupervisionScreen() {
-  const sortedAlarms = [...MOCK_ALARMS].sort((a, b) => {
-    const severityDiff = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
-    if (severityDiff !== 0) return severityDiff;
-    return new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime();
-  });
+  const liveVessels = useLiveVesselPositions(MOCK_VESSELS);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [destinationFilter, setDestinationFilter] = useState<string>("all");
+  const [alarmFilter, setAlarmFilter] = useState<AlarmFilter>("all");
+  const [speedFilter, setSpeedFilter] = useState<SpeedFilter>("all");
+  const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
+
+  // Filtres appliqués hors "destination", pour calculer la liste des
+  // destinations distinctes disponibles compte tenu des autres critères
+  // déjà actifs (§2 de la consigne : options de destination dépendantes
+  // des navires filtrés par les autres critères).
+  const vesselsBeforeDestinationFilter = useMemo(() => {
+    return liveVessels.filter((vessel) => {
+      if (statusFilter !== "all" && vessel.status !== statusFilter) return false;
+      if (alarmFilter === "active" && activeAlarmCount(vessel.id) === 0) return false;
+      if (!matchesSpeedFilter(vessel.speedKnots, speedFilter)) return false;
+      return true;
+    });
+  }, [liveVessels, statusFilter, alarmFilter, speedFilter]);
+
+  const destinationOptions = useMemo(() => {
+    const labels = new Set<string>();
+    vesselsBeforeDestinationFilter.forEach((vessel) => {
+      if (vessel.destinationLabel) labels.add(vessel.destinationLabel);
+    });
+    return [
+      { value: "all", label: "Toutes" },
+      ...Array.from(labels)
+        .sort((a, b) => a.localeCompare(b))
+        .map((label) => ({ value: label, label })),
+    ];
+  }, [vesselsBeforeDestinationFilter]);
+
+  const filteredVessels = useMemo(() => {
+    return vesselsBeforeDestinationFilter.filter((vessel) => {
+      if (destinationFilter !== "all" && vessel.destinationLabel !== destinationFilter) return false;
+      return true;
+    });
+  }, [vesselsBeforeDestinationFilter, destinationFilter]);
+
+  const sortedAlarms = [...MOCK_ALARMS]
+    .filter((alarm) => filteredVessels.some((vessel) => vessel.id === alarm.vesselId))
+    .sort((a, b) => {
+      const severityDiff = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
+      if (severityDiff !== 0) return severityDiff;
+      return new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime();
+    });
+
+  const filteredVesselById = (id: string) => filteredVessels.find((vessel) => vessel.id === id);
 
   return (
     <Stack gap="lg">
@@ -113,48 +207,108 @@ export default function SupervisionScreen() {
         ))}
       </div>
 
-      <FleetMapCard />
+      <Card>
+        <CardSectionHeader icon={MapPin} title="Filtres" />
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-body-sm text-text-muted">Statut</label>
+              <Select
+                aria-label="Filtrer par statut"
+                options={STATUS_FILTER_OPTIONS}
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-body-sm text-text-muted">Destination</label>
+              <Select
+                aria-label="Filtrer par destination"
+                options={destinationOptions}
+                value={destinationFilter}
+                onValueChange={setDestinationFilter}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-body-sm text-text-muted">Alarme</label>
+              <Select
+                aria-label="Filtrer par alarme"
+                options={ALARM_FILTER_OPTIONS}
+                value={alarmFilter}
+                onValueChange={(value) => setAlarmFilter(value as AlarmFilter)}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-body-sm text-text-muted">Vitesse</label>
+              <Select
+                aria-label="Filtrer par vitesse"
+                options={SPEED_FILTER_OPTIONS}
+                value={speedFilter}
+                onValueChange={(value) => setSpeedFilter(value as SpeedFilter)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <FleetMapCard
+        vessels={filteredVessels}
+        selectedVesselId={selectedVesselId}
+        onSelectVessel={setSelectedVesselId}
+      />
 
       <Card>
         <CardSectionHeader icon={Ship} title="Navires de la flotte" />
         <CardContent>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeaderCell>Code</TableHeaderCell>
-                <TableHeaderCell>Navire</TableHeaderCell>
-                <TableHeaderCell>Statut</TableHeaderCell>
-                <TableHeaderCell>Vitesse</TableHeaderCell>
-                <TableHeaderCell>Cap</TableHeaderCell>
-                <TableHeaderCell>Alarmes actives</TableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {MOCK_VESSELS.map((vessel) => {
-                const alarmCount = activeAlarmCount(vessel.id);
-                return (
-                  <TableRow key={vessel.id}>
-                    <TableCell className="font-medium text-text">{vessel.code}</TableCell>
-                    <TableCell>{vessel.name}</TableCell>
-                    <TableCell>
-                      <Badge tone={STATUS_TONE[vessel.status]}>{STATUS_LABEL[vessel.status]}</Badge>
-                    </TableCell>
-                    <TableCell className="tabular-nums">{vessel.speedKnots.toFixed(1)} nds</TableCell>
-                    <TableCell className="tabular-nums">{vessel.headingDeg.toFixed(0)}°</TableCell>
-                    <TableCell>
-                      {alarmCount > 0 ? (
-                        <Badge tone="error" dot>
-                          {alarmCount}
-                        </Badge>
-                      ) : (
-                        <span className="text-text-muted">0</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          {filteredVessels.length === 0 ? (
+            <EmptyState icon={Ship} title="Aucun navire" description="Aucun navire ne correspond aux filtres sélectionnés." />
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Code</TableHeaderCell>
+                  <TableHeaderCell>Navire</TableHeaderCell>
+                  <TableHeaderCell>Statut</TableHeaderCell>
+                  <TableHeaderCell>Vitesse</TableHeaderCell>
+                  <TableHeaderCell>Cap</TableHeaderCell>
+                  <TableHeaderCell>Destination</TableHeaderCell>
+                  <TableHeaderCell>ETA</TableHeaderCell>
+                  <TableHeaderCell>Alarmes actives</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredVessels.map((vessel) => {
+                  const alarmCount = activeAlarmCount(vessel.id);
+                  return (
+                    <TableRow
+                      key={vessel.id}
+                      clickable
+                      onClick={() => setSelectedVesselId(vessel.id === selectedVesselId ? null : vessel.id)}
+                    >
+                      <TableCell className="font-medium text-text">{vessel.code}</TableCell>
+                      <TableCell>{vessel.name}</TableCell>
+                      <TableCell>
+                        <Badge tone={STATUS_TONE[vessel.status]}>{STATUS_LABEL[vessel.status]}</Badge>
+                      </TableCell>
+                      <TableCell className="tabular-nums">{vessel.speedKnots.toFixed(1)} nds</TableCell>
+                      <TableCell className="tabular-nums">{vessel.headingDeg.toFixed(0)}°</TableCell>
+                      <TableCell>{vessel.destinationLabel ?? "—"}</TableCell>
+                      <TableCell className="tabular-nums">{formatEta(vessel.etaMinutes)}</TableCell>
+                      <TableCell>
+                        {alarmCount > 0 ? (
+                          <Badge tone="error" dot>
+                            {alarmCount}
+                          </Badge>
+                        ) : (
+                          <span className="text-text-muted">0</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -176,7 +330,7 @@ export default function SupervisionScreen() {
               </TableHead>
               <TableBody>
                 {sortedAlarms.map((alarm) => {
-                  const vessel = vesselById(alarm.vesselId);
+                  const vessel = filteredVesselById(alarm.vesselId);
                   return (
                     <TableRow key={alarm.id}>
                       <TableCell>
@@ -211,9 +365,20 @@ function toTruckMapStatus(status: MockVessel["status"]): TruckMapStatus {
 /** Carte "flotte" — vraie carte Mapbox, `TrucksMap` (mêmes marqueurs,
  * survol, recentrage et sélecteur de fond de carte que le tracking camions
  * de Zylo Liquid) réutilisé tel quel : générique sur id/label/lat/lon/
- * statut, aucune connaissance propre aux camions. */
-function FleetMapCard() {
-  const points: TruckMapPoint[] = MOCK_VESSELS.map((vessel) => ({
+ * statut, aucune connaissance propre aux camions. `TrucksMap` n'accepte
+ * qu'un seul `route` global (pas un tracé par navire) : le trajet affiché
+ * est donc celui du navire sélectionné (clic sur la carte ou une ligne du
+ * tableau), navires à quai exclus (aucun trajet restant à parcourir). */
+function FleetMapCard({
+  vessels,
+  selectedVesselId,
+  onSelectVessel,
+}: {
+  vessels: MockVessel[];
+  selectedVesselId: string | null;
+  onSelectVessel: (vesselId: string | null) => void;
+}) {
+  const points: TruckMapPoint[] = vessels.map((vessel) => ({
     id: vessel.id,
     label: `${vessel.name} (${vessel.code})`,
     latitude: vessel.latitude,
@@ -221,17 +386,33 @@ function FleetMapCard() {
     status: toTruckMapStatus(vessel.status),
   }));
 
+  const selectedVessel = selectedVesselId ? vessels.find((vessel) => vessel.id === selectedVesselId) : undefined;
+  const route =
+    selectedVessel && selectedVessel.status !== "moored" ? mockVesselRoute(selectedVessel.id) : undefined;
+
   return (
     <Card>
       <CardSectionHeader icon={MapPin} title="Carte de la flotte" />
       <CardContent>
-        <TrucksMap trucks={points} height={320} />
+        <TrucksMap
+          trucks={points}
+          route={route}
+          height={320}
+          selectedTruckId={selectedVesselId}
+          onTruckClick={(vesselId) => onSelectVessel(vesselId === selectedVesselId ? null : vesselId)}
+        />
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {MOCK_VESSELS.map((vessel) => (
-            <div
+          {vessels.map((vessel) => (
+            <button
               key={vessel.id}
-              className="flex items-center justify-between gap-3 rounded-card border border-border-subtle bg-surface px-3 py-2 text-body-sm"
+              type="button"
+              onClick={() => onSelectVessel(vessel.id === selectedVesselId ? null : vessel.id)}
+              className={`flex items-center justify-between gap-3 rounded-card border px-3 py-2 text-left text-body-sm transition-colors ${
+                vessel.id === selectedVesselId
+                  ? "border-primary bg-primary-muted/40"
+                  : "border-border-subtle bg-surface hover:bg-primary-muted/20"
+              }`}
             >
               <span className="flex items-center gap-2 font-medium text-text">
                 <Ship className="size-4 text-text-muted" aria-hidden />
@@ -255,7 +436,7 @@ function FleetMapCard() {
                   {STATUS_LABEL[vessel.status]}
                 </span>
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </CardContent>
