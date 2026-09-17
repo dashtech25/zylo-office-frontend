@@ -43,6 +43,10 @@ interface NavEntry {
   href?: string;
   icon: LucideIcon;
   comingSoon?: boolean;
+  /** Masque l'entrée de la sidebar sans la retirer du tableau (réversible) —
+   * ex. fonctionnalité temporairement dépriorisée mais dont la route/page
+   * reste en place. Filtré dans `visibleNav`. */
+  hidden?: boolean;
   /** Permission requise pour voir cette entrée — vérifiée côté client
    * uniquement pour adapter l'affichage au rôle (jamais un substitut à la
    * vérification serveur, chaque page reste protégée indépendamment).
@@ -107,9 +111,9 @@ const NAV: NavGroup[] = [
     titleKey: "nav.sections.technique",
     entries: [
       { labelKey: "nav.items.maintenance", href: "/zylo-liquid/maintenance", icon: Wrench, requiredPermission: "zyloLiquid.equipment.read" },
-      { labelKey: "nav.items.securite", href: "/zylo-liquid/securite", icon: ShieldCheck, comingSoon: true },
+      { labelKey: "nav.items.securite", href: "/zylo-liquid/securite", icon: ShieldCheck, comingSoon: true, hidden: true },
       { labelKey: "nav.items.reglementaire", href: "/zylo-liquid/reglementaire", icon: FileText, requiredPermission: "zyloLiquid.regulatoryDocument.read" },
-      { labelKey: "nav.items.audit", href: "/zylo-liquid/audit", icon: ClipboardList, comingSoon: true },
+      { labelKey: "nav.items.audit", href: "/zylo-liquid/audit", icon: ClipboardList, comingSoon: true, hidden: true },
     ],
   },
   {
@@ -117,9 +121,9 @@ const NAV: NavGroup[] = [
     entries: [
       { labelKey: "nav.items.configuration", href: "/zylo-liquid/configuration", icon: SettingsIcon, requiredPermission: "zyloLiquid.station.manage" },
       { labelKey: "nav.items.utilisateurs", href: "/users", icon: Users, requiredPermission: "rbac.role.manage" },
-      { labelKey: "nav.items.sante", href: "/zylo-liquid/sante", icon: Activity, comingSoon: true },
+      { labelKey: "nav.items.sante", href: "/zylo-liquid/sante", icon: Activity, comingSoon: true, hidden: true },
       { labelKey: "nav.items.journalAudit", href: "/audit", icon: ClipboardList, requiredPermission: "audit.log.view" },
-      { labelKey: "nav.items.hypotheses", href: "/zylo-liquid/hypotheses", icon: BookOpen, comingSoon: true },
+      { labelKey: "nav.items.hypotheses", href: "/zylo-liquid/hypotheses", icon: BookOpen, comingSoon: true, hidden: true },
     ],
   },
 ];
@@ -163,7 +167,9 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
     () =>
       NAV.map((group) => ({
         ...group,
-        entries: group.entries.filter((entry) => entry.comingSoon || !entry.requiredPermission || permissionsLoading || can(entry.requiredPermission)),
+        entries: group.entries
+          .filter((entry) => !entry.hidden)
+          .filter((entry) => entry.comingSoon || !entry.requiredPermission || permissionsLoading || can(entry.requiredPermission)),
       })).filter((group) => group.entries.length > 0),
     [can, permissionsLoading]
   );

@@ -448,17 +448,34 @@ export default function StationsListScreen() {
         </StationsTable>
       )}
 
-      <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="full" closeLabel={tCommon("actions.close")}>
-        <Stack>
+      <Modal open={mapOpen} onOpenChange={setMapOpen} title={t("list.map.title")} size="fullscreen" closeLabel={tCommon("actions.close")}>
+        <div className="flex h-full min-h-0 flex-col gap-3">
           <Card>
             <StationsFilterBar {...filterBarProps} />
           </Card>
+          {/* Synthèse réseau — mêmes cartes que sur la page Stations, pour ne
+              pas perdre les calculs déjà disponibles en passant en vue carte
+              plein écran (demande commanditaire 2026-09-17). */}
+          {networkProducts.length > 0 && (
+            <NetworkStockSummaryCards
+              products={networkProducts}
+              totalVolumeLiters={networkVolumeLiters}
+              totalCapacityLiters={networkCapacityLiters}
+              totalSellableVolumeLiters={networkTotalSellableVolumeLiters}
+              totalMonetaryValue={networkTotalValue}
+              totalSellableMonetaryValue={networkTotalSellableValue}
+              totalCurrencyCode={[...networkCurrencies][0] ?? null}
+              formatMoney={formatMoney}
+              onProductClick={setBreakdownFilter}
+              onTotalClick={() => setBreakdownFilter({ fuelProductId: null, name: t("list.footer.networkTotal") })}
+            />
+          )}
           {/* Panneau liste + carte synchronisés (P1-4, audit module Stations
              2026-09-16) : la liste réutilise `filteredRows`, donc les mêmes
              filtres que le reste de la page ; cliquer une ligne zoome la
              carte dessus (StationsMap.focusStationId) au lieu de rouvrir un
              modal d'aperçu, pour rester dans le flux liste↔carte. */}
-          <div className="flex gap-3">
+          <div className="flex min-h-0 flex-1 gap-3">
             {mapPanelCollapsed ? (
               <button
                 type="button"
@@ -469,7 +486,7 @@ export default function StationsListScreen() {
                 <ChevronRight className="size-4" aria-hidden />
               </button>
             ) : (
-              <div className="flex w-64 shrink-0 flex-col gap-2 rounded-card border border-border-subtle" style={{ height: 640 }}>
+              <div className="flex w-64 shrink-0 flex-col gap-2 rounded-card border border-border-subtle">
                 <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
                   <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
                   <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
@@ -494,9 +511,9 @@ export default function StationsListScreen() {
                 </div>
               </div>
             )}
-            <div className="flex-1">
+            <div className="min-h-0 flex-1">
               <StationsMap
-                height={640}
+                fill
                 onStationClick={setPreviewStationId}
                 focusStationId={focusedStationId}
                 stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
@@ -509,11 +526,18 @@ export default function StationsListScreen() {
                     sellable: formatVolume(r.totalSellableVolumeLiters),
                     available: formatVolume(r.totalVolumeLiters),
                   }),
+                  productsLabel: r.products.map((p) => p.fuelProductName).join(", "),
+                  operationalLabel: t(`status.${r.station.status}`),
+                  operationalTone: r.station.status === "active" ? "success" : r.station.status === "maintenance" ? "warning" : "neutral",
+                  connectivityLabel: t(r.online ? "status.online" : "status.offline"),
+                  connected: r.online,
+                  alertsCount: r.alertsCount,
+                  alertsLabel: t("list.badges.alerts", { count: r.alertsCount }),
                 }))}
               />
             </div>
           </div>
-        </Stack>
+        </div>
       </Modal>
 
       {previewStationId &&
