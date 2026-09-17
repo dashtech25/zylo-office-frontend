@@ -14,11 +14,88 @@ export interface MockVessel {
   headingDeg: number;
   speedKnots: number;
   status: "underway" | "moored" | "anchored";
+  destinationLatitude: number | null;
+  destinationLongitude: number | null;
+  destinationLabel: string | null;
+  etaMinutes: number | null;
 }
 
+/** Distance orthodromique (grand cercle) entre deux points, en kilomètres.
+ * Utilisée pour calculer un ETA plausible à partir de la vitesse — jamais
+ * d'ETA inventé indépendamment de position/destination/vitesse. */
+export function haversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const earthRadiusKm = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+}
+
+const KNOTS_TO_KMH = 1.852;
+
+/** ETA en minutes à partir d'une position, d'une destination et d'une
+ * vitesse en nœuds. Retourne `null` si pas de destination ou vitesse nulle
+ * (jamais de valeur inventée quand le calcul n'est pas possible). */
+export function computeEtaMinutes(
+  latitude: number,
+  longitude: number,
+  destinationLatitude: number | null,
+  destinationLongitude: number | null,
+  speedKnots: number,
+): number | null {
+  if (destinationLatitude === null || destinationLongitude === null) return null;
+  if (speedKnots <= 0) return null;
+  const distanceKm = haversineDistanceKm(latitude, longitude, destinationLatitude, destinationLongitude);
+  const speedKmh = speedKnots * KNOTS_TO_KMH;
+  return Math.round((distanceKm / speedKmh) * 60);
+}
+
+// Port de Douala — destination du MT Atlantique (v1), actuellement en route.
+// NB : la position courante de v1 (4.0483, 9.6971) est déjà très proche des
+// coordonnées du port lui-même (l'estuaire du Wouri) ; on cible ici un point
+// un peu plus au large, dans le prolongement du cap 218° du navire, pour
+// obtenir un ETA réaliste plutôt qu'un ETA quasi nul.
+const DOUALA_PORT_LAT = 3.95;
+const DOUALA_PORT_LON = 9.5;
+
 export const MOCK_VESSELS: MockVessel[] = [
-  { id: "v1", code: "DEMO-MV1", name: "MT Atlantique", latitude: 4.0483, longitude: 9.6971, headingDeg: 218, speedKnots: 11.4, status: "underway" },
-  { id: "v2", code: "DEMO-MV2", name: "MT Littoral", latitude: 2.9401, longitude: 9.905, headingDeg: 0, speedKnots: 0, status: "moored" },
+  {
+    id: "v1",
+    code: "DEMO-MV1",
+    name: "MT Atlantique",
+    latitude: 4.0483,
+    longitude: 9.6971,
+    headingDeg: 218,
+    speedKnots: 11.4,
+    status: "underway",
+    destinationLatitude: DOUALA_PORT_LAT,
+    destinationLongitude: DOUALA_PORT_LON,
+    destinationLabel: "Port de Douala",
+    etaMinutes: computeEtaMinutes(4.0483, 9.6971, DOUALA_PORT_LAT, DOUALA_PORT_LON, 11.4),
+  },
+  {
+    id: "v2",
+    code: "DEMO-MV2",
+    name: "MT Littoral",
+    latitude: 2.9401,
+    longitude: 9.905,
+    headingDeg: 0,
+    speedKnots: 0,
+    status: "moored",
+    destinationLatitude: null,
+    destinationLongitude: null,
+    destinationLabel: null,
+    etaMinutes: null,
+  },
 ];
 
 export interface MockAlarm {
@@ -97,6 +174,48 @@ export function mockConsumptionSeries(vesselId: string): MockConsumptionPoint[] 
     timestamp: `${String(hour).padStart(2, "0")}:00`,
     liters: Math.round(base + Math.sin(hour / 3) * base * 0.25),
   }));
+}
+
+export interface MockVesselRoutePoint {
+  at: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** Historique de trajet (~6h, points espacés de 25min) pour les navires
+ * "underway". Trajectoire non rectiligne (légères variations lat/lon) pour
+ * rester plausible — le dernier point correspond à la position courante du
+ * navire dans MOCK_VESSELS. Navires à quai/au mouillage : pas d'historique
+ * (tableau vide), leur position ne bouge pas. */
+export const MOCK_VESSEL_ROUTES: Record<string, MockVesselRoutePoint[]> = {
+  v1: [
+    { at: "2026-09-17T03:50:00Z", latitude: 4.35, longitude: 10.05 },
+    { at: "2026-09-17T04:15:00Z", latitude: 4.3305, longitude: 10.0233 },
+    { at: "2026-09-17T04:40:00Z", latitude: 4.3051, longitude: 10.0018 },
+    { at: "2026-09-17T05:05:00Z", latitude: 4.2879, longitude: 9.9733 },
+    { at: "2026-09-17T05:30:00Z", latitude: 4.2624, longitude: 9.9511 },
+    { at: "2026-09-17T05:55:00Z", latitude: 4.2444, longitude: 9.9216 },
+    { at: "2026-09-17T06:20:00Z", latitude: 4.2187, longitude: 9.9003 },
+    { at: "2026-09-17T06:45:00Z", latitude: 4.2008, longitude: 9.8716 },
+    { at: "2026-09-17T07:10:00Z", latitude: 4.1753, longitude: 9.8497 },
+    { at: "2026-09-17T07:35:00Z", latitude: 4.1579, longitude: 9.8215 },
+    { at: "2026-09-17T08:00:00Z", latitude: 4.1329, longitude: 9.8004 },
+    { at: "2026-09-17T08:25:00Z", latitude: 4.1153, longitude: 9.7716 },
+    { at: "2026-09-17T08:50:00Z", latitude: 4.0895, longitude: 9.7497 },
+    { at: "2026-09-17T09:15:00Z", latitude: 4.0713, longitude: 9.7206 },
+    { at: "2026-09-17T09:40:00Z", latitude: 4.0483, longitude: 9.6971 },
+  ],
+  v2: [],
+};
+
+/** Retourne le trajet d'un navire au format [longitude, latitude][] trié
+ * chronologiquement — le format attendu par la prop `route` de TrucksMap
+ * (src/modules/zylo-liquid/components/TrucksMap.tsx). */
+export function mockVesselRoute(vesselId: string): [number, number][] {
+  const points = MOCK_VESSEL_ROUTES[vesselId] ?? [];
+  return [...points]
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    .map((point) => [point.longitude, point.latitude]);
 }
 
 export interface MockDocument {
