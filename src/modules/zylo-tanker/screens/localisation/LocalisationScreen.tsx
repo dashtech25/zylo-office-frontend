@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Clock, Compass, Gauge, MapPin, Navigation, Radio, Ship } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Clock, Compass, Gauge, MapPin, Maximize2, Minimize2, Navigation, Radio, Ship } from "lucide-react";
 
 import { TrucksMap, type TruckMapPoint, type TruckMapStatus } from "@/modules/zylo-liquid/components/TrucksMap";
 import {
@@ -132,6 +133,65 @@ function matchesSpeedFilter(speedKnots: number, filter: SpeedFilter): boolean {
   }
 }
 
+/** Liste de navires cliquable — grille de cartes en mode normal (dans le
+ * flux de la page), panneau flottant compact en mode étendu (survol de la
+ * carte, style "liste de flotte" de MarineTraffic/VesselFinder). */
+function VesselListPanel({
+  vessels,
+  selectedVesselId,
+  onSelectVessel,
+  floating,
+}: {
+  vessels: MockVessel[];
+  selectedVesselId: string | null;
+  onSelectVessel: (vesselId: string | null) => void;
+  floating: boolean;
+}) {
+  return (
+    <div className={floating ? "flex flex-col gap-2" : "grid grid-cols-1 gap-3 sm:grid-cols-2"}>
+      {vessels.map((vessel) => (
+        <button
+          key={vessel.id}
+          type="button"
+          onClick={() => onSelectVessel(vessel.id === selectedVesselId ? null : vessel.id)}
+          className={`flex items-center justify-between gap-3 rounded-card border px-3 py-2 text-left text-body-sm transition-colors ${
+            floating ? "backdrop-blur-sm" : ""
+          } ${
+            vessel.id === selectedVesselId
+              ? "border-primary bg-primary-muted/40"
+              : floating
+                ? "border-border-subtle bg-surface/90 hover:bg-primary-muted/20"
+                : "border-border-subtle bg-surface hover:bg-primary-muted/20"
+          }`}
+        >
+          <span className="flex items-center gap-2 font-medium text-text">
+            <Ship className="size-4 text-text-muted" aria-hidden />
+            {vessel.name}
+          </span>
+          <span className="flex items-center gap-3 text-text-muted">
+            <span className="flex items-center gap-1 tabular-nums">
+              <MapPin className="size-3.5" aria-hidden />
+              {vessel.latitude.toFixed(3)}, {vessel.longitude.toFixed(3)}
+            </span>
+            <span className="flex items-center gap-1 tabular-nums">
+              <Gauge className="size-3.5" aria-hidden />
+              {vessel.speedKnots.toFixed(1)} nds
+            </span>
+            <span className="flex items-center gap-1 tabular-nums">
+              <Compass className="size-3.5" aria-hidden />
+              {vessel.headingDeg.toFixed(0)}°
+            </span>
+            <span className="flex items-center gap-1">
+              <Radio className="size-3.5" aria-hidden />
+              {STATUS_LABEL[vessel.status]}
+            </span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Carte "flotte" — vraie carte Mapbox, `TrucksMap` (mêmes marqueurs,
  * survol, recentrage et sélecteur de fond de carte que le tracking camions
  * de Zylo Liquid) réutilisé tel quel : générique sur id/label/lat/lon/
@@ -139,17 +199,46 @@ function matchesSpeedFilter(speedKnots: number, filter: SpeedFilter): boolean {
  * qu'un seul `route` global (pas un tracé par navire) : le trajet affiché
  * est donc celui du navire sélectionné (clic sur la carte, une carte-navire
  * ou une ligne du tableau), navires à quai exclus (aucun trajet restant à
- * parcourir). */
+ * parcourir).
+ *
+ * Mode étendu : bouton "agrandir" qui bascule la carte dans un portail
+ * React (`createPortal` vers `document.body`) couvrant tout le viewport du
+ * navigateur — jamais l'API Fullscreen (`requestFullscreen`), qui bascule
+ * l'écran entier en mode kiosque OS (pattern explicitement écarté). Le
+ * portail est nécessaire pour échapper au contexte d'empilement de
+ * `ZyloTankerShell` (sidebar/topbar) de façon fiable. Style MarineTraffic/
+ * VesselFinder : la carte occupe tout le fond du viewport, les contrôles
+ * (fermer, liste des navires) flottent par-dessus en overlay, jamais un
+ * header de page classique. Affiche toujours TOUS les navires de la flotte
+ * en mode étendu (`allVessels`, pas `vessels` filtrés) — la vue "voir toute
+ * la flotte" doit rester valable même si des filtres sont actifs ailleurs
+ * sur l'écran. `key` différente entre les deux modes pour forcer un
+ * remount propre de `TrucksMap` (Mapbox GL ne redétecte pas toujours un
+ * changement de taille de son conteneur). */
 function FleetMapCard({
   vessels,
+  allVessels,
   selectedVesselId,
   onSelectVessel,
 }: {
   vessels: MockVessel[];
+  allVessels: MockVessel[];
   selectedVesselId: string | null;
   onSelectVessel: (vesselId: string | null) => void;
 }) {
-  const points: TruckMapPoint[] = vessels.map((vessel) => ({
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsExpanded(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isExpanded]);
+
+  const displayedVessels = isExpanded ? allVessels : vessels;
+  const points: TruckMapPoint[] = displayedVessels.map((vessel) => ({
     id: vessel.id,
     label: `${vessel.name} (${vessel.code})`,
     latitude: vessel.latitude,
@@ -157,58 +246,64 @@ function FleetMapCard({
     status: toTruckMapStatus(vessel.status),
   }));
 
-  const selectedVessel = selectedVesselId ? vessels.find((vessel) => vessel.id === selectedVesselId) : undefined;
+  const selectedVessel = selectedVesselId ? displayedVessels.find((vessel) => vessel.id === selectedVesselId) : undefined;
   const route =
     selectedVessel && selectedVessel.status !== "moored" ? mockVesselRoute(selectedVessel.id) : undefined;
 
+  const mapNode = (
+    <TrucksMap
+      key={isExpanded ? "expanded" : "embedded"}
+      trucks={points}
+      route={route}
+      height={isExpanded ? "100vh" : 320}
+      selectedTruckId={selectedVesselId}
+      onTruckClick={(vesselId) => onSelectVessel(vesselId === selectedVesselId ? null : vesselId)}
+    />
+  );
+
+  if (isExpanded) {
+    return createPortal(
+          <div className="fixed inset-0 z-50 bg-surface">
+            {mapNode}
+            <button
+              type="button"
+              onClick={() => setIsExpanded(false)}
+              title="Réduire la carte"
+              aria-label="Réduire la carte"
+              className="absolute top-2.5 left-14 z-10 flex h-[29px] items-center gap-1.5 rounded bg-white px-2.5 text-body-sm font-medium text-text shadow-[0_0_0_2px_rgba(0,0,0,.1)]"
+            >
+              <Minimize2 className="size-3.5" aria-hidden />
+              Réduire
+            </button>
+            <div className="absolute bottom-4 left-4 z-10 max-h-[45vh] w-80 overflow-y-auto rounded-card">
+              <VesselListPanel
+                vessels={allVessels}
+                selectedVesselId={selectedVesselId}
+                onSelectVessel={onSelectVessel}
+                floating
+              />
+            </div>
+          </div>,
+      document.body
+    );
+  }
+
   return (
     <Card>
-      <CardSectionHeader icon={MapPin} title="Carte de la flotte" />
+      <CardSectionHeader
+        icon={MapPin}
+        title="Carte de la flotte"
+        action={
+          <Button variant="outline" size="sm" type="button" onClick={() => setIsExpanded(true)}>
+            <Maximize2 className="size-3.5" aria-hidden />
+            Étendre
+          </Button>
+        }
+      />
       <CardContent>
-        <TrucksMap
-          trucks={points}
-          route={route}
-          height={320}
-          selectedTruckId={selectedVesselId}
-          onTruckClick={(vesselId) => onSelectVessel(vesselId === selectedVesselId ? null : vesselId)}
-        />
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {vessels.map((vessel) => (
-            <button
-              key={vessel.id}
-              type="button"
-              onClick={() => onSelectVessel(vessel.id === selectedVesselId ? null : vessel.id)}
-              className={`flex items-center justify-between gap-3 rounded-card border px-3 py-2 text-left text-body-sm transition-colors ${
-                vessel.id === selectedVesselId
-                  ? "border-primary bg-primary-muted/40"
-                  : "border-border-subtle bg-surface hover:bg-primary-muted/20"
-              }`}
-            >
-              <span className="flex items-center gap-2 font-medium text-text">
-                <Ship className="size-4 text-text-muted" aria-hidden />
-                {vessel.name}
-              </span>
-              <span className="flex items-center gap-3 text-text-muted">
-                <span className="flex items-center gap-1 tabular-nums">
-                  <MapPin className="size-3.5" aria-hidden />
-                  {vessel.latitude.toFixed(3)}, {vessel.longitude.toFixed(3)}
-                </span>
-                <span className="flex items-center gap-1 tabular-nums">
-                  <Gauge className="size-3.5" aria-hidden />
-                  {vessel.speedKnots.toFixed(1)} nds
-                </span>
-                <span className="flex items-center gap-1 tabular-nums">
-                  <Compass className="size-3.5" aria-hidden />
-                  {vessel.headingDeg.toFixed(0)}°
-                </span>
-                <span className="flex items-center gap-1">
-                  <Radio className="size-3.5" aria-hidden />
-                  {STATUS_LABEL[vessel.status]}
-                </span>
-              </span>
-            </button>
-          ))}
+        {mapNode}
+        <div className="mt-4">
+          <VesselListPanel vessels={vessels} selectedVesselId={selectedVesselId} onSelectVessel={onSelectVessel} floating={false} />
         </div>
       </CardContent>
     </Card>
@@ -415,6 +510,7 @@ export default function LocalisationScreen() {
 
       <FleetMapCard
         vessels={filteredVessels}
+        allVessels={vessels}
         selectedVesselId={selectedVesselId}
         onSelectVessel={setSelectedVesselId}
       />
