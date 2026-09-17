@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "title": "Help center",
+    "subtitle": "Zylo Office is a young product, backed by a small team. You won't find a giant knowledge base here, but honest answers to the most common questions — and a simple way to reach us directly."
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": {
+      "start": {
+        "question": "How do I get started with Zylo Office?",
+        "answer": "There is no self-service sign-up yet: our team sets up your organization together with you, step by step. Leave us your details on the \"It's free\" page and we'll get back to you to arrange a demo and a guided start."
+      },
+      "modules": {
+        "question": "Which modules are available?",
+        "answer": "Two applications today: Zylo Liquid for managing fuel stations, and Zylo Tanker for tracking tanker truck fleets. Details on each are on the Applications page."
+      },
+      "contact": {
+        "question": "How do I contact support?",
+        "answer": "The simplest way is the contact block below: we don't have a dedicated phone line or live chat yet, but we personally reply to every request."
+      },
+      "security": {
+        "question": "Is my data secure?",
+        "answer": "Access to Zylo Office is protected by authentication and by fine-grained role and permission management, specific to each organization. We stay transparent: we don't display a certification that doesn't exist yet, and we're happy to share technical details on request."
+      },
+      "pricing": {
+        "question": "How much does Zylo Office cost?",
+        "answer": "Pricing depends on the modules and activity volume of your business. Check the Pricing page for an overview, or contact us for a quote tailored to your station or fleet."
+      },
+      "multiUser": {
+        "question": "Can several people on my team use Zylo Office?",
+        "answer": "Yes. Each organization can invite team members and assign them suitable roles (management, data entry, read-only), configured together with you during setup."
+      }
+    }
+  },
+  "contact": {
+    "title": "Get in touch",
+    "body": "Have a question we haven't answered here? Write to us directly: our team replies personally, no bot and no queue.",
+    "cta": "Write to us"
+  }
+}

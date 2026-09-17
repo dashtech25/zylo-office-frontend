@@ -1,0 +1,73 @@
+{
+  "hero": {
+    "title": "Two applications, one focus: fuel distribution",
+    "subtitle": "Zylo Office doesn't try to be a generic ERP with dozens of half-useful modules. We build two deep applications, each purpose-built for one part of the fuel distribution business in Africa: service stations (Zylo Liquid) and tanker truck fleets (Zylo Tanker)."
+  },
+  "zyloLiquid": {
+    "eyebrow": "Service station application",
+    "title": "Zylo Liquid",
+    "description": "Day-to-day operation of a service station network: real-time tank monitoring, level and leak alerts, cash management and reconciliation, automatically detected deliveries, network pricing, and a shop for non-fuel products.",
+    "features": {
+      "tanks": {
+        "title": "Tanks and gauges",
+        "description": "Level, volume and status of every tank at every station, with measurement history and threshold tracking."
+      },
+      "alerts": {
+        "title": "Level and leak alerts",
+        "description": "Network alert center (low/high level, water presence, offline sensor or station) and a log of static leak tests."
+      },
+      "cash": {
+        "title": "Cash and reconciliation",
+        "description": "Daily cash summary by currency, from the network down to the tank, plus reconciliation between declared sales and telemetric stock."
+      },
+      "deliveries": {
+        "title": "Deliveries",
+        "description": "Register of fuel deliveries automatically detected from tank level jumps."
+      },
+      "pricing": {
+        "title": "Price configuration",
+        "description": "Per-fuel, per-station price grid with change history and bulk updates across the network."
+      },
+      "shop": {
+        "title": "Product shop",
+        "description": "Catalog and counter sales for a station's non-fuel products, with sales history."
+      }
+    },
+    "screenshotLabel": "Screenshot coming soon",
+    "cta": "Discover Zylo Liquid"
+  },
+  "zyloTanker": {
+    "eyebrow": "Fleet application",
+    "title": "Zylo Tanker",
+    "description": "Tracking a fleet of tanker trucks: live supervision, fuel consumption, onboard pump management, tanks and gauges, and regulatory documentation with its deadlines.",
+    "features": {
+      "supervision": {
+        "title": "Fleet supervision",
+        "description": "Position and status of every vehicle on a map, with fleet indicators and ongoing alarms."
+      },
+      "consumption": {
+        "title": "Fuel consumption",
+        "description": "Consumption tracking per vehicle and per trip, with an estimated cost."
+      },
+      "pumps": {
+        "title": "Pump management",
+        "description": "Flow rate, temperature and status of each vehicle's onboard pumps."
+      },
+      "tanks": {
+        "title": "Onboard tanks",
+        "description": "Level and temperature gauges for each vehicle's tanks, with alert thresholds."
+      },
+      "documents": {
+        "title": "Documentation and certificates",
+        "description": "Plans, manuals and certificates for each vehicle, with upcoming deadline tracking."
+      }
+    },
+    "screenshotLabel": "Screenshot coming soon",
+    "cta": "Discover Zylo Tanker"
+  },
+  "closingCta": {
+    "title": "Let's talk about your needs",
+    "subtitle": "Whether you run a station network, a tanker truck fleet, or both, let's talk about your organization and how Zylo Office can fit it.",
+    "button": "Let's talk about your needs"
+  }
+}

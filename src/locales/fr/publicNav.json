@@ -1,0 +1,56 @@
+{
+  "brand": "Zylo Office",
+  "header": {
+    "applications": "Applications",
+    "pricing": "Tarification",
+    "help": "Aide",
+    "community": "Communauté",
+    "signIn": "Se connecter",
+    "freeTrial": "C'est gratuit"
+  },
+  "footer": {
+    "tagline": "Zylo Office est la suite de gestion pensée pour les métiers de la distribution de carburant en Afrique : stations-service (Zylo Liquid) et flotte de camions-citernes (Zylo Tanker).",
+    "columns": {
+      "product": {
+        "title": "Produit",
+        "applications": "Applications",
+        "pricing": "Tarification",
+        "zyloLiquid": "Zylo Liquid — Stations-service",
+        "zyloTanker": "Zylo Tanker — Camions-citernes"
+      },
+      "resources": {
+        "title": "Ressources",
+        "help": "Centre d'aide",
+        "community": "Communauté"
+      },
+      "company": {
+        "title": "Entreprise",
+        "contact": "Nous contacter",
+        "signIn": "Se connecter"
+      },
+      "legal": {
+        "title": "Légal",
+        "privacy": "Confidentialité",
+        "terms": "Conditions d'utilisation"
+      }
+    },
+    "copyright": "© {year} Zylo Office. Tous droits réservés."
+  },
+  "freeTrialPage": {
+    "title": "Démarrer avec Zylo Office",
+    "subtitle": "Aucune inscription en libre-service pour l'instant : notre équipe configure votre organisation avec vous pour un démarrage sans friction.",
+    "ctaTitle": "Parlons de votre station ou de votre flotte",
+    "ctaBody": "Laissez-nous vos coordonnées, nous revenons vers vous pour organiser une démonstration et configurer votre accès.",
+    "emailLabel": "Email professionnel",
+    "companyLabel": "Nom de votre entreprise",
+    "submit": "Être recontacté",
+    "confirmation": "Merci, nous vous recontactons très vite.",
+    "alreadyClient": "Déjà client ?",
+    "signIn": "Se connecter"
+  },
+  "legalPlaceholder": {
+    "privacyTitle": "Politique de confidentialité",
+    "termsTitle": "Conditions d'utilisation",
+    "body": "Ce contenu est en cours de rédaction et sera publié prochainement. Pour toute question, contactez-nous."
+  }
+}

@@ -2,7 +2,22 @@ import { getRequestConfig } from "next-intl/server";
 import { cookies } from "next/headers";
 import { defaultLocale, isLocale, localeCookieName } from "./config";
 
-const namespaces = ["common", "navigation", "auth", "dashboard", "applications", "organizations", "administration", "zyloLiquid"] as const;
+const namespaces = [
+  "common",
+  "navigation",
+  "auth",
+  "dashboard",
+  "applications",
+  "organizations",
+  "administration",
+  "zyloLiquid",
+  "publicNav",
+  "publicHome",
+  "publicApplications",
+  "publicPricing",
+  "publicHelp",
+  "publicCommunity",
+] as const;
 
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();

@@ -1,0 +1,91 @@
+{
+  "hero": {
+    "title": "Pricing built around your organization",
+    "subtitle": "Zylo Office is activated module by module, station by station: the price depends on the modules you choose (Zylo Liquid, Zylo Tanker), the number of sites, and your organization's setup. We work out a quote with you instead of displaying a standard rate that would not fit anyone."
+  },
+  "tiers": {
+    "sectionTitle": "Plans built around your business",
+    "sectionSubtitle": "These plans illustrate the most common module combinations. Every organization is still free to activate or deactivate modules based on its own needs.",
+    "priceLabel": "Contact us for a quote",
+    "priceNote": "Priced according to your modules and number of sites",
+    "cta": "Request a quote",
+    "station": {
+      "name": "A single station",
+      "description": "For a single fuel station getting started with Zylo Liquid.",
+      "features": [
+        "Tank monitoring and fuel level tracking",
+        "Cash register and pump sales management",
+        "Pricing grid and station configuration",
+        "Stock and anomaly alerts"
+      ]
+    },
+    "network": {
+      "name": "Multiple stations / network",
+      "description": "For a network of stations supervised from a centralized view.",
+      "features": [
+        "Everything included in the \"Single station\" plan",
+        "Network dashboard with a consolidated stock overview",
+        "Tank and delivery tracking across the whole network",
+        "Network pricing grid and consolidated cash management",
+        "Centralized multi-station alerts"
+      ]
+    },
+    "fleet": {
+      "name": "Stations + truck fleet",
+      "description": "For organizations that also operate tanker trucks with Zylo Tanker.",
+      "features": [
+        "Everything included in the \"Multiple stations / network\" plan",
+        "Fleet tracking and tanker truck supervision",
+        "Consumption tracking and transport documents",
+        "Vehicle positions and destinations",
+        "Combined station + fleet supervision view"
+      ]
+    }
+  },
+  "comparison": {
+    "title": "Compare plans",
+    "subtitle": "An overview of the features included in each illustrative plan.",
+    "featureColumn": "Feature",
+    "rows": {
+      "tankMonitoring": "Tank and level monitoring",
+      "cashManagement": "Cash register and sales",
+      "pricingGrid": "Pricing grid",
+      "alerts": "Stock and anomaly alerts",
+      "networkDashboard": "Consolidated network dashboard",
+      "networkPricing": "Network pricing grid",
+      "fleetTracking": "Tanker truck fleet tracking",
+      "fleetDocuments": "Transport documents and consumption",
+      "combinedSupervision": "Combined stations + fleet supervision"
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": {
+      "whyNoPrice": {
+        "question": "Why isn't there a price shown?",
+        "answer": "The rate depends on the modules activated, the number of stations or vehicles tracked, and your organization's own setup. Rather than showing a figure that would not fit anyone, we put together a quote with you once we understand your business."
+      },
+      "howQuoteWorks": {
+        "question": "How do I get a quote?",
+        "answer": "Tell us about your business through the free trial form or by contacting us directly. Our team gets back to you to understand your needs and propose a suitable setup."
+      },
+      "canChangeLater": {
+        "question": "Can I change plans later?",
+        "answer": "Modules can be activated or deactivated as your organization evolves. The simplest way to adjust your scope is to discuss it with our team."
+      },
+      "selfService": {
+        "question": "Can I sign up and pay online right away?",
+        "answer": "Not yet. Zylo Office does not offer self-service sign-up or payment at this time: every organization is set up with the help of our team."
+      },
+      "whichModules": {
+        "question": "Which modules exist today?",
+        "answer": "Zylo Liquid covers fuel station management (tanks, cash, pricing, network) and Zylo Tanker covers tanker truck fleet management. More modules may be added over time."
+      }
+    }
+  },
+  "closing": {
+    "title": "Let's talk about your organization",
+    "subtitle": "Tell us about your business and we'll get back to you with a suitable setup and quote.",
+    "cta": "Request a quote"
+  }
+}

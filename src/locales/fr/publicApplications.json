@@ -1,0 +1,73 @@
+{
+  "hero": {
+    "title": "Deux applications, un seul métier : la distribution de carburant",
+    "subtitle": "Zylo Office n'essaie pas d'être un ERP généraliste avec des dizaines de modules à moitié utiles. Nous construisons deux applications approfondies, chacune pensée pour un métier précis de la filière carburant en Afrique : la station-service (Zylo Liquid) et la flotte de camions-citernes (Zylo Tanker)."
+  },
+  "zyloLiquid": {
+    "eyebrow": "Application station-service",
+    "title": "Zylo Liquid",
+    "description": "Le pilotage quotidien d'un réseau de stations-service : suivi des cuves en temps réel, alertes de niveau et de fuite, caisse et rapprochement des ventes, livraisons détectées automatiquement, prix réseau et boutique de produits hors carburant.",
+    "features": {
+      "tanks": {
+        "title": "Cuves et jauges",
+        "description": "Niveau, volume et statut de chaque cuve par station, avec historique des mesures et suivi des seuils."
+      },
+      "alerts": {
+        "title": "Alertes de niveau et de fuite",
+        "description": "Centre d'alertes réseau (niveau bas/haut, présence d'eau, capteur ou station hors ligne) et journal des tests de détection de fuite."
+      },
+      "cash": {
+        "title": "Caisse et rapprochement",
+        "description": "Caisse du jour par devise, du réseau jusqu'à la cuve, et rapprochement entre ventes déclarées et stock télémétrique."
+      },
+      "deliveries": {
+        "title": "Livraisons",
+        "description": "Registre des livraisons de carburant détectées automatiquement à partir des sauts de niveau en cuve."
+      },
+      "pricing": {
+        "title": "Configuration des prix",
+        "description": "Grille de prix par carburant et par station, avec historique des changements et mise à jour groupée sur le réseau."
+      },
+      "shop": {
+        "title": "Boutique de produits",
+        "description": "Catalogue et vente au comptoir des produits non-carburant de la station, avec historique des ventes."
+      }
+    },
+    "screenshotLabel": "Capture d'écran à venir",
+    "cta": "Découvrir Zylo Liquid"
+  },
+  "zyloTanker": {
+    "eyebrow": "Application flotte",
+    "title": "Zylo Tanker",
+    "description": "Le suivi d'une flotte de camions-citernes : supervision en direct, consommation de carburant, gestion des pompes embarquées, cuves et jauges, et documentation réglementaire avec ses échéances.",
+    "features": {
+      "supervision": {
+        "title": "Supervision de la flotte",
+        "description": "Position et statut de chaque véhicule sur une carte, avec indicateurs de flotte et alarmes en cours."
+      },
+      "consumption": {
+        "title": "Consommation de carburant",
+        "description": "Suivi de la consommation par véhicule et par trajet, avec estimation du coût associé."
+      },
+      "pumps": {
+        "title": "Gestion des pompes",
+        "description": "Débit, température et statut des pompes embarquées de chaque véhicule."
+      },
+      "tanks": {
+        "title": "Cuves embarquées",
+        "description": "Jauges de niveau et de température des cuves de chaque véhicule, avec seuils d'alerte."
+      },
+      "documents": {
+        "title": "Documentation et certificats",
+        "description": "Plans, manuels et certificats de chaque véhicule, avec suivi des échéances à venir."
+      }
+    },
+    "screenshotLabel": "Capture d'écran à venir",
+    "cta": "Découvrir Zylo Tanker"
+  },
+  "closingCta": {
+    "title": "Discuter de vos besoins",
+    "subtitle": "Que vous gériez un réseau de stations, une flotte de camions-citernes, ou les deux, parlons de votre organisation pour voir comment Zylo Office peut s'y adapter.",
+    "button": "Discuter de vos besoins"
+  }
+}

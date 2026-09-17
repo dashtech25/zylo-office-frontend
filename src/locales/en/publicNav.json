@@ -1,0 +1,56 @@
+{
+  "brand": "Zylo Office",
+  "header": {
+    "applications": "Applications",
+    "pricing": "Pricing",
+    "help": "Help",
+    "community": "Community",
+    "signIn": "Sign in",
+    "freeTrial": "It's free"
+  },
+  "footer": {
+    "tagline": "Zylo Office is the management suite built for fuel distribution businesses in Africa: fuel stations (Zylo Liquid) and tanker truck fleets (Zylo Tanker).",
+    "columns": {
+      "product": {
+        "title": "Product",
+        "applications": "Applications",
+        "pricing": "Pricing",
+        "zyloLiquid": "Zylo Liquid — Fuel stations",
+        "zyloTanker": "Zylo Tanker — Tanker trucks"
+      },
+      "resources": {
+        "title": "Resources",
+        "help": "Help center",
+        "community": "Community"
+      },
+      "company": {
+        "title": "Company",
+        "contact": "Contact us",
+        "signIn": "Sign in"
+      },
+      "legal": {
+        "title": "Legal",
+        "privacy": "Privacy",
+        "terms": "Terms of use"
+      }
+    },
+    "copyright": "© {year} Zylo Office. All rights reserved."
+  },
+  "freeTrialPage": {
+    "title": "Get started with Zylo Office",
+    "subtitle": "No self-service sign-up yet: our team sets up your organization with you for a frictionless start.",
+    "ctaTitle": "Let's talk about your station or your fleet",
+    "ctaBody": "Leave us your details and we'll get back to you to arrange a demo and set up your access.",
+    "emailLabel": "Work email",
+    "companyLabel": "Company name",
+    "submit": "Get contacted",
+    "confirmation": "Thanks, we'll get back to you shortly.",
+    "alreadyClient": "Already a customer?",
+    "signIn": "Sign in"
+  },
+  "legalPlaceholder": {
+    "privacyTitle": "Privacy policy",
+    "termsTitle": "Terms of use",
+    "body": "This content is being drafted and will be published soon. For any question, contact us."
+  }
+}

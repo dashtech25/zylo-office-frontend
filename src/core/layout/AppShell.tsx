@@ -45,7 +45,7 @@ interface SidebarSection {
 const SECTIONS: SidebarSection[] = [
   {
     titleKey: "sections.home",
-    entries: [{ labelKey: "items.dashboard", href: "/", icon: LayoutDashboard }],
+    entries: [{ labelKey: "items.dashboard", href: "/dashboard", icon: LayoutDashboard }],
   },
   {
     titleKey: "sections.applications",
@@ -139,7 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </h6>
               {section.entries.map((entry) => {
                 const label = t(entry.labelKey);
-                const active = entry.href === "/" ? pathname === "/" : Boolean(entry.href && pathname?.startsWith(entry.href));
+                const active = Boolean(entry.href && pathname?.startsWith(entry.href));
                 const Icon = entry.icon;
                 const className = cn(
                   "relative flex items-center gap-2 rounded-button px-3 py-2 text-body-sm font-medium transition-colors",

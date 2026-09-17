@@ -1,0 +1,70 @@
+{
+  "hero": {
+    "title": "The ERP built for fuel distribution in Africa",
+    "subtitle": "Zylo Office brings your fuel stations and your tanker-truck fleet together in one platform: tanks, deliveries, cash reconciliation and alerts, tracked in real time, without juggling several tools.",
+    "primaryCta": "Free trial",
+    "secondaryCta": "Sign in",
+    "visualPlaceholder": "Product preview coming soon"
+  },
+  "appShowcase": {
+    "title": "Two businesses, one platform",
+    "subtitle": "Zylo Office is made of two applications, each built for a specific fuel-distribution business.",
+    "viewAll": "View all applications",
+    "zyloLiquid": {
+      "name": "Zylo Liquid",
+      "tagline": "For fuel stations",
+      "description": "Tank and telemetry monitoring, automatic delivery detection, per-product pricing, cash reconciliation and alerts (level, water, leak, disconnected sensor).",
+      "cta": "Discover Zylo Liquid"
+    },
+    "zyloTanker": {
+      "name": "Zylo Tanker",
+      "tagline": "For tanker-truck fleets",
+      "description": "Tanker-truck supervision, consumption tracking and transport document management.",
+      "cta": "Discover Zylo Tanker"
+    }
+  },
+  "valueProp": {
+    "title": "A tool built for the reality of the field, not adapted afterwards",
+    "body": "Fuel distribution has its own constraints: tanks that must be monitored continuously to avoid stockouts, a cash register that must be reconciled without ambiguity at the end of every shift, and deliveries that must be verifiable without relying solely on a paper slip. Zylo Office is designed directly around these needs, rather than being a generic ERP with fuel bolted on afterwards.",
+    "why": {
+      "title": "Why Zylo Office",
+      "body": "Zylo Office is built together with station operators and tanker-truck fleets to match their real processes — not a theoretical view of their business. The platform evolves with feedback from the field."
+    }
+  },
+  "screenshots": {
+    "title": "Your operations, visible at a glance",
+    "subtitle": "The screenshots below will be updated as the product is developed.",
+    "items": {
+      "network": { "caption": "Station network overview — screenshot coming soon" },
+      "tank": { "caption": "Tank detail and telemetry — screenshot coming soon" },
+      "cash": { "caption": "Cash reconciliation — screenshot coming soon" }
+    }
+  },
+  "positioning": {
+    "title": "What sets Zylo Office apart",
+    "items": {
+      "africa": {
+        "title": "Built for Africa",
+        "body": "Each organization configures its own currency for displayed amounts — the platform does not impose a single currency."
+      },
+      "twoBusinesses": {
+        "title": "Two businesses, one platform",
+        "body": "Fuel stations and tanker-truck fleets are managed on the same foundation, with a shared organization and access model, instead of two separate tools you have to connect yourself."
+      },
+      "realtime": {
+        "title": "Real-time data",
+        "body": "Tank telemetry (Holykell sensors) is synced continuously, with a sync status visible at all times — not data entered manually once a day."
+      },
+      "alerts": {
+        "title": "Automatic alerts and detection",
+        "body": "High level, low level, water detected, leak, disconnected sensor: alerts are raised automatically from tank measurements, and deliveries are detected from level changes rather than declared by hand."
+      }
+    }
+  },
+  "finalCta": {
+    "title": "Ready to centralize the management of your stations and your fleet?",
+    "subtitle": "Let's talk about your network: our team sets up your organization with you for a frictionless start.",
+    "primaryCta": "Free trial",
+    "secondaryCta": "Sign in"
+  }
+}

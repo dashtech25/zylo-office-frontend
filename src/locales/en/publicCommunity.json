@@ -1,0 +1,21 @@
+{
+  "hero": {
+    "title": "Community",
+    "subtitle": "Zylo Office is a young, proprietary product: we don't have a public forum or a developer community (yet). What we're building is a direct relationship with our first customers — and your feedback matters more than ever at this stage."
+  },
+  "feedback": {
+    "title": "Share your feedback",
+    "body": "As an early customer, your input directly shapes what comes next for Zylo Liquid and Zylo Tanker. Tell us what works, what's missing, and what would save you time.",
+    "cta": "Write to us"
+  },
+  "updates": {
+    "title": "Follow the news",
+    "description": "A newsletter and a changelog are coming. In the meantime, contact us directly to be notified of upcoming updates.",
+    "badge": "Coming soon"
+  },
+  "partner": {
+    "title": "Become a partner",
+    "body": "Do you support fuel stations or transport fleets and want to explore a partnership with Zylo Office? Let's talk.",
+    "cta": "Contact us"
+  }
+}
