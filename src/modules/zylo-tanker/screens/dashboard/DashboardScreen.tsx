@@ -3,22 +3,16 @@
 import {
   Activity,
   AlertTriangle,
-  Clock,
-  Compass,
   Droplets,
   Fuel,
   Gauge,
   Info,
-  MapPin,
-  Navigation,
   Network,
   Ship,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
 
 import { Badge } from "@/shared/ui/Badge";
-import { Button } from "@/shared/ui/Button";
 import { Card, CardContent } from "@/shared/ui/Card";
 import { CardSectionHeader } from "@/shared/ui/CardSectionHeader";
 import { EmptyState } from "@/shared/ui/EmptyState";
@@ -27,43 +21,20 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { Stack } from "@/shared/ui/Stack";
 import { Tabs } from "@/shared/ui/Tabs";
 
-import { TrucksMap, type TruckMapPoint, type TruckMapStatus } from "@/modules/zylo-liquid/components/TrucksMap";
 import { EChartsTrendChart } from "@/modules/zylo-tanker/components/EChartsTrendChart";
-import { VesselDestinationModal } from "@/modules/zylo-tanker/components/VesselDestinationModal";
 import {
   MOCK_ALARMS,
   MOCK_FLEET_KPIS,
   MOCK_VESSELS,
   mockConsumptionSeries,
-  mockVesselRoute,
   type MockAlarm,
   type MockVessel,
 } from "@/modules/zylo-tanker/mock/fleetMock";
-import { useLiveVesselPositions } from "@/modules/zylo-tanker/hooks/useLiveVesselPositions";
 
 /** Module 1 "Tableau de bord" de SMART TANKER — écran frontend-only, aucune
  * donnée réelle branchée (voir mock/fleetMock.ts). Reproduit le patron
  * screens/<nom>/<Nom>Screen.tsx de zylo-liquid : composition pure à partir
  * de shared/ui, aucune logique métier dans src/app. */
-
-const VESSEL_STATUS_LABEL: Record<MockVessel["status"], string> = {
-  underway: "En route",
-  moored: "À quai",
-  anchored: "Au mouillage",
-};
-
-const VESSEL_STATUS_TONE: Record<MockVessel["status"], "success" | "info" | "warning"> = {
-  underway: "success",
-  moored: "info",
-  anchored: "warning",
-};
-
-/** Statut navire -> statut générique de `TrucksMap` (moving/stopped/
- * unknown) — même mapping que SupervisionScreen (dupliqué localement,
- * fonction pure à 2 branches, pas de partage justifié). */
-function toTruckMapStatus(status: MockVessel["status"]): TruckMapStatus {
-  return status === "underway" ? "moving" : "stopped";
-}
 
 const ALARM_SEVERITY_TONE: Record<MockAlarm["severity"], "error" | "warning" | "info"> = {
   critical: "error",
@@ -113,31 +84,7 @@ function deriveSystemStatus(alarms: MockAlarm[], systemMatch: (system: string) =
   return "ok";
 }
 
-function formatCoordinate(value: number, positiveSuffix: string, negativeSuffix: string): string {
-  const suffix = value >= 0 ? positiveSuffix : negativeSuffix;
-  return `${Math.abs(value).toFixed(4)}° ${suffix}`;
-}
-
-/** Formate un ETA en minutes en "Xh Ymin" (ex. 135 -> "2h 15min"), ou
- * simplement "Ymin" sous l'heure — jamais appelé avec `null` (voir le
- * fallback `disabled` de la tuile Kpi côté appelant). */
-function formatEtaMinutes(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
-}
-
-function VesselDetail({
-  vessel,
-  fleet,
-  onDefineDestination,
-}: {
-  vessel: MockVessel;
-  /** Flotte complète (positions vivantes) — sert à afficher tous les
-   * navires sur la carte tout en mettant en évidence `vessel`. */
-  fleet: MockVessel[];
-  onDefineDestination: () => void;
-}) {
+function VesselDetail({ vessel }: { vessel: MockVessel }) {
   const vesselAlarms = MOCK_ALARMS.filter((a) => a.vesselId === vessel.id);
   const consumption = mockConsumptionSeries(vessel.id);
   const trendPoints = consumption.map((p) => ({ at: p.timestamp, value: p.liters }));
@@ -152,89 +99,6 @@ function VesselDetail({
 
   return (
     <Stack gap="lg">
-      {/* KPI du navire sélectionné */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi
-          icon={Clock}
-          label="ETA"
-          value={vessel.etaMinutes !== null ? formatEtaMinutes(vessel.etaMinutes) : undefined}
-          disabled={vessel.etaMinutes === null}
-          disabledLabel="Aucune destination définie"
-        />
-      </div>
-
-      {/* Position / GPS */}
-      <Card>
-        <CardSectionHeader
-          icon={MapPin}
-          title="Position"
-          action={<Badge tone={VESSEL_STATUS_TONE[vessel.status]}>{VESSEL_STATUS_LABEL[vessel.status]}</Badge>}
-        />
-        <CardContent className="grid gap-4 sm:grid-cols-[1fr_auto]">
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div>
-                <p className="flex items-center gap-1.5 text-caption uppercase tracking-wide text-text-muted">
-                  <MapPin className="size-3.5" aria-hidden />
-                  Latitude
-                </p>
-                <p className="tabular-nums mt-1 text-body-md font-semibold text-text">
-                  {formatCoordinate(vessel.latitude, "N", "S")}
-                </p>
-              </div>
-              <div>
-                <p className="flex items-center gap-1.5 text-caption uppercase tracking-wide text-text-muted">
-                  <MapPin className="size-3.5" aria-hidden />
-                  Longitude
-                </p>
-                <p className="tabular-nums mt-1 text-body-md font-semibold text-text">
-                  {formatCoordinate(vessel.longitude, "E", "O")}
-                </p>
-              </div>
-              <div>
-                <p className="flex items-center gap-1.5 text-caption uppercase tracking-wide text-text-muted">
-                  <Compass className="size-3.5" aria-hidden />
-                  Cap
-                </p>
-                <p className="tabular-nums mt-1 text-body-md font-semibold text-text">{vessel.headingDeg}°</p>
-              </div>
-              <div>
-                <p className="flex items-center gap-1.5 text-caption uppercase tracking-wide text-text-muted">
-                  <Navigation className="size-3.5" aria-hidden />
-                  Vitesse
-                </p>
-                <p className="tabular-nums mt-1 text-body-md font-semibold text-text">{vessel.speedKnots.toFixed(1)} nds</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border-subtle p-3">
-              <div>
-                <p className="text-caption uppercase tracking-wide text-text-muted">Destination</p>
-                <p className="mt-1 text-body-sm font-medium text-text">
-                  {vessel.destinationLabel ?? "Aucune destination définie"}
-                </p>
-              </div>
-              <Button variant="outline" size="sm" type="button" onClick={onDefineDestination}>
-                Définir la destination
-              </Button>
-            </div>
-          </div>
-          <div className="min-h-[220px] min-w-[240px] overflow-hidden rounded-card">
-            <TrucksMap
-              trucks={fleet.map((v): TruckMapPoint => ({
-                id: v.id,
-                label: `${v.name} (${v.code})`,
-                latitude: v.latitude,
-                longitude: v.longitude,
-                status: toTruckMapStatus(v.status),
-              }))}
-              route={mockVesselRoute(vessel.id)}
-              selectedTruckId={vessel.id}
-              height={220}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Alarmes actives */}
         <Card>
@@ -294,32 +158,8 @@ function VesselDetail({
   );
 }
 
-/** Destination définie manuellement pour un navire (mock uniquement — pas
- * de persistance réelle) : remplace les champs destination du navire live
- * tant que l'onglet n'a pas été rechargé. */
-interface DestinationOverride {
-  lat: number;
-  lon: number;
-  label: string;
-}
-
 export default function DashboardScreen() {
-  const liveVessels = useLiveVesselPositions(MOCK_VESSELS);
-  const [destinationOverrides, setDestinationOverrides] = useState<Record<string, DestinationOverride>>({});
-  const [destinationModalVesselId, setDestinationModalVesselId] = useState<string | null>(null);
-
-  const vessels = liveVessels.map((vessel) => {
-    const override = destinationOverrides[vessel.id];
-    if (!override) return vessel;
-    return {
-      ...vessel,
-      destinationLatitude: override.lat,
-      destinationLongitude: override.lon,
-      destinationLabel: override.label || vessel.destinationLabel,
-    };
-  });
-
-  const destinationModalVessel = vessels.find((v) => v.id === destinationModalVesselId) ?? null;
+  const vessels = MOCK_VESSELS;
 
   return (
     <Stack gap="lg">
@@ -354,29 +194,9 @@ export default function DashboardScreen() {
               {vessel.name}
             </span>
           ),
-          content: (
-            <VesselDetail
-              vessel={vessel}
-              fleet={vessels}
-              onDefineDestination={() => setDestinationModalVesselId(vessel.id)}
-            />
-          ),
+          content: <VesselDetail vessel={vessel} />,
         }))}
       />
-
-      {destinationModalVessel && (
-        <VesselDestinationModal
-          vessel={destinationModalVessel}
-          open
-          onClose={() => setDestinationModalVesselId(null)}
-          onSave={(lat, lon, label) => {
-            setDestinationOverrides((prev) => ({
-              ...prev,
-              [destinationModalVessel.id]: { lat, lon, label },
-            }));
-          }}
-        />
-      )}
     </Stack>
   );
 }
