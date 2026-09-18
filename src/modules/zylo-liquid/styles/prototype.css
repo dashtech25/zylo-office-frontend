@@ -164,6 +164,8 @@
   gap: 14px;
   flex-wrap: wrap;
 }
+.zl-shell .topbar .crumbs-back { display: flex; align-items: center; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+.zl-shell .topbar .crumbs-back:hover { color: var(--ink-2); }
 .zl-shell .topbar .crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; min-width: 0; }
 .zl-shell .topbar .crumbs .sep { color: var(--ink-3); }
 .zl-shell .topbar .spacer { flex: 1; }
