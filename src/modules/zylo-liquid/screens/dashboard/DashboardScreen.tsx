@@ -381,7 +381,6 @@ import { cn } from "@/shared/lib/cn";
 
 import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
 import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
-import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { NetworkCashModal } from "@/modules/zylo-liquid/screens/caisse/NetworkCashModal";
 import { useCashPeriod, useNetworkCash } from "@/modules/zylo-liquid/screens/caisse/useCashData";
@@ -393,6 +392,7 @@ import { DashboardCashDiscrepanciesWidget } from "./DashboardCashDiscrepanciesWi
 import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
 import { DashboardSalesBlock } from "./DashboardSalesBlock";
 import { DashboardStationsMapBlock } from "./DashboardStationsMapBlock";
+import { DashboardStockTrendChart } from "./DashboardStockTrendChart";
 import { DashboardStockDiscrepanciesWidget } from "./DashboardStockDiscrepanciesWidget";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
 import PompisteDashboard from "./PompisteDashboard";
@@ -642,55 +642,30 @@ function NetworkDashboardScreen() {
           />
         )}
 
+        {/* Graphique multi-produits (ECharts, style area-simple, une
+            courbe par produit superposée, couleur propre à chaque produit)
+            — remplace l'ancien graphique mono-série. Clic -> modale avec un
+            graphique séparé par produit. Décision utilisateur validée
+            2026-09-17. */}
+        <div className="mt-6">
+          <DashboardStockTrendChart
+            points={data.chartPoints}
+            products={data.products}
+            loading={data.chartLoading}
+            formatVolume={formatVolume}
+            formatDate={formatDateShort}
+            title={t("chart.titleByProduct")}
+            modalTitle={t("chart.modalTitle")}
+            emptyLabel={t("chart.insufficientData")}
+          />
+        </div>
+
         {organizationId && (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="mt-6 grid grid-cols-1 gap-6">
             <DashboardDeliveriesWidget organizationId={organizationId} stations={data.stations} fuelProducts={data.fuelProducts} tanks={data.tanks} />
           </div>
         )}
       </CollapsibleSection>
-
-      {/* Zone C — graphique de tendance : garde son propre `chartLoading`
-          (requête indépendante, déjà exposée par le hook). */}
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-h3 font-semibold text-text">{t("chart.title")}</h3>
-            <span className="text-caption text-text-muted">{t("chart.unit")}</span>
-          </div>
-          {data.chartLoading ? (
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Skeleton className="h-48 flex-1" />
-              <div className="flex shrink-0 flex-col gap-3 sm:w-40">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            </div>
-          ) : data.chartPoints.length < 2 ? (
-            <p className="text-body-sm text-text-muted">{t("chart.insufficientData")}</p>
-          ) : (
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <div className="flex-1">
-                <TrendChart
-                  points={data.chartPoints.map((p) => ({ at: p.at, value: p.totalVolumeLiters }))}
-                  formatValue={formatVolume}
-                  formatDate={formatDateShort}
-                  seriesLabel={t("chart.seriesLabel")}
-                />
-              </div>
-              <div className="flex shrink-0 flex-col gap-3 sm:w-40">
-                <div>
-                  <p className="text-caption text-text-muted">{t("chart.currentStock")}</p>
-                  <p className="text-body-lg font-semibold tabular-nums text-text">{formatVolume(data.networkSummary?.totalVolumeLiters ?? 0)}</p>
-                </div>
-                <div>
-                  <p className="text-caption text-text-muted">{t("chart.totalCapacity")}</p>
-                  <p className="text-body-md tabular-nums text-text">{formatVolume(data.totalCapacityLiters)}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
-      </div>
 
       {breakdownFilter && (
         <ProductBreakdownModal

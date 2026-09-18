@@ -51,9 +51,20 @@ export type ActivityEvent =
   | { kind: "alert"; at: string; alert: Alert; stationName: string }
   | { kind: "measurement"; at: string; stationName: string; tankName: string; heightMm: number };
 
+export interface ChartProductPoint {
+  fuelProductId: string;
+  volumeLiters: number;
+}
+
 export interface ChartPoint {
   at: string;
   totalVolumeLiters: number;
+  /** Répartition par produit au même instant — `NetworkSnapshot.products`
+   * était déjà renvoyée par l'API à chaque échantillon, simplement jetée
+   * jusqu'ici (seul `totalVolumeLiters` était gardé). Réutilisée telle
+   * quelle pour le graphique multi-produits de la rangée 4 du dashboard,
+   * aucun nouvel appel réseau. */
+  products: ChartProductPoint[];
 }
 
 export interface NetworkDashboardData {
@@ -141,7 +152,13 @@ async function fetchStationStates(organizationId: string, activeStationIds: stri
 async function fetchChartPoints(organizationId: string, period: Period, customDate: string | null): Promise<ChartPoint[]> {
   if (period === "custom" && customDate) {
     const point = await getNetworkSnapshot(organizationId, new Date(customDate).toISOString());
-    return [{ at: customDate, totalVolumeLiters: point.totalVolumeLiters }];
+    return [
+      {
+        at: customDate,
+        totalVolumeLiters: point.totalVolumeLiters,
+        products: point.products.map((p) => ({ fuelProductId: p.fuelProductId, volumeLiters: p.totalVolumeLiters })),
+      },
+    ];
   }
 
   const key = period === "custom" ? "now" : period;
@@ -154,7 +171,11 @@ async function fetchChartPoints(organizationId: string, period: Period, customDa
     timestamps.map(async (t) => {
       try {
         const snapshot = await getNetworkSnapshot(organizationId, t.toISOString());
-        return { at: t.toISOString(), totalVolumeLiters: snapshot.totalVolumeLiters };
+        return {
+          at: t.toISOString(),
+          totalVolumeLiters: snapshot.totalVolumeLiters,
+          products: snapshot.products.map((p) => ({ fuelProductId: p.fuelProductId, volumeLiters: p.totalVolumeLiters })),
+        };
       } catch {
         return null;
       }

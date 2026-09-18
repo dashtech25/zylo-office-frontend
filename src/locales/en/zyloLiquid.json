@@ -1385,7 +1385,9 @@
     "currentStock": "Current stock",
     "totalCapacity": "Total capacity",
     "seriesLabel": "Total stock (L)",
-    "insufficientData": "Not enough historical data for this period"
+    "insufficientData": "Not enough historical data for this period",
+    "titleByProduct": "Network stock trend by product",
+    "modalTitle": "Stock trend by product"
   },
   "stations": {
     "title": "Network stations",
