@@ -66,10 +66,10 @@ export function DashboardSalesBlock({
             onClick={() => setExpanded(true)}
           >
             <p className="text-body-sm font-semibold text-white/70">TOTAL RÉSEAU ({block.currencyCode})</p>
-            <p className="mt-2 text-h1 font-bold tabular-nums">{formatVolume(block.volumeSoldLiters)}</p>
+            <p className="mt-2 text-h1 font-bold tabular-nums">{formatMoney(format, block.monetaryValue, block.currencyCode)}</p>
             <div className="mt-3 border-t border-white/10 pt-3">
-              <p className="text-caption text-white/60">Chiffre d&apos;affaires</p>
-              <p className="text-body-lg font-semibold">{formatMoney(format, block.monetaryValue, block.currencyCode)}</p>
+              <p className="text-caption text-white/60">Volume vendu</p>
+              <p className="text-body-lg font-semibold">{formatVolume(block.volumeSoldLiters)}</p>
             </div>
           </Card>
         ))}

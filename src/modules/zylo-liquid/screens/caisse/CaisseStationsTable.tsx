@@ -63,12 +63,12 @@ export function CaisseStationsTable({ rows, cityById, onRowClick }: { rows: Cais
                       <span className="size-2 shrink-0 rounded-full" style={{ background: product.displayColor ?? "var(--color-text-muted)" }} />
                       {product.fuelProductName}
                     </div>
-                    <p className="tabular-nums text-text">{formatVolume(product.volumeSoldLiters)}</p>
                     {product.monetaryValue !== null && product.currencyCode ? (
-                      <p className="tabular-nums text-caption text-text-muted">{formatMoney(format, product.monetaryValue, product.currencyCode)}</p>
+                      <p className="tabular-nums font-semibold text-text">{formatMoney(format, product.monetaryValue, product.currencyCode)}</p>
                     ) : (
                       <CashReasonNote reason={product.monetaryValueNotCalculableReason} />
                     )}
+                    <p className="tabular-nums text-caption text-text-muted">{formatVolume(product.volumeSoldLiters)}</p>
                   </div>
                 ))
               )}

@@ -167,6 +167,7 @@
       "title": "Sales today",
       "stationsConcerned": "{count} station(s) involved",
       "estimatedValue": "Estimated revenue",
+      "volumeSold": "Volume sold",
       "totalNetwork": "Network total ({currency})",
       "totalStation": "Station total"
     },
