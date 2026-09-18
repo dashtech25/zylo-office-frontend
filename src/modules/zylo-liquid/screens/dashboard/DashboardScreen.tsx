@@ -393,6 +393,8 @@ import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
 import { DashboardSalesBlock } from "./DashboardSalesBlock";
 import { DashboardStationsMapBlock } from "./DashboardStationsMapBlock";
 import { DashboardStockTrendChart } from "./DashboardStockTrendChart";
+import { DashboardRegulatoryDocumentsWidget } from "./DashboardRegulatoryDocumentsWidget";
+import { DashboardCreditOutstandingWidget } from "./DashboardCreditOutstandingWidget";
 import { DashboardStockDiscrepanciesWidget } from "./DashboardStockDiscrepanciesWidget";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
 import PompisteDashboard from "./PompisteDashboard";
@@ -666,6 +668,19 @@ function NetworkDashboardScreen() {
           </div>
         )}
       </CollapsibleSection>
+
+      {/* Bas de page — « Échéances & créances » : documents réglementaires
+          à traiter (expirés/à renouveler) + encours clients à crédit les
+          plus élevés. Camions en transit explicitement écarté du
+          dashboard pour l'instant (demande commanditaire 2026-09-17). */}
+      {organizationId && (
+        <CollapsibleSection title={t("dashboardSections.duesAndCredit")} subtitle={t("dashboardSections.duesAndCreditSubtitle")}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <DashboardRegulatoryDocumentsWidget organizationId={organizationId} stations={data.stations} />
+            <DashboardCreditOutstandingWidget organizationId={organizationId} />
+          </div>
+        </CollapsibleSection>
+      )}
 
       {breakdownFilter && (
         <ProductBreakdownModal

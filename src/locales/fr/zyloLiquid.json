@@ -1681,7 +1681,9 @@
     "salesCollapse": "← Réduire",
     "stationsMap": "Où sont mes stations ?",
     "stationsMapSubtitle": "Emplacement et état de chaque station du réseau — carte et tableau synchronisés.",
-    "fuelProducts": "Produits pétroliers"
+    "fuelProducts": "Produits pétroliers",
+    "duesAndCredit": "Échéances & créances",
+    "duesAndCreditSubtitle": "Documents réglementaires à traiter et encours clients à crédit."
   },
   "stationDetail": {
     "backLink": "Stations du réseau",
