@@ -43,7 +43,14 @@ const SEARCH_THRESHOLD = 6;
  * recherche intégrée, factorisée ici une seule fois plutôt que traitée au
  * cas par cas écran par écran (P2 §5.5, audit module Stations 2026-09-16) —
  * tout appelant existant en bénéficie automatiquement sans changement de
- * signature, dès que sa liste d'options dépasse `SEARCH_THRESHOLD`. */
+ * signature, dès que sa liste d'options dépasse `SEARCH_THRESHOLD`.
+ *
+ * Hauteur maximale sur le Viewport (2026-09-18, retour terrain : la liste
+ * des devises — ~180 entrées — débordait sans fin hors de l'écran, aucune
+ * limite n'existait) : seul endroit de toute l'application qui rend une
+ * liste déroulante (39 usages, aucun <select> natif ailleurs) — cette
+ * correction unique s'applique donc automatiquement partout, jamais un
+ * correctif écran par écran. */
 export function Select({
   options,
   value,
@@ -118,7 +125,7 @@ export function Select({
               />
             </div>
           )}
-          <RadixSelect.Viewport className="p-1">
+          <RadixSelect.Viewport className="max-h-72 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-2 text-body-sm text-text-muted">{noResultsLabel}</div>
             ) : (
