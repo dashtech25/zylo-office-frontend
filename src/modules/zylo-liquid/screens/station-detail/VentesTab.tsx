@@ -1,11 +1,22 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Fragment, useCallback, useState } from "react";
-import { Plus, Receipt } from "lucide-react";
+import { Fragment, useCallback, useRef, useState } from "react";
+import { Download, FileSpreadsheet, Plus, Receipt, Upload } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
-import { listCurrencies, listPumps, listSales, listTanks } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { exportTable } from "@/core/api/exportTable";
+import { parseXlsxFile } from "@/core/api/importTable";
+import {
+  bulkImportSales,
+  listCommercialAccounts,
+  listCurrencies,
+  listPumps,
+  listSales,
+  listTanks,
+  type BulkImportSaleRow,
+  type PaymentMethod,
+} from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { cn } from "@/shared/lib/cn";
@@ -34,6 +45,21 @@ import { SaleDeclarationModal } from "./SaleDeclarationModal";
 
 const QUICK_PERIODS: CashQuickPeriod[] = ["today", "yesterday", "7d", "30d", "custom"];
 
+const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "fleet", "credit", "orange_money", "mtn_momo", "bank_transfer", "cheque", "other"];
+
+// Ordre et libellés du fichier XLSX d'import/export — contrat figé partagé
+// entre le modèle téléchargeable et l'import (même tableau des deux côtés,
+// jamais deux définitions divergentes), mêmes idiomes que IMPORT_HEADERS
+// dans ShopWorkspace.tsx. Les index (jamais le volume) reflètent le geste
+// de saisie réel du gérant, exactement comme SaleDeclarationModal.
+const IMPORT_HEADERS = ["Pompe", "Index début (L)", "Index fin (L)", "Date/heure fin de shift", "Prix unitaire", "Devise (code)", "Moyen de paiement", "Compte client (nom, si crédit)"] as const;
+
+// Asymétrie volontaire avec IMPORT_HEADERS : une vente déjà déclarée
+// (`Sale`) ne conserve pas ses index de pompe d'origine, seulement le
+// volume résultant (`quantityLiters`) — l'export utilise donc une colonne
+// "Volume (L)" à la place des deux colonnes "Index début/fin".
+const EXPORT_HEADERS = ["Pompe", "Volume (L)", "Date/heure fin de shift", "Prix unitaire", "Devise (code)", "Moyen de paiement", "Compte client (nom, si crédit)"] as const;
+
 /** Onglet "Ventes" au niveau station (P1-1 §4.5 de refonte-configuration /
  * P1-5 de l'audit module Stations 2026-09-16) : les ventes n'étaient
  * visibles qu'au niveau réseau jusqu'ici. Deux sources cohabitent désormais :
@@ -48,6 +74,7 @@ export function VentesTab({ organizationId, stationId }: { organizationId: strin
   const t = useTranslations("zyloLiquid.caisse");
   const tPayment = useTranslations("zyloLiquid.ventesScreen.paymentMethod");
   const tStation = useTranslations("zyloLiquid.stationDetail.sales");
+  const tCommon = useTranslations("common");
   const format = useFormatter();
   const period = useCashPeriod();
   const { data, loading, error } = useStationCash(organizationId, stationId, period.fromDate, period.toDate, period.mode);
@@ -57,22 +84,31 @@ export function VentesTab({ organizationId, stationId }: { organizationId: strin
   const salesQueryKey = ["zylo-liquid", "station-detail", "ventes-declarations", organizationId, stationId] as const;
 
   const loadSalesPart = useCallback(async () => {
-    const [pumpsPage, tanksPage, salesPage, currenciesPage] = await Promise.all([
+    const [pumpsPage, tanksPage, salesPage, currenciesPage, accountsPage] = await Promise.all([
       listPumps(organizationId, { stationId, limit: 100 }),
       listTanks(organizationId, 100, stationId),
       listSales(organizationId, { stationId, limit: 100 }),
       listCurrencies(organizationId, 100),
+      listCommercialAccounts(organizationId, 100),
     ]);
-    return { pumps: pumpsPage.data, tanks: tanksPage.data, sales: salesPage.data, currencies: currenciesPage.data };
+    return { pumps: pumpsPage.data, tanks: tanksPage.data, sales: salesPage.data, currencies: currenciesPage.data, commercialAccounts: accountsPage.data };
   }, [organizationId, stationId]);
   const salesState = usePartData(salesQueryKey, loadSalesPart);
 
   const [declareOpen, setDeclareOpen] = useState(false);
 
+  // Import/export en masse des ventes déclarées — même squelette que
+  // l'import/export du catalogue Boutique dans ShopWorkspace.tsx.
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
   const pumps = salesState.status === "ready" ? salesState.data.pumps : [];
   const tanks = salesState.status === "ready" ? salesState.data.tanks : [];
   const sales = salesState.status === "ready" ? [...salesState.data.sales].sort((a, b) => b.eventAt.localeCompare(a.eventAt)) : [];
   const currencies = salesState.status === "ready" ? salesState.data.currencies : [];
+  const commercialAccounts = salesState.status === "ready" ? salesState.data.commercialAccounts : [];
 
   function pumpLabel(pumpId: string | null | undefined): string {
     if (!pumpId) return "—";
@@ -84,16 +120,200 @@ export function VentesTab({ organizationId, stationId }: { organizationId: strin
     void queryClient.invalidateQueries({ queryKey: salesQueryKey });
   }
 
+  function handleDownloadTemplate() {
+    const example = [
+      pumps[0]?.name ?? "Pompe 1",
+      "1000",
+      "1300",
+      new Date().toISOString().slice(0, 16).replace("T", " "),
+      "650",
+      currencies[0]?.code ?? "XAF",
+      tPayment("cash"),
+      "",
+    ];
+    void exportTable("xlsx", tStation("importExport.templateFilename"), [...IMPORT_HEADERS], [example], organizationId);
+  }
+
+  function handleExportSales() {
+    const rows = sales.map((sale) => {
+      const currencyCode = currencies.find((c) => c.id === sale.currencyId)?.code ?? "";
+      const accountName = commercialAccounts.find((a) => a.id === sale.commercialAccountId)?.name ?? "";
+      return [
+        pumpLabel(sale.pumpId),
+        String(sale.quantityLiters),
+        sale.eventAt,
+        String(sale.priceAmount),
+        currencyCode,
+        tPayment(sale.paymentMethod),
+        accountName,
+      ];
+    });
+    void exportTable("xlsx", tStation("importExport.exportFilename"), [...EXPORT_HEADERS], rows, organizationId);
+  }
+
+  async function handleImportSalesFile(file: File) {
+    setImporting(true);
+    setImportErrors([]);
+    setImportSuccessCount(null);
+    try {
+      const rawRows = await parseXlsxFile(file, organizationId);
+      if (rawRows.length === 0) {
+        setImportErrors([tStation("importExport.invalidStructure", { headers: IMPORT_HEADERS.join(", ") })]);
+        return;
+      }
+      const headerRow = rawRows[0].map((h) => h.trim());
+      const headersMatch = IMPORT_HEADERS.length === headerRow.length && IMPORT_HEADERS.every((h, i) => h === headerRow[i]);
+      if (!headersMatch) {
+        setImportErrors([tStation("importExport.invalidStructure", { headers: IMPORT_HEADERS.join(", ") })]);
+        return;
+      }
+
+      const pumpByName = new Map(pumps.map((p) => [p.name.trim().toLowerCase(), p]));
+      const currencyByCode = new Map(currencies.map((c) => [c.code.toLowerCase(), c.id]));
+      const accountByName = new Map(commercialAccounts.map((a) => [a.name.trim().toLowerCase(), a.id]));
+      const paymentMethodByLabel = new Map(PAYMENT_METHODS.map((m) => [tPayment(m).trim().toLowerCase(), m]));
+
+      const validRows: BulkImportSaleRow[] = [];
+      const clientErrors: { rowNumber: number; message: string }[] = [];
+
+      rawRows.slice(1).forEach((cells, index) => {
+        const rowNumber = index + 2;
+        if (cells.every((c) => !c.trim())) return; // ligne vide ignorée, jamais une erreur
+        const [pumpName, indexStartStr, indexEndStr, dateStr, priceStr, currencyCode, paymentLabel, accountName] = cells;
+
+        const pump = pumpName?.trim() ? pumpByName.get(pumpName.trim().toLowerCase()) : undefined;
+        if (!pump) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidPump", { value: pumpName ?? "" }) });
+          return;
+        }
+        const indexStart = Number(indexStartStr);
+        const indexEnd = Number(indexEndStr);
+        if (!indexStartStr || !indexEndStr || Number.isNaN(indexStart) || Number.isNaN(indexEnd)) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidIndex") });
+          return;
+        }
+        if (indexEnd <= indexStart) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.indexOrderError") });
+          return;
+        }
+        const eventDate = dateStr?.trim() ? new Date(dateStr) : null;
+        if (!eventDate || Number.isNaN(eventDate.getTime())) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidDate") });
+          return;
+        }
+        const price = Number(priceStr);
+        if (!priceStr || Number.isNaN(price) || price <= 0) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidPrice") });
+          return;
+        }
+        const currencyId = currencyCode?.trim() ? currencyByCode.get(currencyCode.trim().toLowerCase()) : undefined;
+        if (!currencyId) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidCurrency", { value: currencyCode ?? "" }) });
+          return;
+        }
+        const paymentMethod = paymentLabel?.trim() ? paymentMethodByLabel.get(paymentLabel.trim().toLowerCase()) : undefined;
+        if (!paymentMethod) {
+          clientErrors.push({ rowNumber, message: tStation("importExport.invalidPaymentMethod", { value: paymentLabel ?? "" }) });
+          return;
+        }
+        let commercialAccountId: string | undefined;
+        if (paymentMethod === "credit") {
+          if (!accountName?.trim()) {
+            clientErrors.push({ rowNumber, message: tStation("importExport.missingAccount") });
+            return;
+          }
+          const account = accountByName.get(accountName.trim().toLowerCase());
+          if (!account) {
+            clientErrors.push({ rowNumber, message: tStation("importExport.invalidAccount", { value: accountName }) });
+            return;
+          }
+          commercialAccountId = account;
+        }
+
+        validRows.push({
+          rowNumber,
+          stationId,
+          pumpId: pump.id,
+          indexStart,
+          indexEnd,
+          eventAt: eventDate.toISOString(),
+          priceAmount: price,
+          currencyId,
+          paymentMethod,
+          commercialAccountId,
+        });
+      });
+
+      let createdCount = 0;
+      if (validRows.length > 0) {
+        const response = await bulkImportSales(organizationId, validRows);
+        createdCount = response.createdCount;
+        clientErrors.push(...response.errors);
+      }
+
+      setImportSuccessCount(createdCount);
+      if (clientErrors.length > 0) {
+        setImportErrors(clientErrors.map((e) => tStation("importExport.invalidRow", { row: e.rowNumber, message: e.message })));
+      }
+      if (createdCount > 0) {
+        void queryClient.invalidateQueries({ queryKey: salesQueryKey });
+      }
+    } catch (err) {
+      setImportErrors([err instanceof Error ? err.message : tCommon("states.error")]);
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Alert tone="info">{tStation("sourceNote")}</Alert>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button size="sm" variant="secondary" onClick={handleDownloadTemplate}>
+          <FileSpreadsheet className="size-4" aria-hidden />
+          {tStation("importExport.template")}
+        </Button>
+        <Button size="sm" variant="secondary" onClick={handleExportSales} disabled={sales.length === 0}>
+          <Download className="size-4" aria-hidden />
+          {tStation("importExport.export")}
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => importInputRef.current?.click()} loading={importing}>
+          <Upload className="size-4" aria-hidden />
+          {tStation("importExport.import")}
+        </Button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".xlsx"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleImportSalesFile(file);
+          }}
+        />
         <Button size="sm" onClick={() => setDeclareOpen(true)}>
           <Plus className="size-4" aria-hidden />
           {tStation("declareButton")}
         </Button>
       </div>
+
+      {importSuccessCount != null && importErrors.length === 0 && (
+        <Alert tone="success">{tStation("importExport.successCount", { count: importSuccessCount })}</Alert>
+      )}
+      {importErrors.length > 0 && (
+        <Alert tone="error">
+          <p className="font-semibold">
+            {importSuccessCount != null ? tStation("importExport.successCount", { count: importSuccessCount }) : null} {tStation("importExport.errorsTitle")}
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {importErrors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
 
       <PartStateBox state={salesState}>
         <Card>

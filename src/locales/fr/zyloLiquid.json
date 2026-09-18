@@ -1782,6 +1782,27 @@
         "selectAccount": "Sélectionner un compte",
         "submit": "Déclarer",
         "required": "Tous les champs sont requis."
+      },
+      "importExport": {
+        "template": "Télécharger un modèle",
+        "export": "Exporter",
+        "import": "Importer",
+        "importing": "Import en cours…",
+        "templateFilename": "modele_ventes_station",
+        "exportFilename": "ventes_declarees_station",
+        "invalidStructure": "Structure du fichier invalide — en-têtes attendus, dans cet ordre : {headers}.",
+        "invalidRow": "Ligne {row} : {message}",
+        "invalidPump": "pompe inconnue \"{value}\"",
+        "invalidIndex": "index invalide",
+        "indexOrderError": "l'index de fin doit être supérieur à l'index de début",
+        "invalidDate": "date/heure invalide",
+        "invalidPrice": "prix invalide",
+        "invalidCurrency": "devise inconnue \"{value}\"",
+        "invalidPaymentMethod": "moyen de paiement inconnu \"{value}\"",
+        "missingAccount": "compte client requis pour un paiement à crédit",
+        "invalidAccount": "compte client inconnu \"{value}\"",
+        "successCount": "{count} vente(s) déclarée(s) avec succès.",
+        "errorsTitle": "Lignes non importées :"
       }
     },
     "tanksSection": {

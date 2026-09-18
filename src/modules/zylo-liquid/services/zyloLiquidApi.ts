@@ -1629,6 +1629,32 @@ export function createSale(organizationId: string, data: CreateSaleInput): Promi
   return apiFetch<Sale>("/zylo-liquid/sales", { method: "POST", organizationId, body: JSON.stringify(data) });
 }
 
+// Déclaration groupée de ventes pompe/shift via fichier XLSX (onglet Ventes
+// station) — même principe que bulkImportSellableProducts ci-dessous pour la
+// Boutique : les index sont saisis (jamais le volume, toujours dérivé côté
+// client comme pour createSale) et résolus contre pumpId/currencyId/etc.
+export interface BulkImportSaleRow {
+  rowNumber: number;
+  stationId: string;
+  pumpId: string;
+  indexStart: number;
+  indexEnd: number;
+  eventAt: string;
+  priceAmount: number;
+  currencyId: string;
+  paymentMethod: PaymentMethod;
+  commercialAccountId?: string;
+}
+
+export interface BulkImportSalesResponse {
+  createdCount: number;
+  errors: { rowNumber: number; message: string }[];
+}
+
+export function bulkImportSales(organizationId: string, rows: BulkImportSaleRow[]): Promise<BulkImportSalesResponse> {
+  return apiFetch<BulkImportSalesResponse>("/zylo-liquid/sales/bulk-import", { method: "POST", organizationId, body: JSON.stringify({ rows }) });
+}
+
 export interface Receivable {
   id: string;
   commercialAccountId: string;
