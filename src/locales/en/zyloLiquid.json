@@ -1681,7 +1681,9 @@
     "salesCollapse": "← Collapse",
     "stationsMap": "Where are my stations?",
     "stationsMapSubtitle": "Location and status of every station in the network — map and table stay in sync.",
-    "fuelProducts": "Fuel products"
+    "fuelProducts": "Fuel products",
+    "duesAndCredit": "Dues & receivables",
+    "duesAndCreditSubtitle": "Regulatory documents to handle and outstanding credit customer balances."
   },
   "stationDetail": {
     "backLink": "Network stations",
