@@ -1,12 +1,13 @@
 "use client";
 
 import { File, FileImage, FileText, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { AuditLogEntry } from "@/core/api/audit";
 import type { Supplier, StationSupplier, ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDueDate, formatFreshness } from "@/shared/lib/formatDateTime";
 import { Badge, Button, ListSkeleton, Modal, Skeleton, Tabs } from "@/shared/ui";
 
 const CONTRACT_STATUS_TONE = { valid: "success", renew_soon: "warning", expired: "error", unknown: "neutral" } as const;
@@ -64,6 +65,7 @@ export function SupplierModal({
   listHistory: (linkId: string) => Promise<AuditLogEntry[]>;
 }) {
   const t = useTranslations("zyloLiquid.stationDetail.suppliersTab.modal");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -166,11 +168,18 @@ export function SupplierModal({
     <div className="flex flex-col gap-2 py-3 text-body-sm">
       <InfoLine label={t("contractReference")} value={link.contractReference ?? "—"} />
       <InfoLine label={t("contractType")} value={link.contractType ?? "—"} />
-      <InfoLine label={t("contractStartDate")} value={link.contractStartDate ?? "—"} />
+      <InfoLine label={t("contractStartDate")} value={link.contractStartDate ? format.dateTime(new Date(link.contractStartDate), { dateStyle: "long" }) : "—"} />
       <div className="flex items-center justify-between gap-2">
         <span className="text-text-muted">{t("contractEndDate")}</span>
         <span className="flex items-center gap-2 font-medium text-text">
-          {link.contractEndDate ?? "—"}
+          {link.contractEndDate ? (
+            <span className="flex flex-col items-end">
+              <span>{formatDueDate(link.contractEndDate, format).date}</span>
+              <span className="text-caption text-text-muted">{formatDueDate(link.contractEndDate, format).relative}</span>
+            </span>
+          ) : (
+            "—"
+          )}
           <Badge tone={CONTRACT_STATUS_TONE[link.contractStatus]}>{t(`contractStatus.${link.contractStatus}`)}</Badge>
         </span>
       </div>
@@ -263,7 +272,7 @@ export function SupplierModal({
           {history.map((entry) => (
             <li key={entry.id} className="flex gap-3 border-l-2 border-border-subtle pl-3">
               <div className="flex flex-col">
-                <span className="text-caption text-text-muted">{new Date(entry.createdAt).toLocaleString()}</span>
+                <span className="text-caption text-text-muted">{formatFreshness(entry.createdAt, format)}</span>
                 <span className="text-body-sm text-text">{entry.summary}</span>
               </div>
             </li>

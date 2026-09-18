@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 
 import { uploadFile } from "@/core/api/storage";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
 import { getRole, listRoles, type Role, type UserRoleAssignment } from "@/core/api/rbac";
 import { listAuditLogs } from "@/core/api/audit";
 import {
@@ -350,7 +351,7 @@ export function StaffMemberDetailModal({
                   <ul className="flex flex-col gap-2 border-l border-border-subtle pl-3">
                     {state.data.activity.map((entry) => (
                       <li key={entry.id} className="text-body-sm text-text">
-                        <span className="tabular-nums text-text-muted">{format.dateTime(new Date(entry.createdAt), { day: "2-digit", month: "2-digit", year: "numeric" })}</span> — {entry.summary}
+                        <span className="tabular-nums text-text-muted">{formatFreshness(entry.createdAt, format)}</span> — {entry.summary}
                       </li>
                     ))}
                   </ul>

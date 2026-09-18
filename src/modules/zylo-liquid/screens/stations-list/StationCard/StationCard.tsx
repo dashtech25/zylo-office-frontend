@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 
 import type { City } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { cn } from "@/shared/lib/cn";
+import { formatFreshness, getFreshnessTone } from "@/shared/lib/formatDateTime";
 
 import type { StationRow } from "../useStationsList";
 import { ProductStockGrid } from "./ProductStockGrid";
@@ -12,14 +13,6 @@ import { StationIdentityCell } from "./StationIdentityCell";
 import { StationStatusCell } from "./StationStatusCell";
 import { StationSyncBadge } from "./StationSyncBadge";
 import { StationTotalValueCell } from "./StationTotalValueCell";
-
-export function freshnessTone(lastMeasurementAt: string | null): "ok" | "late" | "old" {
-  if (!lastMeasurementAt) return "old";
-  const ageMin = (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000;
-  if (ageMin <= 15) return "ok";
-  if (ageMin <= 60) return "late";
-  return "old";
-}
 
 const BORDER_CLASS_BY_STATE: Record<StationRow["state"], string> = {
   critical: "border-l-error",
@@ -57,7 +50,7 @@ export function StationCard({
   const format = useFormatter();
   const router = useRouter();
 
-  const fresh = freshnessTone(row.lastMeasurementAt);
+  const fresh = getFreshnessTone(row.lastMeasurementAt);
   const detailHref = `/zylo-liquid/stations/${row.station.id}`;
   const moneyDisplay = row.totalValue !== null && row.totalCurrencyCode ? formatMoney(row.totalValue, row.totalCurrencyCode) : null;
 
@@ -89,7 +82,7 @@ export function StationCard({
       />
 
       <div className="w-[7%]">
-        <StationSyncBadge freshness={fresh} label={row.lastMeasurementAt ? format.dateTime(new Date(row.lastMeasurementAt), { hour: "2-digit", minute: "2-digit" }) : t("list.row.syncOffline")} />
+        <StationSyncBadge freshness={fresh} label={row.lastMeasurementAt ? formatFreshness(row.lastMeasurementAt, format) : t("list.row.syncOffline")} />
       </div>
 
       <StationActionsCell

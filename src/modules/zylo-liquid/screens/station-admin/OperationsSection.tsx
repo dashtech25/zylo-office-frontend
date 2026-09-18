@@ -2,9 +2,11 @@
 
 import { Droplet, Fuel, Gauge, Plus, Search, Wrench } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 
 import type { Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
+import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Badge, Button, Card, EmptyState, Input, Kpi, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { KpiSkeleton, ListSkeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
@@ -107,7 +109,7 @@ export function OperationsSection({ organizationId, station }: { organizationId:
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi icon={Fuel} label={t("kpis.productsAvailable")} value={activeProductsCount} />
             <Kpi icon={Gauge} label={t("kpis.activeLanes")} value={station.nbPistes ?? "—"} />
-            <Kpi icon={Droplet} label={t("kpis.totalStock")} value={`${Math.round(totalStockLiters).toLocaleString()} L`} />
+            <Kpi icon={Droplet} label={t("kpis.totalStock")} value={`${formatLiters(Math.round(totalStockLiters))} L`} />
             <Kpi icon={Wrench} label={t("kpis.products")} value={data.products.length} />
           </div>
 
@@ -162,10 +164,10 @@ export function OperationsSection({ organizationId, station }: { organizationId:
                           </span>
                         </TableCell>
                         <TableCell>{p.currentPriceAmount !== null ? `${p.currentPriceAmount} ${p.currencyCode ?? ""}` : "—"}</TableCell>
-                        <TableCell className="tabular-nums">{p.currentVolumeLiters !== null ? `${Math.round(p.currentVolumeLiters).toLocaleString()} L` : "—"}</TableCell>
-                        <TableCell className="tabular-nums">{Math.round(p.capacityLiters).toLocaleString()} L</TableCell>
-                        <TableCell className="tabular-nums">{p.minThresholdLiters !== null ? `${p.minThresholdLiters.toLocaleString()} L` : "—"}</TableCell>
-                        <TableCell className="tabular-nums">{p.criticalThresholdLiters !== null ? `${p.criticalThresholdLiters.toLocaleString()} L` : "—"}</TableCell>
+                        <TableCell className="tabular-nums">{p.currentVolumeLiters !== null ? `${formatLiters(Math.round(p.currentVolumeLiters))} L` : "—"}</TableCell>
+                        <TableCell className="tabular-nums">{formatLiters(Math.round(p.capacityLiters))} L</TableCell>
+                        <TableCell className="tabular-nums">{p.minThresholdLiters !== null ? `${formatLiters(p.minThresholdLiters)} L` : "—"}</TableCell>
+                        <TableCell className="tabular-nums">{p.criticalThresholdLiters !== null ? `${formatLiters(p.criticalThresholdLiters)} L` : "—"}</TableCell>
                         <TableCell>
                           <Badge tone={STATUS_TONE[p.status]}>{t(`status.${p.status}`)}</Badge>
                         </TableCell>
@@ -395,6 +397,7 @@ function CommercialConfigTab({ data }: { data: ReturnType<typeof useExploitation
 
 function HistoryTab({ data }: { data: ReturnType<typeof useExploitation> }) {
   const t = useTranslations("zyloLiquid.stationAdmin.operations");
+  const format = useFormatter();
   const [entries, setEntries] = useState<Awaited<ReturnType<typeof data.listHistory>> | null>(null);
 
   // `data.listHistory` n'est pas mémoïsée (comme le reste des actions de ce
@@ -427,7 +430,7 @@ function HistoryTab({ data }: { data: ReturnType<typeof useExploitation> }) {
       <TableBody>
         {entries.map((entry) => (
           <TableRow key={entry.id}>
-            <TableCell className="tabular-nums text-text-muted">{new Date(entry.createdAt).toLocaleString()}</TableCell>
+            <TableCell className="tabular-nums text-text-muted">{formatFreshness(entry.createdAt, format)}</TableCell>
             <TableCell>{entry.summary}</TableCell>
           </TableRow>
         ))}

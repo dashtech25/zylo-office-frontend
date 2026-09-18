@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 
 import { listPrices, type PriceHistoryEntry, type Station, type StationFuelProductOverview } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
+import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Badge, Button, FormField, Input, ListSkeleton, Modal, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "./PartState";
@@ -34,6 +37,7 @@ export function ProductDetailModal({
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.operations.productModal");
   const tCommon = useTranslations("common");
+  const format = useFormatter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("info");
 
   const [minThreshold, setMinThreshold] = useState(product.minThresholdLiters?.toString() ?? "");
@@ -98,8 +102,8 @@ export function ProductDetailModal({
         {tab === "stock" && (
           <div className="flex flex-col gap-4">
             <dl className="grid grid-cols-2 gap-3 text-body-sm sm:grid-cols-4">
-              <div><dt className="text-text-muted">{t("capacity")}</dt><dd className="tabular-nums text-text">{Math.round(product.capacityLiters).toLocaleString()} L</dd></div>
-              <div><dt className="text-text-muted">{t("currentStock")}</dt><dd className="tabular-nums text-text">{product.currentVolumeLiters !== null ? `${Math.round(product.currentVolumeLiters).toLocaleString()} L` : "—"}</dd></div>
+              <div><dt className="text-text-muted">{t("capacity")}</dt><dd className="tabular-nums text-text">{formatLiters(Math.round(product.capacityLiters))} L</dd></div>
+              <div><dt className="text-text-muted">{t("currentStock")}</dt><dd className="tabular-nums text-text">{product.currentVolumeLiters !== null ? `${formatLiters(Math.round(product.currentVolumeLiters))} L` : "—"}</dd></div>
             </dl>
             <p className="text-caption text-text-muted">{t("capacityHint")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -115,7 +119,7 @@ export function ProductDetailModal({
           <div className="flex flex-col gap-3">
             <dl className="text-body-sm">
               <dt className="text-text-muted">{t("currentPrice")}</dt>
-              <dd className="text-h4 font-semibold text-text">{product.currentPriceAmount !== null ? `${product.currentPriceAmount} ${product.currencyCode ?? ""}` : "—"}</dd>
+              <dd className="text-h4 font-semibold text-text">{product.currentPriceAmount !== null && product.currencyCode ? formatMoney(format, product.currentPriceAmount, product.currencyCode) : "—"}</dd>
             </dl>
             <PartStateBox state={pricesState}>
               {pricesState.status === "ready" && (
@@ -129,8 +133,8 @@ export function ProductDetailModal({
                   <TableBody>
                     {(pricesState.data as PriceHistoryEntry[]).map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="tabular-nums text-text-muted">{new Date(entry.effectiveFrom).toLocaleDateString()}</TableCell>
-                        <TableCell className="tabular-nums">{entry.priceAmount}</TableCell>
+                        <TableCell className="tabular-nums text-text-muted">{format.dateTime(new Date(entry.effectiveFrom), { dateStyle: "short", timeStyle: "short" })}</TableCell>
+                        <TableCell className="tabular-nums">{product.currencyCode ? formatMoney(format, entry.priceAmount, product.currencyCode) : entry.priceAmount}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -166,6 +170,7 @@ function ProductHistoryList({
   entityId: string;
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.operations.productModal");
+  const format = useFormatter();
   const loadHistory = useCallback(() => data.listHistory().then((rows) => rows.filter((r) => r.entityId === entityId)), [data, entityId]);
   const historyState = usePartData(["zylo-liquid", "station-detail", "product-history", organizationId, stationId, entityId], loadHistory);
 
@@ -180,7 +185,7 @@ function ProductHistoryList({
     <ul className="flex flex-col gap-2">
       {entries.map((entry) => (
         <li key={entry.id} className="text-body-sm text-text">
-          <span className="tabular-nums text-text-muted">{new Date(entry.createdAt).toLocaleDateString()}</span> — {entry.summary}
+          <span className="tabular-nums text-text-muted">{formatFreshness(entry.createdAt, format)}</span> — {entry.summary}
         </li>
       ))}
     </ul>

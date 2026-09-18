@@ -12,6 +12,7 @@ import {
   type Pump,
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
 
 const PAYMENT_METHODS = ["cash", "card", "fleet", "credit"] as const;
@@ -181,7 +182,7 @@ export function SaleDeclarationModal({ organizationId, stationId, pumps, tanks, 
         </FormField>
         {volumeSold !== null && (
           <p className="text-sm text-text-muted">
-            {t("form.volumeSold")}: <span className="font-mono tabular-nums text-text">{volumeSold} L</span>
+            {t("form.volumeSold")}: <span className="font-mono tabular-nums text-text">{formatLiters(volumeSold)} L</span>
           </p>
         )}
         <FormField label={t("form.shiftEnd")} required>

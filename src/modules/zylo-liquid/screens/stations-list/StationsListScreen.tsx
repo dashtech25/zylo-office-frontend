@@ -12,6 +12,7 @@ import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { normalizeSearchText } from "@/modules/zylo-liquid/utils/normalizeSearchText";
 import { cn } from "@/shared/lib/cn";
+import { formatFreshness, getFreshnessTone } from "@/shared/lib/formatDateTime";
 import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
@@ -21,7 +22,7 @@ import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid
 import { FullscreenMapView } from "@/modules/zylo-liquid/components/FullscreenMapView";
 
 import { ProductStockGrid } from "./StationCard/ProductStockGrid";
-import { StationCard, freshnessTone } from "./StationCard/StationCard";
+import { StationCard } from "./StationCard/StationCard";
 import { StationSyncBadge } from "./StationCard/StationSyncBadge";
 import { StationsTable } from "./StationCard/StationsTable";
 import { StatusBadge } from "./StationCard/StatusBadge";
@@ -540,7 +541,7 @@ export default function StationsListScreen() {
           if (!previewRow) return null;
           const moneyDisplay = previewRow.totalValue !== null && previewRow.totalCurrencyCode ? formatMoney(previewRow.totalValue, previewRow.totalCurrencyCode) : null;
           const city = previewRow.station.cityId ? (cityById.get(previewRow.station.cityId) ?? null) : null;
-          const fresh = freshnessTone(previewRow.lastMeasurementAt);
+          const fresh = getFreshnessTone(previewRow.lastMeasurementAt);
           return (
             <Modal
               open={!!previewStationId}
@@ -561,7 +562,7 @@ export default function StationsListScreen() {
                   <StatusDot state={previewRow.state} />
                   <StatusBadge state={previewRow.state} label={t(`list.status.${previewRow.state}`)} />
                   {city && <span className="text-body-sm text-text-muted">{city.name}</span>}
-                  <StationSyncBadge freshness={fresh} label={previewRow.lastMeasurementAt ? format.dateTime(new Date(previewRow.lastMeasurementAt), { hour: "2-digit", minute: "2-digit" }) : t("list.row.syncOffline")} />
+                  <StationSyncBadge freshness={fresh} label={previewRow.lastMeasurementAt ? formatFreshness(previewRow.lastMeasurementAt, format) : t("list.row.syncOffline")} />
                 </div>
 
                 <ProductStockGrid

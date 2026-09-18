@@ -2,7 +2,7 @@
 
 import { Plus, Shield } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 
 import {
   createSecurityEquipment,
@@ -11,6 +11,7 @@ import {
   type SecurityEquipmentCategory,
   type SecurityEquipmentConformityStatus,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDueDate, formatFreshness } from "@/shared/lib/formatDateTime";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
@@ -25,6 +26,7 @@ const CONFORMITY_TONE = { conforme: "success", non_conforme: "error", a_controle
  * cette mission (`SecurityEquipment`, absent avant ce lot). */
 export function SecuritySection({ organizationId, stationId }: { organizationId: string; stationId: string }) {
   const t = useTranslations("zyloLiquid.stationAdmin.security");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -137,8 +139,19 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
                     <TableRow key={eq.id}>
                       <TableCell>{t(`category.${eq.category}`)}</TableCell>
                       <TableCell className="font-medium">{eq.label}</TableCell>
-                      <TableCell>{eq.lastControlAt ?? "—"}</TableCell>
-                      <TableCell>{eq.nextControlDueAt ?? "—"}</TableCell>
+                      <TableCell>{eq.lastControlAt ? formatFreshness(eq.lastControlAt, format) : "—"}</TableCell>
+                      <TableCell>
+                        {eq.nextControlDueAt ? (
+                          <span className="flex flex-col">
+                            <span className={formatDueDate(eq.nextControlDueAt, format).overdue ? "text-error font-medium" : undefined}>
+                              {formatDueDate(eq.nextControlDueAt, format).date}
+                            </span>
+                            <span className="text-caption text-text-muted">{formatDueDate(eq.nextControlDueAt, format).relative}</span>
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Select
                           aria-label={t("table.conformityStatus")}

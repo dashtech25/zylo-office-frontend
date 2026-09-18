@@ -902,6 +902,15 @@
         "out_of_order": "En panne",
         "out_of_service": "Hors service"
       },
+      "type": {
+        "pompe": "Pompe",
+        "sonde": "Sonde",
+        "console": "Console",
+        "dtu": "DTU",
+        "electrique": "Électrique",
+        "securite": "Sécurité",
+        "autre": "Autre"
+      },
       "createIntervention": "Signaler une intervention"
     },
     "interventions": {
@@ -2421,7 +2430,7 @@
         "title": "Rapprochement manuel — {tank}",
         "titleFromDetected": "Rattacher cette détection à une livraison déclarée",
         "noCandidates": "Aucune détection disponible dans la fenêtre de recherche.",
-        "deltaMinutes": "Écart avec l'heure déclarée : {minutes} min",
+        "deltaMinutes": "Écart avec l'heure déclarée : {duration}",
         "alreadyUsed": "Déjà rapprochée avec une autre ligne",
         "detectedAlreadyUsed": "Cette détection est déjà rapprochée avec une autre ligne de déclaration.",
         "confirmOverride": "Je confirme vouloir rapprocher malgré tout — cela peut signaler une erreur à corriger de l'autre côté.",

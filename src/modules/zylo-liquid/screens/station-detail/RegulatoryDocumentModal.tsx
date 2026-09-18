@@ -1,12 +1,13 @@
 "use client";
 
 import { File, FileImage, FileText, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { OrganizationMember } from "@/core/api/rbac";
 import type { RegulatoryDocument, UpdateRegulatoryDocumentInput, ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDueDate } from "@/shared/lib/formatDateTime";
 import { Alert, Badge, Button, FormField, Input, Modal, Select, Skeleton, Textarea } from "@/shared/ui";
 
 const STATUS_TONE = { valid: "success", renew_soon: "warning", expired: "error", unknown: "neutral" } as const;
@@ -55,6 +56,7 @@ export function RegulatoryDocumentModal({
   downloadFile: (fileId: string) => Promise<string>;
 }) {
   const t = useTranslations("zyloLiquid.stationDetail.regulationTab");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -219,11 +221,18 @@ export function RegulatoryDocumentModal({
             ) : (
               <InfoLine label={t("modal.authority")} value={doc.authority ?? "—"} />
             )}
-            <InfoLine label={t("modal.issuedAt")} value={doc.issuedAt ?? "—"} />
+            <InfoLine label={t("modal.issuedAt")} value={doc.issuedAt ? format.dateTime(new Date(doc.issuedAt), { dateStyle: "long" }) : "—"} />
             <div className="flex items-center justify-between gap-2">
               <span className="text-text-muted">{t("modal.expiresAt")}</span>
               <span className="flex items-center gap-2 font-medium text-text">
-                {doc.expiresAt ?? "—"}
+                {doc.expiresAt ? (
+                  <span className="flex flex-col items-end">
+                    <span>{formatDueDate(doc.expiresAt, format).date}</span>
+                    <span className="text-caption text-text-muted">{formatDueDate(doc.expiresAt, format).relative}</span>
+                  </span>
+                ) : (
+                  "—"
+                )}
                 <Badge tone={STATUS_TONE[doc.computedStatus]}>{t(`status.${doc.computedStatus}`)}</Badge>
               </span>
             </div>

@@ -4,6 +4,7 @@ import { AlertTriangle, Check, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { formatFreshness } from "@/shared/lib/formatDateTime";
 import { Badge, buttonVariants, Button, Card } from "@/shared/ui";
 
 import type { AlertRow as AlertRowData } from "./useAlertsList";
@@ -57,7 +58,7 @@ export function AlertRow({
   const valueUnit = VOLUME_ALERT_TYPES.has(alert.type) ? "L" : "mm";
 
   function formatDateTime(iso: string): string {
-    return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return formatFreshness(iso, format);
   }
 
   return (
