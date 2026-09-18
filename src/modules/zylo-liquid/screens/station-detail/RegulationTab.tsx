@@ -1,10 +1,11 @@
 "use client";
 
 import { FileText, Paperclip, Plus, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 
 import type { RegulatoryCertaintyLevel } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDueDate } from "@/shared/lib/formatDateTime";
 import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
@@ -22,6 +23,7 @@ const CERTAINTY_LEVELS: RegulatoryCertaintyLevel[] = ["high", "medium", "low"];
  * réseau Réglementaire (jamais un second modèle de données). */
 export function RegulationTab({ organizationId, stationId }: { organizationId: string; stationId: string }) {
   const t = useTranslations("zyloLiquid.stationDetail.regulationTab");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
   const data = useRegulation(organizationId, stationId);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -159,8 +161,17 @@ export function RegulationTab({ organizationId, stationId }: { organizationId: s
                   <TableRow key={doc.id} clickable onClick={() => setOpenDocumentId(doc.id)}>
                     <TableCell className="font-medium text-text underline decoration-dotted">{doc.documentType}</TableCell>
                     <TableCell>{doc.authority ?? "—"}</TableCell>
-                    <TableCell>{doc.issuedAt ?? "—"}</TableCell>
-                    <TableCell>{doc.expiresAt ?? "—"}</TableCell>
+                    <TableCell>{doc.issuedAt ? format.dateTime(new Date(doc.issuedAt), { dateStyle: "long" }) : "—"}</TableCell>
+                    <TableCell>
+                      {doc.expiresAt ? (
+                        <span className="flex flex-col">
+                          <span>{formatDueDate(doc.expiresAt, format).date}</span>
+                          <span className="text-caption text-text-muted">{formatDueDate(doc.expiresAt, format).relative}</span>
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge tone={STATUS_TONE[doc.computedStatus]}>{t(`status.${doc.computedStatus}`)}</Badge>
                     </TableCell>

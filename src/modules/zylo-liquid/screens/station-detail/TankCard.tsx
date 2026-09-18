@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { Alert as AlertType, FuelProduct, Tank, TankCurrentState } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 import { usePermissions } from "@/core/rbac/PermissionContext";
-import { formatFreshness } from "@/modules/zylo-liquid/utils/formatFreshness";
+import { formatFreshness, getFreshnessTone } from "@/shared/lib/formatDateTime";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { TankFigures } from "@/modules/zylo-liquid/components/TankVisual";
 import { TankStatusBadge } from "@/modules/zylo-liquid/components/TankStatusBadge";
@@ -22,12 +22,12 @@ import { TankGaugeColumn, type TankGaugeMode } from "./TankGaugeColumn";
 // niveau d'une cuve individuelle, jamais une nouvelle permission inventée.
 const PRICE_HISTORY_READ = "zyloLiquid.priceHistory.read";
 
+// Traduit la tonalité centralisée (ok/late/old/never) vers le vocabulaire
+// visuel local de cette vignette (ok/warn/off) — un seul calcul de seuils
+// partagé (getFreshnessTone), jamais une deuxième logique de fraîcheur.
+const DOT_TONE_BY_FRESHNESS = { ok: "ok", late: "warn", old: "off", never: "off" } as const;
 function freshnessOf(lastMeasurementAt: string | null): "ok" | "warn" | "off" {
-  if (!lastMeasurementAt) return "off";
-  const ageMin = Math.max(0, (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000);
-  if (ageMin < 15) return "ok";
-  if (ageMin <= 60) return "warn";
-  return "off";
+  return DOT_TONE_BY_FRESHNESS[getFreshnessTone(lastMeasurementAt)];
 }
 
 const DOT_CLASS = { ok: "bg-success", warn: "bg-warning", off: "bg-error" } as const;

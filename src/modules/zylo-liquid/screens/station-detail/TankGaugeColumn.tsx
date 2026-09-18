@@ -5,6 +5,7 @@ import { useFormatter } from "next-intl";
 import type { Tank, TankCurrentState } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 
 import { TankVisual, type TankVisualMode } from "@/modules/zylo-liquid/components/TankVisual";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
 
 export type TankGaugeMode = TankVisualMode;
 
@@ -35,7 +36,7 @@ export function TankGaugeColumn({ tank, state, offline, fuelColor, notCalculable
             <span className="text-text-disabled">-- L</span>
             {state?.lastMeasurementAt && (
               <span className="text-caption italic text-text-disabled">
-                Dernière mesure : {format.dateTime(new Date(state.lastMeasurementAt), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                Dernière mesure : {formatFreshness(state.lastMeasurementAt, format)}
               </span>
             )}
           </div>

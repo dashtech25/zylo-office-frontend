@@ -1,10 +1,12 @@
 "use client";
 
 import { Plus, RefreshCw, ShoppingCart, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { resolveStorageUrl } from "@/core/api/storage";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
+import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import {
   assignTruckToPurchaseOrder, generatePurchaseOrderDocument, getDocumentDownloadUrl, listDocumentsByEntity, listTrucks, listTrucksForPurchaseOrder,
   unassignTruckFromPurchaseOrder, type Truck, type TruckOrderAssignment, type ZyloDocument, type Station,
@@ -33,6 +35,7 @@ const STATUS_TONE = { open: "warning", partially_received: "info", received: "su
  * seule visite. */
 export function OrdersSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.orders");
+  const format = useFormatter();
   const data = useDeliveryFlow(organizationId, station.id);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -114,9 +117,9 @@ export function OrdersSection({ organizationId, station }: { organizationId: str
                       <TableCell className="font-medium text-text underline decoration-dotted">{order.orderReference}</TableCell>
                       <TableCell>{productsLabel || "—"}</TableCell>
                       <TableCell>{supplier?.name ?? "—"}</TableCell>
-                      <TableCell className="tabular-nums">{totalVolume.toLocaleString()} L</TableCell>
-                      <TableCell className="text-text-muted">{new Date(order.orderedAt).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-text-muted">{order.expectedAt ? new Date(order.expectedAt).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className="tabular-nums">{formatLiters(totalVolume)} L</TableCell>
+                      <TableCell className="text-text-muted">{format.dateTime(new Date(order.orderedAt), { dateStyle: "long" })}</TableCell>
+                      <TableCell className="text-text-muted">{order.expectedAt ? format.dateTime(new Date(order.expectedAt), { dateStyle: "long" }) : "—"}</TableCell>
                       <TableCell>
                         <Badge tone={STATUS_TONE[order.status]}>{t(`status.${order.status}`)}</Badge>
                       </TableCell>
@@ -152,6 +155,7 @@ function OrderDetailModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.orders.detail");
+  const format = useFormatter();
   const tDoc = useTranslations("zyloLiquid.stationAdmin.orders.detail.document");
   const tOrders = useTranslations("zyloLiquid.stationAdmin.orders");
   const tCommon = useTranslations("common");
@@ -283,9 +287,9 @@ function OrderDetailModal({
 
         <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
           <div><dt className="text-text-muted">{t("supplier")}</dt><dd className="text-text">{supplier?.name ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("orderedVolume")}</dt><dd className="tabular-nums text-text">{totalOrderedVolume.toLocaleString()} L</dd></div>
-          <div><dt className="text-text-muted">{t("orderedAt")}</dt><dd className="text-text">{new Date(order.orderedAt).toLocaleString()}</dd></div>
-          <div><dt className="text-text-muted">{t("expectedAt")}</dt><dd className="text-text">{order.expectedAt ? new Date(order.expectedAt).toLocaleDateString() : "—"}</dd></div>
+          <div><dt className="text-text-muted">{t("orderedVolume")}</dt><dd className="tabular-nums text-text">{formatLiters(totalOrderedVolume)} L</dd></div>
+          <div><dt className="text-text-muted">{t("orderedAt")}</dt><dd className="text-text">{format.dateTime(new Date(order.orderedAt), { dateStyle: "long" })}</dd></div>
+          <div><dt className="text-text-muted">{t("expectedAt")}</dt><dd className="text-text">{order.expectedAt ? format.dateTime(new Date(order.expectedAt), { dateStyle: "long" }) : "—"}</dd></div>
         </dl>
 
         <div>
@@ -298,7 +302,7 @@ function OrderDetailModal({
                 <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-border-subtle px-3 py-2 text-body-sm">
                   <span className="font-medium text-text">{fuelProduct?.name ?? "—"}</span>
                   <span className="tabular-nums text-text-muted">
-                    {t("lineDelivered")}: {delivered.toLocaleString()} / {line.orderedVolumeLiters.toLocaleString()} L
+                    {t("lineDelivered")}: {formatLiters(delivered)} / {formatLiters(line.orderedVolumeLiters)} L
                   </span>
                   <Badge tone={STATUS_TONE[line.status]}>{tOrders(`status.${line.status}`)}</Badge>
                 </li>
@@ -315,8 +319,8 @@ function OrderDetailModal({
             <ul className="flex flex-col gap-2">
               {linkedDeliveries.map(({ declaration, matchedVolume }) => (
                 <li key={declaration.id} className="flex items-center justify-between rounded-card border border-border-subtle px-3 py-2 text-body-sm">
-                  <span className="text-text">{new Date(declaration.eventAt).toLocaleString()}</span>
-                  <span className="tabular-nums text-text">{matchedVolume.toLocaleString()} L</span>
+                  <span className="text-text">{formatFreshness(declaration.eventAt, format)}</span>
+                  <span className="tabular-nums text-text">{formatLiters(matchedVolume)} L</span>
                 </li>
               ))}
             </ul>

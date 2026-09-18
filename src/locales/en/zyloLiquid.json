@@ -902,6 +902,15 @@
         "out_of_order": "Out of order",
         "out_of_service": "Out of service"
       },
+      "type": {
+        "pompe": "Pump",
+        "sonde": "Sensor",
+        "console": "Console",
+        "dtu": "DTU",
+        "electrique": "Electrical",
+        "securite": "Security",
+        "autre": "Other"
+      },
       "createIntervention": "Report an intervention"
     },
     "interventions": {
@@ -2421,7 +2430,7 @@
         "title": "Manual reconciliation — {tank}",
         "titleFromDetected": "Link this detection to a declared delivery",
         "noCandidates": "No detection available in the search window.",
-        "deltaMinutes": "Gap from declared time: {minutes} min",
+        "deltaMinutes": "Gap from declared time: {duration}",
         "alreadyUsed": "Already reconciled with another line",
         "detectedAlreadyUsed": "This detection is already reconciled with another declaration line.",
         "confirmOverride": "I confirm I want to reconcile anyway — this may signal an error to fix on the other side.",

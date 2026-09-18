@@ -1,17 +1,20 @@
 "use client";
 
-import { File as FileIcon, Paperclip, Plus, RefreshCcw, Trash2, Truck, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { File as FileIcon, Link2, Paperclip, Plus, RefreshCcw, Trash2, Truck, Upload } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import {
   correctDeliveryDeclarationLines,
+  listDeliveryDeclarationLineReconciliationCandidates,
   listReconciliationRecords,
+  manuallyReconcileDeliveryDeclarationLine,
   type CorrectDeliveryDeclarationLineInput,
   type CreateDeliveryDeclarationLineInput,
   type Delivery,
   type DeliveryDeclaration,
   type DeliveryDeclarationLine,
+  type DeliveryReconciliationCandidate,
   type PurchaseOrder,
   type PurchaseOrderLine,
   type ReconciliationRecord,
@@ -19,6 +22,8 @@ import {
   type Tank,
   type ZyloDocument,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDurationMinutes, formatFreshness } from "@/shared/lib/formatDateTime";
+import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { Tabs } from "@/shared/ui/Tabs";
@@ -68,6 +73,248 @@ function aggregateDeclarationStatus(declaration: DeliveryDeclaration, byLineId: 
   return "not_reconciled";
 }
 
+/** Rapprochement MANUEL, sens ligne déclarée -> détection (mission
+ * « rapprochement manuel », 2026-09-17, validée scénario par scénario) —
+ * la personne habilitée voit tous les candidats de la fenêtre (jamais un
+ * choix silencieux comme l'automatique) et choisit elle-même. Un candidat
+ * déjà utilisé par une autre ligne active est signalé explicitement ;
+ * le choisir quand même exige une confirmation avant l'envoi
+ * (`force: true`), jamais un partage silencieux d'une même détection. */
+function ManualReconcileFromLineModal({
+  organizationId,
+  line,
+  tankName,
+  open,
+  onOpenChange,
+  onDone,
+}: {
+  organizationId: string;
+  line: DeliveryDeclarationLine | null;
+  tankName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+}) {
+  const t = useTranslations("zyloLiquid.stationAdmin.deliveries.reconcileModal");
+  const format = useFormatter();
+  const tCommon = useTranslations("common");
+  const [candidates, setCandidates] = useState<DeliveryReconciliationCandidate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [confirmOverride, setConfirmOverride] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !line) return;
+    let cancelled = false;
+    setLoading(true);
+    setSelectedId(null);
+    setConfirmOverride(false);
+    setError(null);
+    listDeliveryDeclarationLineReconciliationCandidates(organizationId, line.id)
+      .then((result) => { if (!cancelled) setCandidates(result); })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : tCommon("states.error")); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, line?.id]);
+
+  const selectedCandidate = candidates.find((c) => c.detected.id === selectedId) ?? null;
+  const needsConfirmation = selectedCandidate?.alreadyReconciledWith != null;
+
+  async function handleSubmit() {
+    if (!line || !selectedId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await manuallyReconcileDeliveryDeclarationLine(organizationId, line.id, { detectedId: selectedId, force: needsConfirmation });
+      onDone();
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("title", { tank: tankName })}
+      closeLabel={tCommon("actions.close")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} loading={submitting} disabled={!selectedId || (needsConfirmation && !confirmOverride)}>
+            {t("submit")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        {error && <Alert tone="error">{error}</Alert>}
+        {loading ? (
+          <Skeleton className="h-32 w-full" variant="rectangular" />
+        ) : candidates.length === 0 ? (
+          <p className="text-body-sm text-text-muted">{t("noCandidates")}</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {candidates.map((candidate) => {
+              const selected = selectedId === candidate.detected.id;
+              return (
+                <button
+                  key={candidate.detected.id}
+                  type="button"
+                  onClick={() => { setSelectedId(candidate.detected.id); setConfirmOverride(false); }}
+                  className={`flex flex-col gap-1 rounded-card border p-3 text-left transition-colors ${selected ? "border-primary bg-primary-muted/40" : "border-border-subtle hover:border-primary/50"}`}
+                >
+                  <div className="flex items-center justify-between text-body-sm">
+                    <span className="font-medium text-text">{formatFreshness(candidate.detected.startTime, format)}</span>
+                    <span className="tabular-nums text-text-muted">{candidate.detected.volumeLiters !== null ? `${formatLiters(candidate.detected.volumeLiters)} L` : "—"}</span>
+                  </div>
+                  <span className="text-caption text-text-muted">{t("deltaMinutes", { duration: formatDurationMinutes(candidate.deltaMinutes) })}</span>
+                  {candidate.alreadyReconciledWith && <Badge tone="warning" className="w-fit">{t("alreadyUsed")}</Badge>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {needsConfirmation && (
+          <label className="flex items-start gap-2 rounded-card border border-warning/40 bg-warning-muted/30 p-3 text-body-sm text-text">
+            <input type="checkbox" checked={confirmOverride} onChange={(e) => setConfirmOverride(e.target.checked)} className="mt-0.5" />
+            {t("confirmOverride")}
+          </label>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/** Même mécanisme, sens INVERSE : détection -> ligne déclarée (scénario 3/6,
+ * demandé explicitement des deux côtés). Les candidats sont les lignes
+ * ACTIVES (non supplantées) de cette station sur la même cuve — calculées
+ * côté client (pas d'appel réseau dédié, réutilise `data.declarations` déjà
+ * chargé), plutôt qu'un second endpoint symétrique côté backend. */
+function ManualReconcileFromDetectedModal({
+  organizationId,
+  data,
+  delivery,
+  lineReconciliation,
+  detectedAlreadyUsedByLineId,
+  open,
+  onOpenChange,
+  onDone,
+}: {
+  organizationId: string;
+  data: ReturnType<typeof useDeliveryFlow>;
+  delivery: Delivery | null;
+  lineReconciliation: Map<string, ReconciliationRecord>;
+  detectedAlreadyUsedByLineId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+}) {
+  const t = useTranslations("zyloLiquid.stationAdmin.deliveries.reconcileModal");
+  const format = useFormatter();
+  const tCommon = useTranslations("common");
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+  const [confirmOverride, setConfirmOverride] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedLineId(null);
+    setConfirmOverride(false);
+    setError(null);
+  }, [open, delivery?.id]);
+
+  if (!delivery) return null;
+
+  const supersededLineIds = new Set(data.declarations.flatMap((d) => d.lines).map((l) => l.correctsLineId).filter((id): id is string => id !== null));
+  const candidateLines = data.declarations
+    .flatMap((declaration) => declaration.lines.map((line) => ({ declaration, line })))
+    .filter(({ line }) => line.tankId === delivery.tankId && !supersededLineIds.has(line.id));
+
+  const needsConfirmation = detectedAlreadyUsedByLineId !== null;
+
+  async function handleSubmit() {
+    if (!selectedLineId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await manuallyReconcileDeliveryDeclarationLine(organizationId, selectedLineId, { detectedId: delivery!.id, force: needsConfirmation });
+      onDone();
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("titleFromDetected")}
+      closeLabel={tCommon("actions.close")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>{tCommon("actions.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} loading={submitting} disabled={!selectedLineId || (needsConfirmation && !confirmOverride)}>
+            {t("submit")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        {error && <Alert tone="error">{error}</Alert>}
+        {needsConfirmation && (
+          <Alert tone="warning">{t("detectedAlreadyUsed")}</Alert>
+        )}
+        {candidateLines.length === 0 ? (
+          <p className="text-body-sm text-text-muted">{t("noCandidates")}</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {candidateLines.map(({ declaration, line }) => {
+              const selected = selectedLineId === line.id;
+              const status = lineReconciliation.get(line.id)?.status ?? "not_reconciled";
+              return (
+                <button
+                  key={line.id}
+                  type="button"
+                  onClick={() => setSelectedLineId(line.id)}
+                  className={`flex items-center justify-between gap-3 rounded-card border p-3 text-left transition-colors ${selected ? "border-primary bg-primary-muted/40" : "border-border-subtle hover:border-primary/50"}`}
+                >
+                  <div className="flex flex-col gap-0.5 text-body-sm">
+                    <span className="font-medium text-text">{formatFreshness(declaration.eventAt, format)}</span>
+                    <span className="text-caption text-text-muted">{declaration.deliveryNoteReference ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="tabular-nums text-body-sm text-text-muted">{formatLiters(line.volumeLiters)} L</span>
+                    <Badge tone={RECONCILIATION_TONE[status]}>{t(`currentStatus.${status}`)}</Badge>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {needsConfirmation && (
+          <label className="flex items-start gap-2 rounded-card border border-warning/40 bg-warning-muted/30 p-3 text-body-sm text-text">
+            <input type="checkbox" checked={confirmOverride} onChange={(e) => setConfirmOverride(e.target.checked)} className="mt-0.5" />
+            {t("confirmOverride")}
+          </label>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 /** Onglet « Livraison » (mission « flux de livraison station », 2026-09-10,
  * refonte 2026-09-17 validée scénario par scénario avec le commanditaire) —
  * étape 2 du flux : la personne habilitée à réceptionner
@@ -82,12 +329,19 @@ function aggregateDeclarationStatus(declaration: DeliveryDeclaration, byLineId: 
  * ré-évaluation manuelle proposée dans le détail. */
 export function DeliveriesSection({ organizationId, station }: { organizationId: string; station: Station }) {
   const t = useTranslations("zyloLiquid.stationAdmin.deliveries");
+  const format = useFormatter();
   const data = useDeliveryFlow(organizationId, station.id);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedDeclarationId, setSelectedDeclarationId] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
   const selectedDeclaration = data.declarations.find((d) => d.id === selectedDeclarationId) ?? null;
   const selectedDelivery = data.deliveries.find((d) => d.id === selectedDeliveryId) ?? null;
+
+  // Rapprochement manuel (mission « rapprochement manuel », 2026-09-17) —
+  // un seul id sélectionné à la fois par sens, jamais les deux modales
+  // ouvertes simultanément.
+  const [reconcileLineId, setReconcileLineId] = useState<string | null>(null);
+  const [reconcileDetectedId, setReconcileDetectedId] = useState<string | null>(null);
 
   // Toutes les lignes de commande encore ouvertes de cette station, tous
   // bons de commande confondus (une commande "partially_received" peut
@@ -121,6 +375,26 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
   lineReconciliation.forEach((record) => {
     if (record.counterpartType === "DeliveryDetected" && record.counterpartId) detectedReconciliationByDetectedId.set(record.counterpartId, record);
   });
+
+  // Toutes les lignes de toutes les déclarations, aplaties — la table
+  // « Déclarée » affiche désormais une ligne par CUVE (pas par déclaration),
+  // cohérent avec le fait que le rapprochement se fait par ligne (refonte
+  // 2026-09-17). Une ligne déjà remplacée par une correction ciblée
+  // (`correctsLineId` d'une autre ligne pointe vers elle) n'est jamais
+  // proposée au rapprochement manuel — elle n'est plus la vérité active.
+  const allDeclaredLines = data.declarations.flatMap((declaration) => declaration.lines.map((line) => ({ declaration, line })));
+  const supersededLineIds = new Set(allDeclaredLines.map(({ line }) => line.correctsLineId).filter((id): id is string => id !== null));
+
+  // Onglet « Rapprochées » (mission « rapprochement manuel », 2026-09-17,
+  // validé avec le commanditaire) : uniquement les lignes pour lesquelles
+  // un rapprochement a réellement comparé une déclaration à une détection —
+  // "matched" (correspondance) ET "discrepancy" (écart) comptent, jamais
+  // "pending"/"insufficient_data" (rien à comparer pour l'instant).
+  const reconciledLines = allDeclaredLines
+    .map(({ declaration, line }) => ({ declaration, line, record: lineReconciliation.get(line.id) }))
+    .filter((entry): entry is { declaration: DeliveryDeclaration; line: DeliveryDeclarationLine; record: ReconciliationRecord } =>
+      entry.record != null && (entry.record.status === "matched" || entry.record.status === "discrepancy")
+    );
 
   // Silhouette de tableau plutôt qu'un spinner plein écran — cette section
   // est démontée/remontée à chaque bascule du Centre administratif (cf.
@@ -173,7 +447,7 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
             content: (
               <Card padding="none">
                 <div className="p-5">
-                  {data.declarations.length === 0 ? (
+                  {allDeclaredLines.length === 0 ? (
                     <EmptyState icon={Truck} title={t("empty")} />
                   ) : (
                     <Table>
@@ -184,26 +458,36 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
                           <TableHeaderCell>{t("table.volume")}</TableHeaderCell>
                           <TableHeaderCell>{t("table.noteReference")}</TableHeaderCell>
                           <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.actions")}</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {data.declarations.map((declaration) => {
-                          const tankNames = declaration.lines
-                            .map((line) => data.tanks.find((tk) => tk.id === line.tankId)?.displayName ?? "?")
-                            .join(", ");
-                          const totalVolume = declaration.lines.reduce((sum, line) => sum + line.volumeLiters, 0);
-                          const reconciliationStatus = aggregateDeclarationStatus(declaration, lineReconciliation);
+                        {allDeclaredLines.map(({ declaration, line }) => {
+                          const tankName = data.tanks.find((tk) => tk.id === line.tankId)?.displayName ?? "—";
+                          const reconciliationStatus = lineReconciliation.get(line.id)?.status ?? "not_reconciled";
+                          const superseded = supersededLineIds.has(line.id);
                           return (
-                            <TableRow key={declaration.id} clickable onClick={() => setSelectedDeclarationId(declaration.id)}>
-                              <TableCell className="text-text-muted underline decoration-dotted">{new Date(declaration.eventAt).toLocaleString()}</TableCell>
-                              <TableCell className="font-medium text-text">{tankNames || "—"}</TableCell>
-                              <TableCell className="tabular-nums">{totalVolume.toLocaleString()} L</TableCell>
+                            <TableRow key={line.id}>
+                              <TableCell className="cursor-pointer text-text-muted underline decoration-dotted" onClick={() => setSelectedDeclarationId(declaration.id)}>
+                                {formatFreshness(declaration.eventAt, format)}
+                              </TableCell>
+                              <TableCell className="font-medium text-text">{tankName}</TableCell>
+                              <TableCell className="tabular-nums">{formatLiters(line.volumeLiters)} L</TableCell>
                               <TableCell>{declaration.deliveryNoteReference ?? "—"}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1.5">
                                   <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`detail.reconciliation.${reconciliationStatus}`)}</Badge>
                                   <Badge tone={declaration.lifecycleStatus === "locked" ? "neutral" : "info"}>{t(`lifecycle.${declaration.lifecycleStatus}`)}</Badge>
+                                  {superseded && <Badge tone="neutral">{t("detail.line.corrected")}</Badge>}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {!superseded && (
+                                  <Button variant="outline" size="sm" onClick={() => setReconcileLineId(line.id)}>
+                                    <Link2 className="size-4" aria-hidden />
+                                    {t("table.reconcileAction")}
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -231,19 +515,68 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
                           <TableHeaderCell>{t("detectedTable.endTime")}</TableHeaderCell>
                           <TableHeaderCell>{t("detectedTable.volume")}</TableHeaderCell>
                           <TableHeaderCell>{t("detectedTable.status")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.actions")}</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {data.deliveries.map((delivery) => {
                           const reconciliationStatus = detectedReconciliationByDetectedId.get(delivery.id)?.status ?? "not_reconciled";
                           return (
-                            <TableRow key={delivery.id} clickable onClick={() => setSelectedDeliveryId(delivery.id)}>
-                              <TableCell className="text-text-muted underline decoration-dotted">{new Date(delivery.startTime).toLocaleString()}</TableCell>
-                              <TableCell className="text-text-muted">{new Date(delivery.endTime).toLocaleString()}</TableCell>
-                              <TableCell className="tabular-nums">{delivery.volumeLiters !== null ? `${delivery.volumeLiters.toLocaleString()} L` : "—"}</TableCell>
+                            <TableRow key={delivery.id}>
+                              <TableCell className="cursor-pointer text-text-muted underline decoration-dotted" onClick={() => setSelectedDeliveryId(delivery.id)}>
+                                {formatFreshness(delivery.startTime, format)}
+                              </TableCell>
+                              <TableCell className="text-text-muted">{formatFreshness(delivery.endTime, format)}</TableCell>
+                              <TableCell className="tabular-nums">{delivery.volumeLiters !== null ? `${formatLiters(delivery.volumeLiters)} L` : "—"}</TableCell>
                               <TableCell>
                                 <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`detail.reconciliation.${reconciliationStatus}`)}</Badge>
                               </TableCell>
+                              <TableCell>
+                                <Button variant="outline" size="sm" onClick={() => setReconcileDetectedId(delivery.id)}>
+                                  <Link2 className="size-4" aria-hidden />
+                                  {t("table.reconcileAction")}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </Card>
+            ),
+          },
+          {
+            value: "reconciled",
+            label: t("tabs.reconciled"),
+            content: (
+              <Card padding="none">
+                <div className="p-5">
+                  {reconciledLines.length === 0 ? (
+                    <EmptyState icon={Truck} title={t("emptyReconciled")} />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>{t("table.eventAt")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.tanks")}</TableHeaderCell>
+                          <TableHeaderCell>{t("reconciledTable.declaredVolume")}</TableHeaderCell>
+                          <TableHeaderCell>{t("reconciledTable.detectedVolume")}</TableHeaderCell>
+                          <TableHeaderCell>{t("table.status")}</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {reconciledLines.map(({ declaration, line, record }) => {
+                          const tankName = data.tanks.find((tk) => tk.id === line.tankId)?.displayName ?? "—";
+                          const detected = record.counterpartId ? data.deliveries.find((d) => d.id === record.counterpartId) : undefined;
+                          return (
+                            <TableRow key={line.id} clickable onClick={() => setSelectedDeclarationId(declaration.id)}>
+                              <TableCell className="text-text-muted underline decoration-dotted">{formatFreshness(declaration.eventAt, format)}</TableCell>
+                              <TableCell className="font-medium text-text">{tankName}</TableCell>
+                              <TableCell className="tabular-nums">{formatLiters(line.volumeLiters)} L</TableCell>
+                              <TableCell className="tabular-nums">{detected?.volumeLiters != null ? `${formatLiters(detected.volumeLiters)} L` : "—"}</TableCell>
+                              <TableCell><Badge tone={RECONCILIATION_TONE[record.status as ReconciliationTone]}>{t(`detail.reconciliation.${record.status}`)}</Badge></TableCell>
                             </TableRow>
                           );
                         })}
@@ -275,6 +608,24 @@ export function DeliveriesSection({ organizationId, station }: { organizationId:
           setSelectedDeclarationId(declarationId);
         }}
       />
+      <ManualReconcileFromLineModal
+        organizationId={data.organizationId ?? ""}
+        line={allDeclaredLines.find((entry) => entry.line.id === reconcileLineId)?.line ?? null}
+        tankName={data.tanks.find((tk) => tk.id === allDeclaredLines.find((entry) => entry.line.id === reconcileLineId)?.line.tankId)?.displayName ?? ""}
+        open={reconcileLineId !== null}
+        onOpenChange={(next) => { if (!next) setReconcileLineId(null); }}
+        onDone={data.reload}
+      />
+      <ManualReconcileFromDetectedModal
+        organizationId={data.organizationId ?? ""}
+        data={data}
+        delivery={data.deliveries.find((d) => d.id === reconcileDetectedId) ?? null}
+        lineReconciliation={lineReconciliation}
+        detectedAlreadyUsedByLineId={reconcileDetectedId ? detectedReconciliationByDetectedId.get(reconcileDetectedId)?.subjectId ?? null : null}
+        open={reconcileDetectedId !== null}
+        onOpenChange={(next) => { if (!next) setReconcileDetectedId(null); }}
+        onDone={data.reload}
+      />
     </div>
   );
 }
@@ -291,6 +642,7 @@ function DeliveryDetailModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.deliveries.detail");
+  const format = useFormatter();
   const tDeliveries = useTranslations("zyloLiquid.stationAdmin.deliveries");
   const tCommon = useTranslations("common");
 
@@ -450,7 +802,7 @@ function DeliveryDetailModal({
 
         <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
           <div><dt className="text-text-muted">{t("supplier")}</dt><dd className="text-text">{supplier?.name ?? declaration.supplierName ?? "—"}</dd></div>
-          <div><dt className="text-text-muted">{t("eventAt")}</dt><dd className="text-text">{new Date(declaration.eventAt).toLocaleString()}</dd></div>
+          <div><dt className="text-text-muted">{t("eventAt")}</dt><dd className="text-text">{formatFreshness(declaration.eventAt, format)}</dd></div>
           <div><dt className="text-text-muted">{t("noteReference")}</dt><dd className="text-text">{declaration.deliveryNoteReference ?? "—"}</dd></div>
         </dl>
 
@@ -496,7 +848,7 @@ function DeliveryDetailModal({
                               disabled={!editTankId}
                               options={editOrderLineOptions.map((entry) => ({
                                 value: entry.line.id,
-                                label: `${entry.order.orderReference} — ${entry.line.orderedVolumeLiters.toLocaleString()} L`,
+                                label: `${entry.order.orderReference} — ${formatLiters(entry.line.orderedVolumeLiters)} L`,
                               }))}
                             />
                           )}
@@ -511,7 +863,7 @@ function DeliveryDetailModal({
                       <div className="flex items-start justify-between gap-3">
                         <dl className="grid grid-cols-1 gap-2 text-body-sm sm:grid-cols-2">
                           <div><dt className="text-text-muted">{t("line.tank")}</dt><dd className="text-text">{tank?.displayName ?? "—"}</dd></div>
-                          <div><dt className="text-text-muted">{t("line.volume")}</dt><dd className="tabular-nums text-text">{line.volumeLiters.toLocaleString()} L</dd></div>
+                          <div><dt className="text-text-muted">{t("line.volume")}</dt><dd className="tabular-nums text-text">{formatLiters(line.volumeLiters)} L</dd></div>
                           <div><dt className="text-text-muted">{t("line.order")}</dt><dd className="text-text">{orderLineLabel(line.purchaseOrderLineId)}</dd></div>
                           <div>
                             <dt className="text-text-muted">{t("line.reconciliation")}</dt>
@@ -529,8 +881,11 @@ function DeliveryDetailModal({
                       </div>
                     )}
                     {!editing && record && record.discrepancyValue !== null && (
-                      <p className="mt-2 text-caption text-text-muted">
-                        {t("discrepancy", { value: Math.round(record.discrepancyValue).toLocaleString(), tolerance: record.toleranceApplied !== null ? Math.round(record.toleranceApplied).toLocaleString() : "—" })}
+                      <p className="mt-2 text-caption text-error font-medium">
+                        {t("discrepancy", {
+                          value: `${record.discrepancyValue > 0 ? "+" : ""}${formatLiters(record.discrepancyValue)}`,
+                          tolerance: record.toleranceApplied !== null ? formatLiters(record.toleranceApplied) : "—",
+                        })}
                       </p>
                     )}
                   </div>
@@ -596,6 +951,7 @@ function DetectedDeliveryDetailModal({
   onOpenDeclaration: (declarationId: string) => void;
 }) {
   const t = useTranslations("zyloLiquid.stationAdmin.deliveries.detail");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
 
   if (!delivery) return null;
@@ -617,16 +973,19 @@ function DetectedDeliveryDetailModal({
         <Badge tone={RECONCILIATION_TONE[reconciliationStatus]}>{t(`reconciliation.${reconciliationStatus}`)}</Badge>
 
         <dl className="grid grid-cols-1 gap-3 text-body-sm sm:grid-cols-2">
-          <div><dt className="text-text-muted">{t("detectedStartTime")}</dt><dd className="text-text">{new Date(delivery.startTime).toLocaleString()}</dd></div>
-          <div><dt className="text-text-muted">{t("detectedEndTime")}</dt><dd className="text-text">{new Date(delivery.endTime).toLocaleString()}</dd></div>
-          <div><dt className="text-text-muted">{t("detectedStartHeight")}</dt><dd className="tabular-nums text-text">{delivery.startHeightMm.toLocaleString()} mm</dd></div>
-          <div><dt className="text-text-muted">{t("detectedEndHeight")}</dt><dd className="tabular-nums text-text">{delivery.endHeightMm.toLocaleString()} mm</dd></div>
-          <div><dt className="text-text-muted">{t("detectedVolume")}</dt><dd className="tabular-nums text-text">{delivery.volumeLiters !== null ? `${delivery.volumeLiters.toLocaleString()} L` : "—"}</dd></div>
+          <div><dt className="text-text-muted">{t("detectedStartTime")}</dt><dd className="text-text">{formatFreshness(delivery.startTime, format)}</dd></div>
+          <div><dt className="text-text-muted">{t("detectedEndTime")}</dt><dd className="text-text">{formatFreshness(delivery.endTime, format)}</dd></div>
+          <div><dt className="text-text-muted">{t("detectedStartHeight")}</dt><dd className="tabular-nums text-text">{formatLiters(delivery.startHeightMm)} mm</dd></div>
+          <div><dt className="text-text-muted">{t("detectedEndHeight")}</dt><dd className="tabular-nums text-text">{formatLiters(delivery.endHeightMm)} mm</dd></div>
+          <div><dt className="text-text-muted">{t("detectedVolume")}</dt><dd className="tabular-nums text-text">{delivery.volumeLiters !== null ? `${formatLiters(delivery.volumeLiters)} L` : "—"}</dd></div>
         </dl>
 
         {reconciliation && reconciliation.discrepancyValue !== null && (
-          <p className="text-caption text-text-muted">
-            {t("discrepancy", { value: Math.round(reconciliation.discrepancyValue).toLocaleString(), tolerance: reconciliation.toleranceApplied !== null ? Math.round(reconciliation.toleranceApplied).toLocaleString() : "—" })}
+          <p className="text-caption text-error font-medium">
+            {t("discrepancy", {
+              value: `${reconciliation.discrepancyValue > 0 ? "+" : ""}${formatLiters(reconciliation.discrepancyValue)}`,
+              tolerance: reconciliation.toleranceApplied !== null ? formatLiters(reconciliation.toleranceApplied) : "—",
+            })}
           </p>
         )}
 
@@ -636,7 +995,7 @@ function DetectedDeliveryDetailModal({
             onClick={() => onOpenDeclaration(linkedDeclaration.id)}
             className="self-start text-body-sm font-medium text-primary underline decoration-dotted hover:opacity-80"
           >
-            {t("detectedLinkedDeclaration", { reference: linkedDeclaration.deliveryNoteReference ?? new Date(linkedDeclaration.eventAt).toLocaleDateString() })}
+            {t("detectedLinkedDeclaration", { reference: linkedDeclaration.deliveryNoteReference ?? formatFreshness(linkedDeclaration.eventAt, format) })}
           </button>
         ) : (
           <p className="text-body-sm text-text-muted">{t("detectedNoDeclaration")}</p>
@@ -817,7 +1176,7 @@ function DeliveryFormModal({
                       disabled={!line.tankId}
                       options={lineOrderOptions.map((entry) => ({
                         value: entry.line.id,
-                        label: `${entry.order.orderReference} — ${entry.line.orderedVolumeLiters.toLocaleString()} L`,
+                        label: `${entry.order.orderReference} — ${formatLiters(entry.line.orderedVolumeLiters)} L`,
                       }))}
                     />
                   )}

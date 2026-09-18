@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useCallback } from "react";
 
 import { listHolykellAccounts, listTankSensorMappings, type HolykellAccountSyncStatus, type Tank, type TankSensorMapping } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatFreshness } from "@/shared/lib/formatDateTime";
 import { Badge, Card, CardSectionHeader, EmptyState, InfoRow, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "./PartState";
@@ -63,9 +64,7 @@ export function AtgTab({
   const state = usePartData(["zylo-liquid", "station-detail", "atg", organizationId, activeTankKey], load);
 
   function formatDateTime(iso: string | null): string {
-    return iso
-      ? format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
-      : "—";
+    return iso ? formatFreshness(iso, format) : "—";
   }
 
   return (

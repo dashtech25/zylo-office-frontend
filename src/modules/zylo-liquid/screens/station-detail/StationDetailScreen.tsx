@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { deactivateStation, reactivateStation, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { formatFreshness } from "@/modules/zylo-liquid/utils/formatFreshness";
+import { formatFreshness, getFreshnessTone } from "@/shared/lib/formatDateTime";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { computeStationOnlineStatus } from "@/modules/zylo-liquid/utils/stationStatus";
 import { ActivityRow, Alert, Badge, Button, Card, CardSectionHeader, DropdownMenu, DropdownMenuItem, EmptyState, Kpi, Modal, PageHeader, Stack, Tabs } from "@/shared/ui";
@@ -57,18 +57,6 @@ const OPERATIONAL_STATUS_TONE = { active: "success", maintenance: "warning", ina
 // désactivée, pour ces rôles.
 const PRICE_HISTORY_READ = "zyloLiquid.priceHistory.read";
 
-type Freshness = "ok" | "late" | "old" | "never";
-
-// Mêmes seuils que `TanksNetworkScreen.tsx` (15 / 45 min) — reproduit ici
-// plutôt qu'extrait dans un utilitaire partagé pour rester cohérent avec ce
-// fichier existant sans le toucher hors mission.
-function freshnessOf(lastMeasurementAt: string | null): Freshness {
-  if (!lastMeasurementAt) return "never";
-  const ageMin = (Date.now() - new Date(lastMeasurementAt).getTime()) / 60000;
-  if (ageMin <= 15) return "ok";
-  if (ageMin <= 45) return "late";
-  return "old";
-}
 
 /** Reconstruit la page détail d'une station selon la spécification détaillée
  * fournie par le commanditaire (ZoneA-D).
@@ -116,18 +104,6 @@ export default function StationDetailScreen() {
   function formatVolume(liters: number): string {
     return `${formatLiters(liters)} L`;
   }
-  function formatTime(iso: string): string {
-    return format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  }
-  function minutesAgo(iso: string): number {
-    // Math.max(0, ...) : une mesure horodatée dans le futur par rapport à
-    // l'horloge du navigateur (dérive d'horloge du simulateur de démo,
-    // donnée réelle mais non fiable pour un calcul de fraîcheur) ne doit
-    // jamais s'afficher comme un nombre de minutes négatif — traitée comme
-    // "à l'instant" plutôt que dans un sens ou l'autre.
-    return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  }
-
   async function handleToggleStatus() {
     if (!currentOrganization || !data.station) return;
     setMenuOpen(false);
@@ -192,7 +168,7 @@ export default function StationDetailScreen() {
   // cette station. Une cuve "old" (>45 min sans mesure) rend les valeurs
   // affichées non fiables ; "late" (15-45 min) invite à la prudence sans
   // les invalider.
-  const tankFreshness = tankStates.map((s) => freshnessOf(s.lastMeasurementAt));
+  const tankFreshness = tankStates.map((s) => getFreshnessTone(s.lastMeasurementAt));
   const worstFreshness: "old" | "late" | null = tankFreshness.includes("old") ? "old" : tankFreshness.includes("late") ? "late" : null;
 
   // Synthèse stock station (5e KPI) : même construction que la section
@@ -589,7 +565,7 @@ export default function StationDetailScreen() {
                           </a>
                         </div>
                       ) : (
-                        <span className="text-caption text-text-muted">{minutesAgo(a.triggeredAt)} min</span>
+                        <span className="text-caption text-text-muted">{formatFreshness(a.triggeredAt, format)}</span>
                       )
                     }
                     onClick={() => setAlertsModal({ open: true, initialAlertId: a.id })}
@@ -603,7 +579,7 @@ export default function StationDetailScreen() {
                   iconTone={critical ? "error" : "warning"}
                   title={tAlerts(`types.${a.type}`)}
                   meta={tank?.displayName ?? "?"}
-                  trailing={<span className="text-caption text-text-muted">{minutesAgo(a.triggeredAt)} min</span>}
+                  trailing={<span className="text-caption text-text-muted">{formatFreshness(a.triggeredAt, format)}</span>}
                   onClick={() => setAlertsModal({ open: true, initialAlertId: a.id })}
                 />
               );
@@ -637,7 +613,7 @@ export default function StationDetailScreen() {
                   iconTone="success"
                   title={`${(product?.name ?? "?").toUpperCase()} · ${tank?.displayName ?? "?"}`}
                   meta={`+${formatVolume(d.volumeLiters ?? 0)}`}
-                  trailing={<span className="text-caption text-text-muted">{formatTime(d.endTime)}</span>}
+                  trailing={<span className="text-caption text-text-muted">{formatFreshness(d.endTime, format)}</span>}
                   onClick={() => setDeliveriesModal({ open: true, initialDeliveryId: d.id })}
                 />
               );
@@ -674,7 +650,7 @@ export default function StationDetailScreen() {
                   meta={
                     <>
                       {anomalyLeak && <span className="text-error">{t("columns.leaks.rate", { rate: format.number(anomalyLeak.leakRateLph ?? 0, { maximumFractionDigits: 1 }) })} · </span>}
-                      {formatTime(a.triggeredAt)}
+                      {formatFreshness(a.triggeredAt, format)}
                     </>
                   }
                   trailing={

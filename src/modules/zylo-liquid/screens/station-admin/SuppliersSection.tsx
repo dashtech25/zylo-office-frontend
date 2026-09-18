@@ -1,10 +1,11 @@
 "use client";
 
 import { Building2, Paperclip, Plus, Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import type { Supplier, StationSupplier, SupplierCategory } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatDueDate } from "@/shared/lib/formatDateTime";
 import { Alert, Badge, Button, Card, EmptyState, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
@@ -25,6 +26,7 @@ const CATEGORIES: SupplierCategory[] = ["carburant", "equipement", "maintenance"
  * backend `Supplier`/`StationSupplier` (jamais un second modèle). */
 export function SuppliersSection({ organizationId, stationId }: { organizationId: string; stationId: string }) {
   const t = useTranslations("zyloLiquid.stationDetail.suppliersTab");
+  const format = useFormatter();
   const tCommon = useTranslations("common");
   const data = useSuppliers(organizationId, stationId);
 
@@ -148,7 +150,7 @@ export function SuppliersSection({ organizationId, stationId }: { organizationId
                     <TableCell>
                       <div className="flex flex-col text-caption text-text-muted">
                         <span>{supplier.contactPhone ?? "—"}</span>
-                        <span>{supplier.contactEmail ?? ""}</span>
+                        <span>{supplier.contactEmail ?? "—"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -157,7 +159,10 @@ export function SuppliersSection({ organizationId, stationId }: { organizationId
                     <TableCell>
                       {link.contractEndDate ? (
                         <span className="flex items-center gap-2">
-                          {link.contractEndDate}
+                          <span className="flex flex-col">
+                            <span>{formatDueDate(link.contractEndDate, format).date}</span>
+                            <span className="text-caption text-text-muted">{formatDueDate(link.contractEndDate, format).relative}</span>
+                          </span>
                           <Badge tone={CONTRACT_STATUS_TONE[link.contractStatus]}>{t(`modal.contractStatus.${link.contractStatus}`)}</Badge>
                         </span>
                       ) : (
