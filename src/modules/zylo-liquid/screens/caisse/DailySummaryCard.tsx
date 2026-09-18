@@ -1,11 +1,10 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 import type { NetworkCashSummary } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { Card } from "@/shared/ui";
 
 /** Synthèse quotidienne automatique (page_caisse.md §L, P3) : quelques
@@ -24,15 +23,16 @@ export function DailySummaryCard({
   weeklyAverageData: NetworkCashSummary | null;
 }) {
   const t = useTranslations("zyloLiquid.caisse.dailySummary");
-  const format = useFormatter();
 
   const sentences = useMemo(() => {
     if (!data || data.currencyBlocks.length === 0) return [];
     const lines: string[] = [];
 
     for (const block of data.currencyBlocks) {
-      lines.push(t("total", { value: formatMoney(format, block.monetaryValue, block.currencyCode), stations: block.stationCount }));
-
+      // Le montant total n'est plus répété ici : il est désormais affiché en
+      // très grand tout en haut de la page (CaisseScreen.tsx, bloc "hero") —
+      // ce résumé ne garde que les phrases qui apportent une info
+      // supplémentaire (comparaisons, meilleure/pire contribution, alertes).
       const yesterdayBlock = comparisonData?.currencyBlocks.find((b) => b.currencyCode === block.currencyCode);
       if (yesterdayBlock && yesterdayBlock.monetaryValue > 0) {
         const pct = ((block.monetaryValue - yesterdayBlock.monetaryValue) / yesterdayBlock.monetaryValue) * 100;
@@ -60,7 +60,7 @@ export function DailySummaryCard({
     }
 
     return lines;
-  }, [data, comparisonData, weeklyAverageData, t, format]);
+  }, [data, comparisonData, weeklyAverageData, t]);
 
   if (sentences.length === 0) return null;
 

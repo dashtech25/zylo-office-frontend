@@ -120,6 +120,10 @@
     "pageTitle": "Caisse",
     "pageSubtitle": "Ventes estimées à partir des baisses de niveau mesurées en cuve, valorisées au prix de vente en vigueur — jamais une comptabilité officielle.",
     "banner": "Chiffre estimé à partir de la télémétrie des cuves, hors périodes de livraison. Cliquez sur un montant pour voir sa répartition, jusqu'à la mesure ayant servi au calcul.",
+    "heroTotal": {
+      "titleToday": "Ventes du jour",
+      "titlePeriod": "Ventes — {period}"
+    },
     "incompletePricingBanner": "{count, plural, one {# station a} other {# stations ont}} des ventes dont le chiffre d'affaires n'est pas entièrement calculable (prix manquant ou devises mélangées) — configurez les prix de vente pour compléter le calcul.",
     "noData": "Aucune cuve calibrée ne permet de calculer une caisse sur ce périmètre.",
     "periods": {
@@ -173,7 +177,6 @@
     },
     "dailySummary": {
       "title": "Résumé automatique (règles déterministes, pas une analyse humaine)",
-      "total": "Caisse du jour : {value} — {stations} station(s) contributrices.",
       "vsYesterdayUp": "En hausse de {pct}% par rapport à hier.",
       "vsYesterdayDown": "En baisse de {pct}% par rapport à hier.",
       "vsAverageUp": "{pct}% au-dessus de la moyenne des 7 derniers jours.",
