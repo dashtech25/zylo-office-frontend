@@ -1,81 +1,105 @@
 "use client";
 
-import { Fuel } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
-import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Fuel, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCallback, useState } from "react";
 
-import { listEquipment } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, Card, CardSectionHeader, EmptyState, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { listPumps, listTanks, type Pump } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { Badge, Button, Card, CardSectionHeader, EmptyState, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "./PartState";
+import { PumpFormModal } from "./PumpFormModal";
 
-const EQUIPMENT_STATUS_TONE = { in_service: "success", out_of_order: "error", out_of_service: "neutral" } as const;
+const PUMP_STATUS_TONE = { active: "success", inactive: "neutral" } as const;
 
-/** Onglet « Pompes » (prototype) réalisé avec le modèle réel : Zylo Liquid
- * n'a pas d'entité « pompe » dédiée — les pompes sont des fiches
- * d'équipement de maintenance de type « pompe » (vocabulaire réel des
- * données, comme les sondes). Seul ce type est affiché, filtré sur la
- * valeur réelle, jamais sur une inférence de nom. Les pistolets et index
- * totalisateurs du prototype ne sont pas modélisés : l'écart est dit dans la
- * note, aucune valeur n'est inventée pour les combler. */
+/** Onglet « Pompes » — Zylo Liquid a désormais une véritable entité Pompe
+ * (`listPumps`/`createPump`/`updatePump`, backend dédié) : ce tableau liste
+ * les pompes réelles de la station, plus les fiches d'équipement de
+ * maintenance de type « pompe » affichées auparavant faute d'entité dédiée.
+ * Les cuves de la station sont chargées en parallèle uniquement pour
+ * résoudre le nom de la cuve affectée à chaque pompe et pour alimenter le
+ * sélecteur de cuve du formulaire (`PumpFormModal`). */
 export function PumpsTab({ organizationId, stationId }: { organizationId: string; stationId: string }) {
   const t = useTranslations("zyloLiquid.stationDetail.pumpsTab");
-  const tEq = useTranslations("zyloLiquid.maintenanceScreen.equipment");
-  const format = useFormatter();
+  const queryClient = useQueryClient();
+
+  const queryKey = ["zylo-liquid", "station-detail", "pumps", organizationId, stationId] as const;
 
   const load = useCallback(async () => {
-    const page = await listEquipment(organizationId, { stationId, limit: 100 });
-    return page.data.filter((eq) => eq.type === "pompe");
+    const [pumpsPage, tanksPage] = await Promise.all([
+      listPumps(organizationId, { stationId, limit: 100 }),
+      listTanks(organizationId, 100, stationId),
+    ]);
+    return { pumps: pumpsPage.data, tanks: tanksPage.data };
   }, [organizationId, stationId]);
-  const state = usePartData(["zylo-liquid", "station-detail", "pumps", organizationId, stationId], load);
+  const state = usePartData(queryKey, load);
 
-  function formatDate(iso: string | null): string {
-    return iso
-      ? format.dateTime(new Date(iso), { day: "2-digit", month: "2-digit", year: "numeric" })
-      : "—";
+  const [modalPump, setModalPump] = useState<Pump | null | undefined>(undefined);
+
+  function handleSaved() {
+    setModalPump(undefined);
+    void queryClient.invalidateQueries({ queryKey });
+  }
+
+  const pumps = state.status === "ready" ? state.data.pumps : [];
+  const tanks = state.status === "ready" ? state.data.tanks : [];
+
+  function tankLabel(tankId: string): string {
+    const tank = tanks.find((tk) => tk.id === tankId);
+    return tank ? tank.displayName : "—";
   }
 
   return (
-    <PartStateBox state={state}>
-      {(() => {
-        const pumps = state.status === "ready" ? state.data : [];
-        return (
-          <Card>
-            <CardSectionHeader title={t("title")} />
-            <p className="-mt-3 mb-1 text-body-sm text-text-muted">{t("note")}</p>
-            {pumps.length === 0 ? (
-              <EmptyState icon={Fuel} title={tEq("empty")} />
-            ) : (
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableHeaderCell>{tEq("table.name")}</TableHeaderCell>
-                    <TableHeaderCell>{t("columns.manufacturerModel")}</TableHeaderCell>
-                    <TableHeaderCell>{t("columns.serialNumber")}</TableHeaderCell>
-                    <TableHeaderCell>{t("columns.installedAt")}</TableHeaderCell>
-                    <TableHeaderCell>{tEq("table.lastMaintenance")}</TableHeaderCell>
-                    <TableHeaderCell>{tEq("table.status")}</TableHeaderCell>
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setModalPump(null)}>
+          <Plus className="size-4" aria-hidden />
+          {t("addPump")}
+        </Button>
+      </div>
+
+      <PartStateBox state={state}>
+        <Card>
+          <CardSectionHeader title={t("title")} />
+          {pumps.length === 0 ? (
+            <EmptyState icon={Fuel} title={t("empty")} />
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>{t("columns.name")}</TableHeaderCell>
+                  <TableHeaderCell>{t("columns.tank")}</TableHeaderCell>
+                  <TableHeaderCell>{t("columns.status")}</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {pumps.map((pump) => (
+                  <TableRow key={pump.id} clickable onClick={() => setModalPump(pump)}>
+                    <TableCell className="font-medium">{pump.name}</TableCell>
+                    <TableCell>{tankLabel(pump.tankId)}</TableCell>
+                    <TableCell>
+                      <Badge tone={PUMP_STATUS_TONE[pump.active ? "active" : "inactive"]}>
+                        {t(pump.active ? "status.active" : "status.inactive")}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pumps.map((eq) => (
-                    <TableRow key={eq.id}>
-                      <TableCell className="font-medium">{eq.name}</TableCell>
-                      <TableCell>{[eq.manufacturer, eq.model].filter(Boolean).join(" · ") || "—"}</TableCell>
-                      <TableCell className="tabular-nums text-text-muted">{eq.serialNumber ?? "—"}</TableCell>
-                      <TableCell>{formatDate(eq.installedAt)}</TableCell>
-                      <TableCell>{formatDate(eq.lastMaintenanceAt)}</TableCell>
-                      <TableCell>
-                        <Badge tone={EQUIPMENT_STATUS_TONE[eq.status]}>{tEq(`status.${eq.status}`)}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </Card>
-        );
-      })()}
-    </PartStateBox>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+      </PartStateBox>
+
+      <PumpFormModal
+        organizationId={organizationId}
+        stationId={stationId}
+        tanks={tanks}
+        pump={modalPump ?? null}
+        open={modalPump !== undefined}
+        onOpenChange={(open) => { if (!open) setModalPump(undefined); }}
+        onSaved={handleSaved}
+      />
+    </div>
   );
 }

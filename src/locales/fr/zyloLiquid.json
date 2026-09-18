@@ -1835,12 +1835,29 @@
       }
     },
     "pumpsTab": {
-      "title": "Équipements de type « pompe »",
-      "note": "Les pompes du prototype portent pistolets et index totalisateurs : Zylo Liquid ne modélise pas ces compteurs (voir matrice des écarts) — ce tableau liste les fiches d'équipement réelles de type « pompe » de la station.",
+      "title": "Pompes de la station",
+      "empty": "Aucune pompe enregistrée pour cette station.",
+      "addPump": "Ajouter une pompe",
       "columns": {
-        "serialNumber": "N° de série",
-        "manufacturerModel": "Fabricant · modèle",
-        "installedAt": "Installé le"
+        "name": "Nom",
+        "tank": "Cuve",
+        "status": "Statut"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Hors service"
+      },
+      "createTitle": "Ajouter une pompe",
+      "editTitle": "Modifier la pompe",
+      "form": {
+        "name": "Nom",
+        "tank": "Cuve associée",
+        "selectTank": "Sélectionner une cuve",
+        "status": "Statut",
+        "statusActive": "Active",
+        "statusInactive": "Hors service",
+        "submit": "Enregistrer",
+        "required": "Merci de renseigner les champs requis."
       }
     },
     "staffTab": {
