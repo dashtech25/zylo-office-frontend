@@ -120,6 +120,10 @@
     "pageTitle": "Cash",
     "pageSubtitle": "Sales estimated from tank level drops, valued at the sale price in effect — never an official accounting record.",
     "banner": "Figure estimated from tank telemetry, excluding delivery windows. Click an amount to see its breakdown, down to the measurement that produced it.",
+    "heroTotal": {
+      "titleToday": "Sales today",
+      "titlePeriod": "Sales — {period}"
+    },
     "incompletePricingBanner": "{count, plural, one {# station has} other {# stations have}} sales whose revenue isn't fully calculable (missing price or mixed currencies) — configure sale prices to complete the calculation.",
     "noData": "No calibrated tank allows a cash calculation on this scope.",
     "periods": {
@@ -173,7 +177,6 @@
     },
     "dailySummary": {
       "title": "Automatic summary (deterministic rules, not a human analysis)",
-      "total": "Cash today: {value} — {stations} contributing station(s).",
       "vsYesterdayUp": "Up {pct}% compared to yesterday.",
       "vsYesterdayDown": "Down {pct}% compared to yesterday.",
       "vsAverageUp": "{pct}% above the last 7 days' average.",

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-liquid/services/zyloLiquidApi";
+import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { Alert, Card, EmptyState, Input, PageHeader, Stack } from "@/shared/ui";
 import { KpiSkeleton, ListSkeleton } from "@/shared/ui/Skeleton";
 import { cn } from "@/shared/lib/cn";
@@ -163,6 +164,31 @@ export default function CaisseScreen() {
           </div>
         }
       />
+
+      {/* Vue globale des ventes du jour : la toute première information visible
+          sur cette page est le montant total, en très grand — jamais noyée
+          dans une liste de texte (demande explicite du commanditaire). Basée
+          sur `data.currencyBlocks`, non filtrée par les filtres de la table
+          plus bas — c'est un chiffre réseau global, pas un sous-ensemble. */}
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <KpiSkeleton />
+        </div>
+      ) : (
+        data &&
+        data.currencyBlocks.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {data.currencyBlocks.map((block) => (
+              <Card key={block.currencyCode} className="border-secondary/20 bg-secondary text-white">
+                <p className="text-body-sm font-semibold uppercase tracking-wide text-white/70">
+                  {period.quickPeriod === "today" ? t("heroTotal.titleToday") : t("heroTotal.titlePeriod", { period: t(`periods.${period.quickPeriod}`) })}
+                </p>
+                <p className="mt-2 text-h1 font-bold tabular-nums">{formatMoney(format, block.monetaryValue, block.currencyCode)}</p>
+              </Card>
+            ))}
+          </div>
+        )
+      )}
 
       <Alert tone="info">{t("banner")}</Alert>
       {showComparison && <DailySummaryCard data={data} comparisonData={comparison.data} weeklyAverageData={last7Days.data} />}
