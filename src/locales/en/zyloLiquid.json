@@ -1753,8 +1753,35 @@
       "sales": "Sales"
     },
     "sales": {
-      "sourceNote": "Shown source: tank drawdown (same principle as the daily cash till, applied to the whole station). Pump-reported sales and human declarations are not yet integrated into this tab.",
-      "byTankDrawdown": "Breakdown by product and tank"
+      "sourceNote": "Primary source: the declared sales below. Tank drawdown (same principle as the daily cash till, applied to the whole station) is still shown below as a cross-check.",
+      "byTankDrawdown": "Breakdown by product and tank",
+      "declarationsTitle": "Declared sales",
+      "declareButton": "Declare a sale",
+      "declareTitle": "Declare a sale",
+      "empty": "No sales declared for this station.",
+      "columns": {
+        "pump": "Pump",
+        "period": "Date",
+        "volume": "Volume",
+        "value": "Value",
+        "paymentMethod": "Payment method"
+      },
+      "form": {
+        "pump": "Pump",
+        "selectPump": "Select a pump",
+        "indexStart": "Start index (L)",
+        "indexEnd": "End index (L)",
+        "volumeSold": "Volume sold",
+        "indexOrderError": "The end index must be greater than the start index.",
+        "shiftEnd": "Shift end date/time",
+        "price": "Unit price",
+        "currency": "Currency",
+        "paymentMethod": "Payment method",
+        "commercialAccount": "Customer account",
+        "selectAccount": "Select an account",
+        "submit": "Declare",
+        "required": "All fields are required."
+      }
     },
     "tanksSection": {
       "title": "Station tanks",

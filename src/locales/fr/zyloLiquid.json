@@ -1753,8 +1753,35 @@
       "sales": "Ventes"
     },
     "sales": {
-      "sourceNote": "Source affichée : baisse en cuve (même principe que la caisse du jour, appliqué à l'ensemble de la station). Les ventes remontées par les pompes et les déclarations humaines ne sont pas encore intégrées à cet onglet.",
-      "byTankDrawdown": "Détail par produit et par cuve"
+      "sourceNote": "Source principale : les ventes déclarées ci-dessous. La baisse en cuve (même principe que la caisse du jour, appliquée à l'ensemble de la station) reste affichée plus bas comme recoupement.",
+      "byTankDrawdown": "Détail par produit et par cuve",
+      "declarationsTitle": "Ventes déclarées",
+      "declareButton": "Déclarer une vente",
+      "declareTitle": "Déclarer une vente",
+      "empty": "Aucune vente déclarée sur cette station.",
+      "columns": {
+        "pump": "Pompe",
+        "period": "Date",
+        "volume": "Volume",
+        "value": "Valeur",
+        "paymentMethod": "Moyen de paiement"
+      },
+      "form": {
+        "pump": "Pompe",
+        "selectPump": "Choisir une pompe",
+        "indexStart": "Index début (L)",
+        "indexEnd": "Index fin (L)",
+        "volumeSold": "Volume vendu",
+        "indexOrderError": "L'index de fin doit être supérieur à l'index de début.",
+        "shiftEnd": "Date/heure de fin de shift",
+        "price": "Prix unitaire",
+        "currency": "Devise",
+        "paymentMethod": "Moyen de paiement",
+        "commercialAccount": "Compte client",
+        "selectAccount": "Sélectionner un compte",
+        "submit": "Déclarer",
+        "required": "Tous les champs sont requis."
+      }
     },
     "tanksSection": {
       "title": "Cuves de la station",
