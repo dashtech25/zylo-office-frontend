@@ -1578,6 +1578,7 @@ export interface Sale {
   commercialAccountId: string | null;
   vehicleId: string | null;
   driverId: string | null;
+  pumpId: string | null;
 }
 
 export interface CreateSaleInput {
@@ -1591,6 +1592,7 @@ export interface CreateSaleInput {
   commercialAccountId?: string;
   vehicleId?: string;
   driverId?: string;
+  pumpId?: string;
 }
 
 export function listSales(organizationId: string, params: { stationId?: string; limit?: number } = {}): Promise<Page<Sale>> {
