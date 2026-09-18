@@ -1785,7 +1785,11 @@
       "sales": "Ventes"
     },
     "sales": {
-      "sourceNote": "Source principale : les ventes déclarées ci-dessous. La baisse en cuve (même principe que la caisse du jour, appliquée à l'ensemble de la station) reste affichée plus bas comme recoupement.",
+      "sourceNote": "Source principale : les ventes déclarées (onglet « Déclarer »). La baisse en cuve (même principe que la caisse du jour, appliquée à l'ensemble de la station) reste disponible dans l'onglet « Détecté » comme recoupement.",
+      "tabs": {
+        "detected": "Détecté",
+        "declare": "Déclarer"
+      },
       "byTankDrawdown": "Détail par produit et par cuve",
       "declarationsTitle": "Ventes déclarées",
       "declareButton": "Déclarer une vente",

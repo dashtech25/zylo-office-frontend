@@ -1785,7 +1785,11 @@
       "sales": "Sales"
     },
     "sales": {
-      "sourceNote": "Primary source: the declared sales below. Tank drawdown (same principle as the daily cash till, applied to the whole station) is still shown below as a cross-check.",
+      "sourceNote": "Primary source: declared sales (the « Declare » tab). Tank drawdown (same principle as the daily cash till, applied to the whole station) is still available in the « Detected » tab as a cross-check.",
+      "tabs": {
+        "detected": "Detected",
+        "declare": "Declare"
+      },
       "byTankDrawdown": "Breakdown by product and tank",
       "declarationsTitle": "Declared sales",
       "declareButton": "Declare a sale",

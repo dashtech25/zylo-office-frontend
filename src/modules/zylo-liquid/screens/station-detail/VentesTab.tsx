@@ -33,6 +33,7 @@ import {
   TableHead,
   TableHeaderCell,
   TableRow,
+  Tabs,
 } from "@/shared/ui";
 import { KpiSkeleton, Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
@@ -266,90 +267,8 @@ export function VentesTab({ organizationId, stationId }: { organizationId: strin
     }
   }
 
-  return (
+  const detectedContent = (
     <div className="flex flex-col gap-4">
-      <Alert tone="info">{tStation("sourceNote")}</Alert>
-
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button size="sm" variant="secondary" onClick={handleDownloadTemplate}>
-          <FileSpreadsheet className="size-4" aria-hidden />
-          {tStation("importExport.template")}
-        </Button>
-        <Button size="sm" variant="secondary" onClick={handleExportSales} disabled={sales.length === 0}>
-          <Download className="size-4" aria-hidden />
-          {tStation("importExport.export")}
-        </Button>
-        <Button size="sm" variant="secondary" onClick={() => importInputRef.current?.click()} loading={importing}>
-          <Upload className="size-4" aria-hidden />
-          {tStation("importExport.import")}
-        </Button>
-        <input
-          ref={importInputRef}
-          type="file"
-          accept=".xlsx"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleImportSalesFile(file);
-          }}
-        />
-        <Button size="sm" onClick={() => setDeclareOpen(true)}>
-          <Plus className="size-4" aria-hidden />
-          {tStation("declareButton")}
-        </Button>
-      </div>
-
-      {importSuccessCount != null && importErrors.length === 0 && (
-        <Alert tone="success">{tStation("importExport.successCount", { count: importSuccessCount })}</Alert>
-      )}
-      {importErrors.length > 0 && (
-        <Alert tone="error">
-          <p className="font-semibold">
-            {importSuccessCount != null ? tStation("importExport.successCount", { count: importSuccessCount }) : null} {tStation("importExport.errorsTitle")}
-          </p>
-          <ul className="mt-1 list-disc pl-5">
-            {importErrors.map((e, i) => (
-              <li key={i}>{e}</li>
-            ))}
-          </ul>
-        </Alert>
-      )}
-
-      <PartStateBox state={salesState}>
-        <Card>
-          <CardSectionHeader title={tStation("declarationsTitle")} />
-          {sales.length === 0 ? (
-            <EmptyState icon={Receipt} title={tStation("empty")} />
-          ) : (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>{tStation("columns.pump")}</TableHeaderCell>
-                  <TableHeaderCell>{tStation("columns.period")}</TableHeaderCell>
-                  <TableHeaderCell>{tStation("columns.volume")}</TableHeaderCell>
-                  <TableHeaderCell>{tStation("columns.value")}</TableHeaderCell>
-                  <TableHeaderCell>{tStation("columns.paymentMethod")}</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sales.map((sale) => {
-                  const currencyCode = currencies.find((c) => c.id === sale.currencyId)?.code ?? sale.currencyId;
-                  return (
-                    <TableRow key={sale.id}>
-                      <TableCell>{pumpLabel(sale.pumpId)}</TableCell>
-                      <TableCell>{format.dateTime(new Date(sale.eventAt), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</TableCell>
-                      <TableCell>{formatLiters(sale.quantityLiters)} L</TableCell>
-                      <TableCell>{formatMoney(format, sale.priceAmount, currencyCode)}</TableCell>
-                      <TableCell>{tPayment(sale.paymentMethod)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-      </PartStateBox>
-
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-pill border border-border-subtle p-1">
           {QUICK_PERIODS.map((value) => (
@@ -461,6 +380,105 @@ export function VentesTab({ organizationId, stationId }: { organizationId: strin
           </div>
         )}
       </Card>
+    </div>
+  );
+
+  const declareContent = (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button size="sm" variant="secondary" onClick={handleDownloadTemplate}>
+          <FileSpreadsheet className="size-4" aria-hidden />
+          {tStation("importExport.template")}
+        </Button>
+        <Button size="sm" variant="secondary" onClick={handleExportSales} disabled={sales.length === 0}>
+          <Download className="size-4" aria-hidden />
+          {tStation("importExport.export")}
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => importInputRef.current?.click()} loading={importing}>
+          <Upload className="size-4" aria-hidden />
+          {tStation("importExport.import")}
+        </Button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".xlsx"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleImportSalesFile(file);
+          }}
+        />
+        <Button size="sm" onClick={() => setDeclareOpen(true)}>
+          <Plus className="size-4" aria-hidden />
+          {tStation("declareButton")}
+        </Button>
+      </div>
+
+      {importSuccessCount != null && importErrors.length === 0 && (
+        <Alert tone="success">{tStation("importExport.successCount", { count: importSuccessCount })}</Alert>
+      )}
+      {importErrors.length > 0 && (
+        <Alert tone="error">
+          <p className="font-semibold">
+            {importSuccessCount != null ? tStation("importExport.successCount", { count: importSuccessCount }) : null} {tStation("importExport.errorsTitle")}
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {importErrors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
+
+      <PartStateBox state={salesState}>
+        <Card>
+          <CardSectionHeader title={tStation("declarationsTitle")} />
+          {sales.length === 0 ? (
+            <EmptyState icon={Receipt} title={tStation("empty")} />
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>{tStation("columns.pump")}</TableHeaderCell>
+                  <TableHeaderCell>{tStation("columns.period")}</TableHeaderCell>
+                  <TableHeaderCell>{tStation("columns.volume")}</TableHeaderCell>
+                  <TableHeaderCell>{tStation("columns.value")}</TableHeaderCell>
+                  <TableHeaderCell>{tStation("columns.paymentMethod")}</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sales.map((sale) => {
+                  const currencyCode = currencies.find((c) => c.id === sale.currencyId)?.code ?? sale.currencyId;
+                  return (
+                    <TableRow key={sale.id}>
+                      <TableCell>{pumpLabel(sale.pumpId)}</TableCell>
+                      <TableCell>{format.dateTime(new Date(sale.eventAt), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</TableCell>
+                      <TableCell>{formatLiters(sale.quantityLiters)} L</TableCell>
+                      <TableCell>{formatMoney(format, sale.priceAmount, currencyCode)}</TableCell>
+                      <TableCell>{tPayment(sale.paymentMethod)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+      </PartStateBox>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Alert tone="info">{tStation("sourceNote")}</Alert>
+
+      <Tabs
+        variant="pills"
+        defaultValue="detected"
+        items={[
+          { value: "detected", label: tStation("tabs.detected"), content: detectedContent },
+          { value: "declare", label: tStation("tabs.declare"), content: declareContent },
+        ]}
+      />
 
       <TankCashModal
         open={openTankId !== null}
