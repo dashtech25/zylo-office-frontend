@@ -12,7 +12,7 @@ import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { normalizeSearchText } from "@/modules/zylo-liquid/utils/normalizeSearchText";
 import { cn } from "@/shared/lib/cn";
-import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Select, Stack } from "@/shared/ui";
+import { Alert, Button, Card, DropdownMenu, DropdownMenuItem, EmptyState, Modal, PageHeader, Stack } from "@/shared/ui";
 import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
@@ -63,7 +63,6 @@ export default function StationsListScreen() {
   const [productFilter, setProductFilter] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("criticality");
   const [search, setSearch] = useState("");
-  const [currencyId, setCurrencyId] = useState("");
   const [breakdownFilter, setBreakdownFilter] = useState<ProductFilter | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapPanelCollapsed, setMapPanelCollapsed] = useState(false);
@@ -77,10 +76,6 @@ export default function StationsListScreen() {
   const [exporting, setExporting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!currencyId && data.currencies.length > 0) setCurrencyId(data.currencies[0].id);
-  }, [currencyId, data.currencies]);
 
   // Vue carte plein écran (demande commanditaire 2026-09-17 : "la carte
   // prend tout [...] tout le reste n'est qu'au-dessus de la carte", pas un
@@ -104,20 +99,21 @@ export default function StationsListScreen() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const selectedCurrency = data.currencies.find((c) => c.id === currencyId) ?? null;
   const cityById = new Map(data.cities.map((c) => [c.id, c]));
   const fuelProductNameById = new Map(data.fuelProducts.map((p) => [p.id, p.name]));
-
-  function formatMoneyOrReason(value: number, nativeCurrencyCode: string): string {
-    return formatMoney(value, nativeCurrencyCode) ?? t("list.row.conversionUnavailable");
-  }
 
   function formatVolume(liters: number): string {
     return `${formatLiters(liters)} L`;
   }
 
-  function formatMoney(value: number, nativeCurrencyCode: string): string | null {
-    if (selectedCurrency && selectedCurrency.code !== nativeCurrencyCode) return null;
+  // Toujours dans la devise native de la donnée — jamais de sélecteur de
+  // devise bloquant (il n'existait de toute façon aucune conversion réelle
+  // derrière ce sélecteur, seulement un blocage d'affichage quand la devise
+  // choisie ne correspondait pas ; comme le réseau est intégralement en
+  // XAF, ce blocage se déclenchait systématiquement — cf. tableau de bord,
+  // qui n'a jamais eu ce problème car son formatMoney ne filtre jamais par
+  // une devise sélectionnée).
+  function formatMoney(value: number, nativeCurrencyCode: string): string {
     try {
       return format.number(value, { style: "currency", currency: nativeCurrencyCode, maximumFractionDigits: 0 });
     } catch {
@@ -186,7 +182,7 @@ export default function StationsListScreen() {
       row.station.cityId ? (cityById.get(row.station.cityId)?.name ?? "") : "",
       t(`list.status.${row.state}`),
       row.products.map((p) => `${p.fuelProductName}: ${formatVolume(p.volumeLiters)}/${formatVolume(p.capacityLiters)}`).join(" | "),
-      row.totalValue !== null && row.totalCurrencyCode ? (formatMoney(row.totalValue, row.totalCurrencyCode) ?? `${row.totalValue} ${row.totalCurrencyCode}`) : t("list.row.valueNotCalculable"),
+      row.totalValue !== null && row.totalCurrencyCode ? formatMoney(row.totalValue, row.totalCurrencyCode) : t("list.row.valueNotCalculable"),
       row.lastMeasurementAt ? format.dateTime(new Date(row.lastMeasurementAt)) : t("list.row.syncOffline"),
     ]);
     return { headers, rows };
@@ -334,11 +330,6 @@ export default function StationsListScreen() {
         description={t("list.pageSubtitle", { count: data.stations.length })}
         actions={
           <div className="flex items-center gap-2 no-print">
-            {data.currencies.length > 0 && (
-              <div className="w-24">
-                <Select aria-label={t("list.currency")} value={currencyId} onValueChange={setCurrencyId} options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />
-              </div>
-            )}
             <div ref={exportMenuRef} className="relative">
               <Button variant="outline" size="sm" onClick={() => setExportMenuOpen((v) => !v)} loading={exporting}>
                 <Download className="size-4" aria-hidden />
@@ -612,7 +603,7 @@ export default function StationsListScreen() {
           stationStates={data.stationStates}
           fuelProductNameById={fuelProductNameById}
           formatVolume={formatVolume}
-          formatMoney={formatMoneyOrReason}
+          formatMoney={formatMoney}
         />
       )}
 
