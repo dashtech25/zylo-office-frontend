@@ -61,7 +61,13 @@ export function CashSummaryCards({
               <Circle className="size-2.5" style={{ fill: product.displayColor ?? "var(--color-text-muted)", color: product.displayColor ?? undefined }} aria-hidden />
               {product.fuelProductName.toUpperCase()}
             </div>
-            <p className="mt-2 text-h1 font-bold tabular-nums text-text">{formatVolume(product.volumeSoldLiters)}</p>
+            {product.monetaryValue !== null && product.currencyCode ? (
+              <p className="mt-2 text-h1 font-bold tabular-nums text-text">{formatMoney(format, product.monetaryValue, product.currencyCode)}</p>
+            ) : (
+              <div className="mt-2">
+                <CashReasonNote reason={product.monetaryValueNotCalculableReason} />
+              </div>
+            )}
             {!hideStationsConcerned && <p className="text-body-sm text-text-muted">{t("stationsConcerned", { count: product.stationCount })}</p>}
 
             <div className="mt-3 border-t border-border-subtle pt-3">
@@ -69,12 +75,8 @@ export function CashSummaryCards({
             </div>
 
             <div className="mt-3 border-t border-border-subtle pt-3">
-              <p className="text-caption text-text-muted">{t("estimatedValue")}</p>
-              {product.monetaryValue !== null && product.currencyCode ? (
-                <p className="text-body-lg font-semibold text-text">{formatMoney(format, product.monetaryValue, product.currencyCode)}</p>
-              ) : (
-                <CashReasonNote reason={product.monetaryValueNotCalculableReason} />
-              )}
+              <p className="text-caption text-text-muted">{t("volumeSold")}</p>
+              <p className="text-body-lg font-semibold tabular-nums text-text">{formatVolume(product.volumeSoldLiters)}</p>
             </div>
           </Card>
         ))}
@@ -88,12 +90,12 @@ export function CashSummaryCards({
             <p className="text-body-sm font-semibold text-white/70">
               {(totalCardLabel ? totalCardLabel(block.currencyCode) : t("totalNetwork", { currency: block.currencyCode })).toUpperCase()}
             </p>
-            <p className="mt-2 text-h1 font-bold tabular-nums">{formatVolume(block.volumeSoldLiters)}</p>
+            <p className="mt-2 text-h1 font-bold tabular-nums">{formatMoney(format, block.monetaryValue, block.currencyCode)}</p>
             {!hideStationsConcerned && <p className="text-body-sm text-white/60">{t("stationsConcerned", { count: block.stationCount })}</p>}
 
             <div className="mt-3 border-t border-white/10 pt-3">
-              <p className="text-caption text-white/60">{t("estimatedValue")}</p>
-              <p className="text-body-lg font-semibold">{formatMoney(format, block.monetaryValue, block.currencyCode)}</p>
+              <p className="text-caption text-white/60">{t("volumeSold")}</p>
+              <p className="text-body-lg font-semibold tabular-nums">{formatVolume(block.volumeSoldLiters)}</p>
             </div>
           </Card>
         ))}

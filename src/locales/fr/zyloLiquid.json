@@ -167,6 +167,7 @@
       "title": "Ventes du jour",
       "stationsConcerned": "{count} station(s) concernée(s)",
       "estimatedValue": "Chiffre estimé",
+      "volumeSold": "Volume vendu",
       "totalNetwork": "Total réseau ({currency})",
       "totalStation": "Total station"
     },
