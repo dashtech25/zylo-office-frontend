@@ -17,7 +17,12 @@ import type { useFormatter } from "next-intl";
  * illisible. */
 export function formatFreshness(iso: string, format: ReturnType<typeof useFormatter>): string {
   const date = new Date(iso);
-  const ageMs = Date.now() - date.getTime();
+  // Clamp à 0 : une mesure "future" par rapport à l'horloge du navigateur
+  // (dérive d'horloge, donnée de simulateur/démo mal générée) ne doit jamais
+  // s'afficher comme un compte à rebours ("dans X secondes" — comportement
+  // naturel d'Intl.RelativeTimeFormat pour un delta positif) — toujours "à
+  // l'instant" au pire, jamais une projection dans le futur.
+  const ageMs = Math.max(0, Date.now() - date.getTime());
   const ageMinutes = ageMs / 60000;
 
   if (ageMinutes < 60 * 24) {

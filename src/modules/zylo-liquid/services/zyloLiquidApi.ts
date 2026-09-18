@@ -401,10 +401,6 @@ export function listPumps(organizationId: string, params: { stationId?: string; 
   return apiFetch<Page<Pump>>(`/zylo-liquid/pumps?${search.toString()}`, withOrg(organizationId));
 }
 
-export function getPump(organizationId: string, pumpId: string): Promise<Pump> {
-  return apiFetch<Pump>(`/zylo-liquid/pumps/${pumpId}`, withOrg(organizationId));
-}
-
 export function createPump(organizationId: string, data: CreatePumpInput): Promise<Pump> {
   return apiFetch<Pump>("/zylo-liquid/pumps", {
     method: "POST",
@@ -1359,10 +1355,6 @@ export function unassignTruckFromPurchaseOrder(organizationId: string, purchaseO
   return apiFetch<void>(`/zylo-liquid/purchase-orders/${purchaseOrderId}/trucks/${truckId}`, { method: "DELETE", organizationId });
 }
 
-export function listOrdersForTruck(organizationId: string, truckId: string): Promise<TruckOrderAssignment[]> {
-  return apiFetch<TruckOrderAssignment[]>(`/zylo-liquid/trucks/${truckId}/orders`, withOrg(organizationId));
-}
-
 export interface TrackingSettings {
   organizationId: string;
   stopStabilizationMinutes: number | null;
@@ -1492,10 +1484,6 @@ export function generatePurchaseOrderDocument(organizationId: string, purchaseOr
 
 export function createDeliveryDeclaration(organizationId: string, data: CreateDeliveryDeclarationInput): Promise<DeliveryDeclaration> {
   return apiFetch<DeliveryDeclaration>("/zylo-liquid/delivery-declarations", { method: "POST", organizationId, body: JSON.stringify(data) });
-}
-
-export function lockDeliveryDeclaration(organizationId: string, id: string): Promise<DeliveryDeclaration> {
-  return apiFetch<DeliveryDeclaration>(`/zylo-liquid/delivery-declarations/${id}/lock`, { method: "POST", organizationId });
 }
 
 /** Une déclaration peut porter plusieurs lignes (refonte 2026-09-17) —
@@ -1837,10 +1825,6 @@ export function createSellableProductPrice(organizationId: string, productId: st
   return apiFetch<SellableProductPrice>(`/zylo-liquid/sellable-products/${productId}/prices`, { method: "POST", organizationId, body: JSON.stringify(data) });
 }
 
-export function listSellableProductPrices(organizationId: string, productId: string): Promise<SellableProductPrice[]> {
-  return apiFetch<SellableProductPrice[]>(`/zylo-liquid/sellable-products/${productId}/prices`, withOrg(organizationId));
-}
-
 export interface BulkImportSellableProductRow {
   rowNumber: number;
   stationId?: string;
@@ -1978,10 +1962,6 @@ export function listEquipment(organizationId: string, params: { stationId?: stri
 
 export function createEquipment(organizationId: string, data: CreateEquipmentInput): Promise<Equipment> {
   return apiFetch<Equipment>("/zylo-liquid/equipment", { method: "POST", organizationId, body: JSON.stringify(data) });
-}
-
-export function updateEquipment(organizationId: string, equipmentId: string, data: Partial<CreateEquipmentInput> & { status?: EquipmentStatus; lastMaintenanceAt?: string; nextMaintenanceDueAt?: string }): Promise<Equipment> {
-  return apiFetch<Equipment>(`/zylo-liquid/equipment/${equipmentId}`, { method: "PATCH", organizationId, body: JSON.stringify(data) });
 }
 
 export type InterventionPriority = "critical" | "high" | "medium" | "low";
