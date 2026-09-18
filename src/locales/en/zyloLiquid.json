@@ -1782,6 +1782,27 @@
         "selectAccount": "Select an account",
         "submit": "Declare",
         "required": "All fields are required."
+      },
+      "importExport": {
+        "template": "Download template",
+        "export": "Export",
+        "import": "Import",
+        "importing": "Importing…",
+        "templateFilename": "station_sales_template",
+        "exportFilename": "station_declared_sales",
+        "invalidStructure": "Invalid file structure — expected headers, in this order: {headers}.",
+        "invalidRow": "Row {row}: {message}",
+        "invalidPump": "unknown pump \"{value}\"",
+        "invalidIndex": "invalid index",
+        "indexOrderError": "the end index must be greater than the start index",
+        "invalidDate": "invalid date/time",
+        "invalidPrice": "invalid price",
+        "invalidCurrency": "unknown currency \"{value}\"",
+        "invalidPaymentMethod": "unknown payment method \"{value}\"",
+        "missingAccount": "a customer account is required for a credit payment",
+        "invalidAccount": "unknown customer account \"{value}\"",
+        "successCount": "{count} sale(s) declared successfully.",
+        "errorsTitle": "Rows not imported:"
       }
     },
     "tanksSection": {
