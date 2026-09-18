@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, DollarSign, Droplet, Gauge, Printer, Ruler, Truck, Waves, Wifi, X } from "lucide-react";
+import { AlertTriangle, DollarSign, Droplet, Gauge, Printer, Ruler, Scale, Truck, Waves, Wifi, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -75,6 +75,9 @@ export default function AlertsScreen() {
     // Silence complet de la station (toutes ses cuves configurées hors
     // ligne) — P1-9, audit module Stations 2026-09-16.
     station_offline: Wifi,
+    // Ventes déclarées vs stock détecté (mission détection de pertes,
+    // 2026-09-18) — même icône que la page Écarts de caisse.
+    stock_declared_discrepancy: Scale,
   };
   const typeTone: Record<AlertType, "error" | "warning" | "info" | "neutral"> = {
     leak: "error",
@@ -93,6 +96,7 @@ export default function AlertsScreen() {
     calibration_missing: "warning",
     truck_stop_unqualified: "warning",
     station_offline: "error",
+    stock_declared_discrepancy: "error",
   };
 
   return (
