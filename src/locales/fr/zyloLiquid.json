@@ -1630,7 +1630,8 @@
       "price_missing": "Prix de vente manquant",
       "sensor_mapping_missing": "Sonde non associée",
       "calibration_missing": "Barème de calibration manquant",
-      "station_offline": "Silence complet — aucune cuve ne transmet"
+      "station_offline": "Silence complet — aucune cuve ne transmet",
+      "stock_declared_discrepancy": "Écart ventes déclarées / stock détecté"
     },
     "page": {
       "title": "Centre d'alertes",

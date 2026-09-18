@@ -1630,7 +1630,8 @@
       "price_missing": "Missing sale price",
       "sensor_mapping_missing": "Sensor not mapped",
       "calibration_missing": "Missing calibration chart",
-      "station_offline": "Total silence — no tank reporting"
+      "station_offline": "Total silence — no tank reporting",
+      "stock_declared_discrepancy": "Declared sales / detected stock gap"
     },
     "page": {
       "title": "Alert center",
