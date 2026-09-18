@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Map as MapIcon, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -18,7 +18,7 @@ import { KpiSkeleton, Skeleton } from "@/shared/ui/Skeleton";
 import { CreateStationModal } from "@/modules/zylo-liquid/components/CreateStationModal";
 import { NetworkStockSummaryCards } from "@/modules/zylo-liquid/components/NetworkStockSummaryCards";
 import { ProductBreakdownModal, type ProductFilter } from "@/modules/zylo-liquid/components/ProductBreakdownModal";
-import { StationsMap } from "@/modules/zylo-liquid/components/StationsMap";
+import { FullscreenMapView } from "@/modules/zylo-liquid/components/FullscreenMapView";
 
 import { ProductStockGrid } from "./StationCard/ProductStockGrid";
 import { StationCard, freshnessTone } from "./StationCard/StationCard";
@@ -456,93 +456,83 @@ export default function StationsListScreen() {
           modal, pas de marge, pas de header) — tout le reste (recherche,
           filtres, liste des stations, calques) flotte par-dessus, comme une
           carte de suivi (demande commanditaire 2026-09-17). */}
-      {mapOpen && (
-        <div className="fixed inset-0 z-50 bg-surface">
-          <div className="absolute inset-0">
-            <StationsMap
-              fill
-              onStationClick={setPreviewStationId}
-              focusStationId={focusedStationId}
-              stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
-                id: r.station.id,
-                name: r.station.name,
-                latitude: r.station.latitude as number,
-                longitude: r.station.longitude as number,
-                status: r.state,
-                popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
-                  sellable: formatVolume(r.totalSellableVolumeLiters),
-                  available: formatVolume(r.totalVolumeLiters),
-                }),
-                productsLabel: r.products.map((p) => p.fuelProductName).join(", "),
-                operationalLabel: t(`status.${r.station.status}`),
-                operationalTone: r.station.status === "active" ? "success" : r.station.status === "maintenance" ? "warning" : "neutral",
-                connectivityLabel: t(r.online ? "status.online" : "status.offline"),
-                connected: r.online,
-                alertsCount: r.alertsCount,
-                alertsLabel: t("list.badges.alerts", { count: r.alertsCount }),
-              }))}
-            />
-          </div>
+      <FullscreenMapView
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        closeLabel={tCommon("actions.close")}
+        onStationClick={setPreviewStationId}
+        focusStationId={focusedStationId}
+        stations={filteredRows.filter((r) => r.station.latitude != null && r.station.longitude != null).map((r) => ({
+          id: r.station.id,
+          name: r.station.name,
+          latitude: r.station.latitude as number,
+          longitude: r.station.longitude as number,
+          status: r.state,
+          popupSubtitle: tRoot("stockSynthesis.sellableOfAvailable", {
+            sellable: formatVolume(r.totalSellableVolumeLiters),
+            available: formatVolume(r.totalVolumeLiters),
+          }),
+          productsLabel: r.products.map((p) => p.fuelProductName).join(", "),
+          operationalLabel: t(`status.${r.station.status}`),
+          operationalTone: r.station.status === "active" ? "success" : r.station.status === "maintenance" ? "warning" : "neutral",
+          connectivityLabel: t(r.online ? "status.online" : "status.offline"),
+          connected: r.online,
+          alertsCount: r.alertsCount,
+          alertsLabel: t("list.badges.alerts", { count: r.alertsCount }),
+        }))}
+        sidePanel={
+          <>
+            {/* Recherche + filtres, flottants — plus de bloc plein-largeur ni
+                de cartes de synthèse (retirées, jugées inutiles ici). */}
+            <div className="absolute left-4 top-4 z-10 w-[min(92vw,380px)] rounded-card border border-border-subtle bg-surface p-3 shadow-elevated">
+              <StationsFilterBar {...filterBarProps} />
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setMapOpen(false)}
-            aria-label={tCommon("actions.close")}
-            className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full border border-border-subtle bg-surface text-text-muted shadow-elevated hover:bg-surface-muted hover:text-text"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-
-          {/* Recherche + filtres, flottants — plus de bloc plein-largeur ni
-              de cartes de synthèse (retirées, jugées inutiles ici). */}
-          <div className="absolute left-4 top-4 z-10 w-[min(92vw,380px)] rounded-card border border-border-subtle bg-surface p-3 shadow-elevated">
-            <StationsFilterBar {...filterBarProps} />
-          </div>
-
-          {/* Liste des stations, flottante et rétractable (P1-4, audit
-             module Stations 2026-09-16) : cliquer une ligne zoome la carte
-             dessus (StationsMap.focusStationId) au lieu de rouvrir un modal
-             d'aperçu, pour rester dans le flux liste↔carte. */}
-          <div className="absolute bottom-4 left-4 z-10">
-            {mapPanelCollapsed ? (
-              <button
-                type="button"
-                onClick={() => setMapPanelCollapsed(false)}
-                aria-label={t("list.map.expandPanel")}
-                className="flex items-center gap-2 rounded-card border border-border-subtle bg-surface px-3 py-2 text-body-sm font-medium text-text shadow-elevated hover:bg-surface-muted"
-              >
-                <ChevronRight className="size-4" aria-hidden />
-                {t("list.map.panelTitle", { count: filteredRows.length })}
-              </button>
-            ) : (
-              <div className="flex max-h-[50vh] w-64 flex-col gap-2 rounded-card border border-border-subtle bg-surface shadow-elevated">
-                <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
-                  <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
-                  <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
-                    <ChevronLeft className="size-4" aria-hidden />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto px-1 pb-2">
-                  {filteredRows.map((row) => (
-                    <button
-                      key={row.station.id}
-                      type="button"
-                      onClick={() => setFocusedStationId(row.station.id)}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-button px-2 py-2 text-left text-body-sm hover:bg-surface-muted",
-                        focusedStationId === row.station.id && "bg-surface-muted font-medium"
-                      )}
-                    >
-                      <StatusDot state={row.state} />
-                      <span className="truncate">{row.station.name}</span>
+            {/* Liste des stations, flottante et rétractable (P1-4, audit
+               module Stations 2026-09-16) : cliquer une ligne zoome la carte
+               dessus (StationsMap.focusStationId) au lieu de rouvrir un modal
+               d'aperçu, pour rester dans le flux liste↔carte. */}
+            <div className="absolute bottom-4 left-4 z-10">
+              {mapPanelCollapsed ? (
+                <button
+                  type="button"
+                  onClick={() => setMapPanelCollapsed(false)}
+                  aria-label={t("list.map.expandPanel")}
+                  className="flex items-center gap-2 rounded-card border border-border-subtle bg-surface px-3 py-2 text-body-sm font-medium text-text shadow-elevated hover:bg-surface-muted"
+                >
+                  <ChevronRight className="size-4" aria-hidden />
+                  {t("list.map.panelTitle", { count: filteredRows.length })}
+                </button>
+              ) : (
+                <div className="flex max-h-[50vh] w-64 flex-col gap-2 rounded-card border border-border-subtle bg-surface shadow-elevated">
+                  <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
+                    <span className="text-caption font-medium text-text-muted">{t("list.map.panelTitle", { count: filteredRows.length })}</span>
+                    <button type="button" onClick={() => setMapPanelCollapsed(true)} aria-label={t("list.map.collapsePanel")} className="text-text-muted hover:text-text">
+                      <ChevronLeft className="size-4" aria-hidden />
                     </button>
-                  ))}
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-1 pb-2">
+                    {filteredRows.map((row) => (
+                      <button
+                        key={row.station.id}
+                        type="button"
+                        onClick={() => setFocusedStationId(row.station.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-button px-2 py-2 text-left text-body-sm hover:bg-surface-muted",
+                          focusedStationId === row.station.id && "bg-surface-muted font-medium"
+                        )}
+                      >
+                        <StatusDot state={row.state} />
+                        <span className="truncate">{row.station.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              )}
+            </div>
+          </>
+        }
+      />
 
       {previewStationId &&
         (() => {

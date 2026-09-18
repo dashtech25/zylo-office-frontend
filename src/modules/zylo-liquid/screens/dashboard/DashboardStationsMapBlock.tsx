@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { Badge, EmptyState } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
+import { FullscreenMapView } from "@/modules/zylo-liquid/components/FullscreenMapView";
 import { StationsMap, type StationMapPoint } from "@/modules/zylo-liquid/components/StationsMap";
-import { formatPercent } from "@/modules/zylo-liquid/utils/formatPercent";
 
 export interface DashboardStationAggregate {
   station: { id: string; name: string; status: "active" | "inactive" | string; latitude: number | null; longitude: number | null };
@@ -34,16 +35,19 @@ export function DashboardStationsMapBlock({
   stationAggregates,
   totalStationsCount,
   formatVolume,
-  formatMoney,
 }: {
   loading: boolean;
   stationAggregates: DashboardStationAggregate[];
   totalStationsCount: number;
   formatVolume: (liters: number) => string;
+  /** Non utilisée depuis la simplification du tableau à 2 colonnes (Station
+   * + Statut) — gardée dans le contrat pour ne pas casser l'appelant. */
   formatMoney: (value: number, currencyCode: string) => string;
 }) {
   const t = useTranslations("zyloLiquid");
+  const tCommon = useTranslations("common");
   const [focusedStationId, setFocusedStationId] = useState<string | null>(null);
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
   const mapStations: StationMapPoint[] = stationAggregates
     .filter(({ station }) => station.latitude != null && station.longitude != null)
@@ -57,82 +61,90 @@ export function DashboardStationsMapBlock({
       productsLabel: mainProductName ?? undefined,
     }));
 
+  function stationsTable() {
+    if (loading) {
+      return (
+        <table className="w-full border-collapse text-body-sm">
+          <tbody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRowSkeleton key={i} columns={2} />
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    if (stationAggregates.length === 0) {
+      return <EmptyState title={t("stations.empty")} />;
+    }
+    return (
+      <>
+        <table className="w-full border-collapse text-body-sm">
+          <thead>
+            <tr className="border-b border-border-subtle text-caption font-semibold uppercase tracking-wide text-text-muted">
+              <th className="py-2 text-left">{t("stations.columns.station")}</th>
+              <th className="py-2 text-left">{t("stations.columns.status")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stationAggregates.map(({ station, online }) => (
+              <tr
+                key={station.id}
+                onClick={() => setFocusedStationId(station.id)}
+                className={cn(
+                  "cursor-pointer border-b border-border-subtle/60",
+                  focusedStationId === station.id && "bg-surface-muted"
+                )}
+              >
+                <td className="py-2 text-text">{station.name}</td>
+                <td className="py-2">
+                  <Badge tone={online ? "success" : "neutral"} size="sm" dot>
+                    {online ? t("stations.status.online") : t("stations.status.offline")}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-3 text-caption text-text-muted">{t("stations.totalStations", { count: totalStationsCount })}</p>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      <div className="max-h-[420px] shrink-0 overflow-auto lg:w-[420px]">
+      <div className="max-h-[420px] shrink-0 overflow-auto lg:w-[420px]">{stationsTable()}</div>
+
+      <div className="relative h-[420px] min-w-0 flex-1">
         {loading ? (
-          <table className="w-full border-collapse text-body-sm">
-            <tbody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRowSkeleton key={i} columns={7} />
-              ))}
-            </tbody>
-          </table>
-        ) : stationAggregates.length === 0 ? (
-          <EmptyState title={t("stations.empty")} />
+          <div className="h-full w-full animate-pulse rounded-card bg-surface-muted" style={{ height: MAP_BLOCK_HEIGHT }} />
         ) : (
           <>
-            <table className="w-full border-collapse text-body-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-caption font-semibold uppercase tracking-wide text-text-muted">
-                  <th className="py-2 text-left">{t("stations.columns.station")}</th>
-                  <th className="py-2 text-left">{t("stations.columns.status")}</th>
-                  <th className="py-2 text-left">{t("stations.columns.mainProduct")}</th>
-                  <th className="py-2 text-right">{t("stations.columns.currentStock")}</th>
-                  <th className="py-2 text-right">{t("stations.columns.capacity")}</th>
-                  <th className="py-2 pl-4 text-left">{t("stations.columns.rate")}</th>
-                  <th className="py-2 text-right">{t("stations.columns.value")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stationAggregates.map(({ station, online, volumeLiters, capacityLiters, monetaryValue, currencyCode, mainProductName }) => {
-                  const rate = capacityLiters > 0 ? (volumeLiters / capacityLiters) * 100 : 0;
-                  return (
-                    <tr
-                      key={station.id}
-                      onClick={() => setFocusedStationId(station.id)}
-                      className={cn(
-                        "cursor-pointer border-b border-border-subtle/60",
-                        focusedStationId === station.id && "bg-surface-muted"
-                      )}
-                    >
-                      <td className="py-2 text-text">{station.name}</td>
-                      <td className="py-2">
-                        <Badge tone={online ? "success" : "neutral"} size="sm" dot>
-                          {online ? t("stations.status.online") : t("stations.status.offline")}
-                        </Badge>
-                      </td>
-                      <td className="py-2 text-text-muted">{mainProductName ?? "—"}</td>
-                      <td className="py-2 text-right tabular-nums text-text">{formatVolume(volumeLiters)}</td>
-                      <td className="py-2 text-right tabular-nums text-text-muted">{formatVolume(capacityLiters)}</td>
-                      <td className="py-2 pl-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-16 overflow-hidden rounded-pill bg-surface-muted">
-                            <div className="h-full rounded-pill bg-primary" style={{ width: `${Math.min(100, rate)}%` }} />
-                          </div>
-                          <span className="tabular-nums text-caption text-text-muted">{formatPercent(rate)}%</span>
-                        </div>
-                      </td>
-                      <td className="py-2 text-right tabular-nums text-text">
-                        {monetaryValue !== null && currencyCode ? formatMoney(monetaryValue, currencyCode) : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <p className="mt-3 text-caption text-text-muted">{t("stations.totalStations", { count: totalStationsCount })}</p>
+            <StationsMap fill stations={mapStations} focusStationId={focusedStationId} />
+            <button
+              type="button"
+              onClick={() => setFullscreenOpen(true)}
+              aria-label={t("stationsMapExpand")}
+              className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full border border-border-subtle bg-surface text-text-muted shadow-elevated hover:bg-surface-muted hover:text-text"
+            >
+              <Maximize2 className="size-4" aria-hidden />
+            </button>
           </>
         )}
       </div>
 
-      <div className="h-[420px] min-w-0 flex-1">
-        {loading ? (
-          <div className="h-full w-full animate-pulse rounded-card bg-surface-muted" style={{ height: MAP_BLOCK_HEIGHT }} />
-        ) : (
-          <StationsMap fill stations={mapStations} focusStationId={focusedStationId} />
-        )}
-      </div>
+      <FullscreenMapView
+        open={fullscreenOpen}
+        onClose={() => setFullscreenOpen(false)}
+        closeLabel={tCommon("actions.close")}
+        focusStationId={focusedStationId}
+        onStationClick={setFocusedStationId}
+        stations={mapStations}
+        sidePanel={
+          <div className="absolute left-4 top-4 z-10 max-h-[80vh] w-[min(92vw,380px)] overflow-auto rounded-card border border-border-subtle bg-surface p-3 shadow-elevated">
+            {stationsTable()}
+          </div>
+        }
+      />
     </div>
   );
 }
