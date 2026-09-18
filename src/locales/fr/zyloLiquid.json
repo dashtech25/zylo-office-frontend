@@ -1179,8 +1179,30 @@
   "caisseEcartsScreen": {
     "pageTitle": "Écarts de caisse",
     "pageSubtitle": "Écarts détectés par le rapprochement, tous types confondus.",
-    "banner": "Vue de lecture seule — chaque ligne vient d'un rapprochement déjà déclenché ailleurs (Approvisionnement, Réconciliation de stock, Cuves).",
     "empty": "Aucun écart détecté pour l'instant.",
+    "stock": {
+      "title": "Ventes déclarées vs stock",
+      "subtitle": "Pour la période choisie, compare ce qui a été déclaré vendu (gérant) à ce que la télémétrie a détecté quitter chaque cuve.",
+      "empty": "Aucune cuve active à comparer sur cette période.",
+      "columns": {
+        "station": "Station",
+        "tank": "Cuve",
+        "day": "Jour",
+        "declared": "Déclaré",
+        "detected": "Détecté",
+        "gap": "Écart",
+        "status": "Statut"
+      },
+      "status": {
+        "matched": "Cohérent",
+        "discrepancy": "Écart détecté",
+        "insufficient_data": "Données insuffisantes"
+      }
+    },
+    "other": {
+      "title": "Autres écarts",
+      "subtitle": "Livraisons, jaugeage manuel, contrôle qualité — vue de lecture seule, chaque ligne vient d'un rapprochement déjà déclenché ailleurs."
+    },
     "table": {
       "type": "Type",
       "discrepancy": "Écart constaté",

@@ -1179,8 +1179,30 @@
   "caisseEcartsScreen": {
     "pageTitle": "Cash discrepancies",
     "pageSubtitle": "Discrepancies detected by reconciliation, across all types.",
-    "banner": "Read-only view — each row comes from a reconciliation already triggered elsewhere (Supply, Stock reconciliation, Tanks).",
     "empty": "No discrepancy detected yet.",
+    "stock": {
+      "title": "Declared sales vs stock",
+      "subtitle": "For the selected period, compares what was declared sold (manager) against what telemetry detected leaving each tank.",
+      "empty": "No active tank to compare for this period.",
+      "columns": {
+        "station": "Station",
+        "tank": "Tank",
+        "day": "Day",
+        "declared": "Declared",
+        "detected": "Detected",
+        "gap": "Gap",
+        "status": "Status"
+      },
+      "status": {
+        "matched": "Consistent",
+        "discrepancy": "Discrepancy",
+        "insufficient_data": "Insufficient data"
+      }
+    },
+    "other": {
+      "title": "Other discrepancies",
+      "subtitle": "Deliveries, manual gauging, quality checks — read-only view, each row comes from a reconciliation already triggered elsewhere."
+    },
     "table": {
       "type": "Type",
       "discrepancy": "Discrepancy found",
