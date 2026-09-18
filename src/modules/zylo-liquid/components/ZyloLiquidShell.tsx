@@ -32,6 +32,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { useAuth } from "@/core/auth/AuthContext";
+import { BackToZyloOfficeLink } from "@/core/layout/BackToZyloOfficeLink";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 
@@ -238,6 +239,7 @@ export function ZyloLiquidShell({ children }: { children: React.ReactNode }) {
           <button type="button" className="burger" aria-label={tCommon("header.menu")} onClick={() => setNavOpen((v) => !v)}>
             {navOpen ? <X width={20} height={20} strokeWidth={1.8} aria-hidden /> : <Menu width={20} height={20} strokeWidth={1.8} aria-hidden />}
           </button>
+          <BackToZyloOfficeLink className="crumbs-back" />
           <div className="crumbs">
             <Link href="/zylo-liquid">{t("appName")}</Link>
             <span className="sep">

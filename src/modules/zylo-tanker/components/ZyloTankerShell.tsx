@@ -28,6 +28,7 @@ import { usePathname } from "next/navigation";
 
 import { Badge } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
+import { BackToZyloOfficeLink } from "@/core/layout/BackToZyloOfficeLink";
 
 /** Sidebar Zylo Tanker (SMART TANKER) — reprend les 20 modules du cahier
  * des charges (Downloads/SMART_TANKER_Specifications_Fonctionnelles.docx),
@@ -123,9 +124,7 @@ export function ZyloTankerShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-surface px-6">
-          <Link href="/zylo-liquid" className="text-body-sm text-text-muted hover:text-text">
-            ← Retour à Zylo Office
-          </Link>
+          <BackToZyloOfficeLink className="text-body-sm text-text-muted hover:text-text" />
         </header>
         <main className="flex-1 overflow-y-auto bg-surface-muted p-8">{children}</main>
       </div>

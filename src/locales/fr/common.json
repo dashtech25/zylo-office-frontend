@@ -36,6 +36,7 @@
     "messages": "Messages",
     "account": "Compte",
     "logout": "Déconnexion",
-    "menu": "Menu"
+    "menu": "Menu",
+    "backToOffice": "Retour à Zylo Office"
   }
 }
