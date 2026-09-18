@@ -1835,12 +1835,29 @@
       }
     },
     "pumpsTab": {
-      "title": "Equipment of type “pump”",
-      "note": "Prototype pumps show nozzles and totalizer indexes: Zylo Liquid does not model those counters (see gap matrix) — this table lists the station's actual “pump” equipment records.",
+      "title": "Station pumps",
+      "empty": "No pump registered for this station.",
+      "addPump": "Add a pump",
       "columns": {
-        "serialNumber": "Serial no.",
-        "manufacturerModel": "Manufacturer · model",
-        "installedAt": "Installed on"
+        "name": "Name",
+        "tank": "Tank",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Out of service"
+      },
+      "createTitle": "Add a pump",
+      "editTitle": "Edit pump",
+      "form": {
+        "name": "Name",
+        "tank": "Associated tank",
+        "selectTank": "Select a tank",
+        "status": "Status",
+        "statusActive": "Active",
+        "statusInactive": "Out of service",
+        "submit": "Save",
+        "required": "Please fill in the required fields."
       }
     },
     "staffTab": {

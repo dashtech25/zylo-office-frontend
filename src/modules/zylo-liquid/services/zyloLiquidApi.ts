@@ -106,6 +106,26 @@ export interface CreateTankInput {
   alertWaterMaxMm?: number;
 }
 
+export interface Pump {
+  id: string;
+  stationId: string;
+  tankId: string;
+  name: string;
+  active: boolean;
+}
+
+export interface CreatePumpInput {
+  stationId: string;
+  tankId: string;
+  name: string;
+}
+
+export interface UpdatePumpInput {
+  tankId?: string;
+  name?: string;
+  active?: boolean;
+}
+
 export interface FuelProduct {
   id: string;
   organizationId: string;
@@ -372,6 +392,33 @@ export function updateTank(organizationId: string, tankId: string, data: Partial
 
 export function getTankCurrentState(organizationId: string, tankId: string): Promise<TankCurrentState> {
   return apiFetch<TankCurrentState>(`/zylo-liquid/tanks/${tankId}/current-state`, withOrg(organizationId));
+}
+
+export function listPumps(organizationId: string, params: { stationId?: string; limit?: number } = {}): Promise<Page<Pump>> {
+  const search = new URLSearchParams();
+  if (params.stationId) search.set("stationId", params.stationId);
+  if (params.limit) search.set("limit", String(params.limit));
+  return apiFetch<Page<Pump>>(`/zylo-liquid/pumps?${search.toString()}`, withOrg(organizationId));
+}
+
+export function getPump(organizationId: string, pumpId: string): Promise<Pump> {
+  return apiFetch<Pump>(`/zylo-liquid/pumps/${pumpId}`, withOrg(organizationId));
+}
+
+export function createPump(organizationId: string, data: CreatePumpInput): Promise<Pump> {
+  return apiFetch<Pump>("/zylo-liquid/pumps", {
+    method: "POST",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
+export function updatePump(organizationId: string, pumpId: string, data: UpdatePumpInput): Promise<Pump> {
+  return apiFetch<Pump>(`/zylo-liquid/pumps/${pumpId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
 }
 
 /** `limit` est plafonné à 100 côté backend (PaginationParams) — jamais
@@ -1631,6 +1678,33 @@ export function listReconciliationRecords(organizationId: string, params: { subj
 
 export function reconcileStock(organizationId: string, tankId: string, day: string): Promise<ReconciliationRecord> {
   return apiFetch<ReconciliationRecord>(`/zylo-liquid/tanks/${tankId}/reconcile-stock?day=${day}`, { method: "POST", organizationId });
+}
+
+/** Une détection candidate pour le rapprochement MANUEL d'une ligne de
+ * livraison déclarée — jamais un choix silencieux comme l'automatique (qui
+ * prend toujours la plus proche en temps) : la personne habilitée voit
+ * tous les candidats de la fenêtre et choisit elle-même. */
+export interface DeliveryReconciliationCandidate {
+  detected: Delivery;
+  deltaMinutes: number;
+  /** Id de la ligne de déclaration qui utilise déjà ce candidat comme
+   * contrepartie confirmée, si applicable — jamais bloqué d'office, mais
+   * jamais silencieux : le choix de ce candidat exige `force: true`. */
+  alreadyReconciledWith: string | null;
+}
+
+export function listDeliveryDeclarationLineReconciliationCandidates(organizationId: string, lineId: string): Promise<DeliveryReconciliationCandidate[]> {
+  return apiFetch<DeliveryReconciliationCandidate[]>(`/zylo-liquid/delivery-declaration-lines/${lineId}/reconciliation-candidates`, withOrg(organizationId));
+}
+
+export function manuallyReconcileDeliveryDeclarationLine(
+  organizationId: string,
+  lineId: string,
+  data: { detectedId: string; force?: boolean }
+): Promise<ReconciliationRecord> {
+  return apiFetch<ReconciliationRecord>(`/zylo-liquid/delivery-declaration-lines/${lineId}/reconcile-manual`, {
+    method: "POST", organizationId, body: JSON.stringify(data),
+  });
 }
 
 // ================================================================
