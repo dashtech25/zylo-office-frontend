@@ -2527,6 +2527,7 @@
       },
       "detailModal": {
         "title": "Fiche personnel",
+        "changePhoto": "Changer la photo",
         "status": {
           "active": "Actif",
           "inactive": "Inactif"

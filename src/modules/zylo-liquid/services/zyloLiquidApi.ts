@@ -697,6 +697,29 @@ export function listCurrencies(organizationId: string, limit = 50, offset = 0): 
   return apiFetch<Page<Currency>>(`/currencies?limit=${limit}&offset=${offset}`, withOrg(organizationId));
 }
 
+// ================================================================
+// Profil utilisateur — mise à jour de la photo de profil. Vit hors du
+// préfixe /zylo-liquid/ (users est une ressource transverse, même logique
+// que /currencies ci-dessus).
+// ================================================================
+
+export interface UpdateUserProfileInput {
+  photoStorageReference?: string | null;
+}
+
+export interface UserProfile {
+  id: string;
+  photoStorageReference: string | null;
+}
+
+export function updateUserProfile(organizationId: string, userId: string, data: UpdateUserProfileInput): Promise<UserProfile> {
+  return apiFetch<UserProfile>(`/users/${userId}`, {
+    method: "PATCH",
+    organizationId,
+    body: JSON.stringify(data),
+  });
+}
+
 export interface City {
   id: string;
   name: string;

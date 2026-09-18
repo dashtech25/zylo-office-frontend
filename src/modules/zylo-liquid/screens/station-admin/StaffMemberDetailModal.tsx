@@ -1,9 +1,10 @@
 "use client";
 
 import { Camera, Check, Copy, Mail, UserX } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { uploadFile } from "@/core/api/storage";
 import { getRole, listRoles, type Role, type UserRoleAssignment } from "@/core/api/rbac";
 import { listAuditLogs } from "@/core/api/audit";
 import {
@@ -11,6 +12,7 @@ import {
   deactivateStationStaff,
   resetStationStaffPassword,
   updateStationStaff,
+  updateUserProfile,
   type StationStaff,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Alert, Badge, Button, FormField, Input, Modal, Select } from "@/shared/ui";
@@ -96,6 +98,28 @@ export function StaffMemberDetailModal({
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Changement de photo — même mécanisme d'upload que `AddStaffMemberModal`
+  // (service de stockage générique, jamais réinventé), mais applicable à un
+  // membre déjà créé via `updateUserProfile` (PATCH /users/{id}).
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  async function handlePhotoSelected(file: File) {
+    setUploadingPhoto(true);
+    setError(null);
+    try {
+      const uploaded = await uploadFile(organizationId, file);
+      await updateUserProfile(organizationId, staff.userId, { photoStorageReference: uploaded.storageReference });
+      setPhotoPreviewUrl(URL.createObjectURL(file));
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tCommon("states.error"));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
@@ -170,13 +194,32 @@ export function StaffMemberDetailModal({
         {error && <Alert tone="error">{error}</Alert>}
 
         <div className="flex items-center gap-5 rounded-card border border-border-subtle bg-surface-muted/40 p-4">
-          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-surface-muted">
-            {staff.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={staff.photoUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <Camera className="size-8 text-text-muted" aria-hidden />
-            )}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-surface-muted">
+              {photoPreviewUrl || staff.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoPreviewUrl ?? staff.photoUrl ?? undefined} alt="" className="size-full object-cover" />
+              ) : (
+                <Camera className="size-8 text-text-muted" aria-hidden />
+              )}
+            </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handlePhotoSelected(f);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className="text-caption font-medium text-primary hover:underline"
+            >
+              {uploadingPhoto ? tCommon("states.loading") : t("changePhoto")}
+            </button>
           </div>
           <div>
             <h3 className="text-h3 font-semibold text-text">{staff.fullName}</h3>

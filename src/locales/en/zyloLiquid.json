@@ -2527,6 +2527,7 @@
       },
       "detailModal": {
         "title": "Staff member sheet",
+        "changePhoto": "Change photo",
         "status": {
           "active": "Active",
           "inactive": "Inactive"
