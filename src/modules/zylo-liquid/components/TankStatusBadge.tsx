@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import type { Alert } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Badge } from "@/shared/ui";
+import { SEVERITY_TONE } from "./SeverityBadge";
 
 /** Sévérité d'affichage pour choisir l'alerte à montrer quand plusieurs sont
  * actives sur la même cuve — reprend le seul enum réel `Alert.type` déjà en
@@ -51,8 +52,11 @@ export function TankStatusBadge({ alerts, offline, variant }: TankStatusBadgePro
   }
 
   if (alert) {
+    // Réutilise le même mapping sévérité→ton que le Centre d'alertes —
+    // jamais un "warning" générique fixe quelle que soit la vraie gravité
+    // de l'alerte (refonte 2026-09-20).
     return (
-      <Badge tone="warning" dot>
+      <Badge tone={SEVERITY_TONE[alert.severity]} dot>
         {t(alert.type)}
       </Badge>
     );

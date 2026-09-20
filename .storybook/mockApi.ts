@@ -149,6 +149,31 @@ export const DELIVERIES = Array.from({ length: 6 }, (_, i) => ({
   supplierId: "sup-1", truckId: "trk-1", status: "confirmed",
 }));
 
+// Forme reelle de `DeliveryDeclaration` (zyloLiquidApi.ts) — distincte de
+// `DELIVERIES` (livraisons detectees automatiquement, type `Delivery`) :
+// jamais reutiliser l'une pour l'autre (bug corrige 2026-09-20, le widget
+// tableau de bord plantait sur `declaration.lines.reduce` car cet endpoint
+// renvoyait des `DELIVERIES` sans champ `lines`).
+export const DELIVERY_DECLARATIONS = Array.from({ length: 6 }, (_, i) => {
+  const station = STATIONS[i % STATIONS.length];
+  const tanksForStation = TANKS.filter((t) => t.stationId === station.id);
+  const tank = tanksForStation[i % Math.max(tanksForStation.length, 1)] ?? TANKS[i % TANKS.length];
+  return {
+    id: `decl-${i + 1}`, stationId: station.id, authorUserId: "user-1",
+    eventAt: new Date(Date.now() - i * 86400000).toISOString(),
+    declaredAt: new Date(Date.now() - i * 86400000 + 1800000).toISOString(),
+    supplierName: "Tradex SA", supplierId: "sup-1", truckId: "trk-1",
+    deliveryNoteReference: `BL-2026-${String(1000 + i)}`, lifecycleStatus: i === 0 ? "declared" : "locked",
+    changeReason: null, correctsDeclarationId: null,
+    lines: [
+      {
+        id: `decl-${i + 1}-line-1`, declarationId: `decl-${i + 1}`, tankId: tank.id, purchaseOrderLineId: null,
+        volumeLiters: 14500 + i * 250, correctsLineId: null, reconciledWithId: null, reconciledWithType: null,
+      },
+    ],
+  };
+});
+
 export const LEAK_EVENTS = Array.from({ length: 4 }, (_, i) => ({
   id: `leak-${i + 1}`, tankId: TANKS[i % TANKS.length].id, startTime: new Date(Date.now() - (i + 1) * 3600000).toISOString(),
   endTime: new Date(Date.now() - i * 3600000).toISOString(), leakRateLph: i === 0 ? 3.2 : null,
@@ -210,8 +235,21 @@ export const DOCUMENTS = [
 export const TRACKING_LOCATIONS = STATIONS.map((s) => ({ id: `loc-${s.id}`, organizationId: ORG_ID, label: s.name, latitude: s.latitude, longitude: s.longitude, radiusMeters: 150, deleted: false }));
 
 export const NETWORK_SUMMARY = {
-  totalVolumeLiters: 115400, totalCapacityLiters: 180000, totalStationCount: STATIONS.length,
-  totalTankCount: TANKS.length, activeAlertsCount: ALERTS.filter((a) => a.status === "active").length,
+  products: FUEL_PRODUCTS.map((product) => {
+    const tanksForProduct = TANKS.filter((t) => t.fuelProductId === product.id && t.active);
+    const stationIds = new Set(tanksForProduct.map((t) => t.stationId));
+    const totalVolumeLiters = tanksForProduct.reduce((sum, t) => sum + (TANK_STATES[t.id]?.volumeLiters ?? 0), 0);
+    const totalSellableVolumeLiters = tanksForProduct.reduce((sum, t) => sum + (TANK_STATES[t.id]?.sellableVolumeLiters ?? 0), 0);
+    const totalMonetaryValue = tanksForProduct.reduce((sum, t) => sum + (TANK_STATES[t.id]?.monetaryValue ?? 0), 0);
+    return {
+      fuelProductId: product.id, fuelProductName: product.name, totalVolumeLiters,
+      stationCount: stationIds.size, tankCount: tanksForProduct.length, totalMonetaryValue,
+      currencyCode: "XAF", monetaryValueNotCalculableReason: null,
+      totalSellableVolumeLiters, totalSellableMonetaryValue: totalMonetaryValue,
+    };
+  }),
+  totalVolumeLiters: 115400, totalStationCount: STATIONS.length,
+  totalTankCount: TANKS.length, totalSellableVolumeLiters: 108900,
 };
 
 // ---------------------------------------------------------------------------
@@ -342,7 +380,8 @@ export function resolve(path: string, method: string): Response {
     return alert ? json(alert) : notFound();
   }
   if (rawPath === "/zylo-liquid/deliveries-in-progress") return json([]);
-  if (rawPath === "/zylo-liquid/delivery-declarations") return json(page(DELIVERIES));
+  if (rawPath === "/zylo-liquid/deliveries") return json(page(DELIVERIES));
+  if (rawPath === "/zylo-liquid/delivery-declarations") return json(page(DELIVERY_DECLARATIONS));
   if (rawPath === "/zylo-liquid/leaks" || rawPath === "/zylo-liquid/leak-events") return json(page(LEAK_EVENTS));
 
   // --- Ventes / shifts / caisse / crédit ---

@@ -20,13 +20,6 @@ export interface AlertRow {
   station: Station | null;
 }
 
-export interface AlertStationGroup {
-  station: Station;
-  count: number;
-  activeCount: number;
-  rows: AlertRow[];
-}
-
 export type AlertStatusFilter = "active" | "acknowledged" | "resolved" | "all";
 
 export interface AlertScope {
@@ -35,8 +28,9 @@ export interface AlertScope {
 }
 
 /** Regroupe l'historique complet des alertes (pas seulement les actives) :
- * le filtre de statut par défaut est "all" côté écran — voir AlertsScreen.
- * `typeFilter` est optionnel et se cumule avec le filtre de statut (les
+ * le filtre de statut par défaut est "all" côté écran appelant (ex.
+ * `AlertCenterScreen`). `typeFilter` est optionnel et se cumule avec le
+ * filtre de statut (les
  * deux sont envoyés tels quels à l'API, qui les supporte déjà nativement,
  * cf. `service.list_alerts`). `scope` restreint à une station ou une cuve —
  * utilisé par `AlertsBrowserModal` pour ne jamais recharger la liste
@@ -112,25 +106,11 @@ export function useAlertsList(organizationId: string | null, statusFilter: Alert
 
   const activeCount = alerts.filter((a) => a.status === "active").length;
 
-  const stationGroups: AlertStationGroup[] = (() => {
-    const byStation = new Map<string, AlertStationGroup>();
-    for (const row of rows) {
-      if (!row.station) continue;
-      const entry = byStation.get(row.station.id) ?? { station: row.station, count: 0, activeCount: 0, rows: [] };
-      entry.count += 1;
-      if (row.alert.status === "active") entry.activeCount += 1;
-      entry.rows.push(row);
-      byStation.set(row.station.id, entry);
-    }
-    return [...byStation.values()].sort((a, b) => b.activeCount - a.activeCount || a.station.name.localeCompare(b.station.name));
-  })();
-
   return {
     loading,
     error,
     rows,
     activeCount,
-    stationGroups,
     acknowledge,
     resolve,
     reload: async () => {

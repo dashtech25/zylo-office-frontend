@@ -16,6 +16,7 @@ import { LeaksBrowserModal } from "@/modules/zylo-liquid/components/LeaksBrowser
 import { computeTankVisualData, ModeSwitcher, TankLegend, TankVisual, type TankVisualMode } from "@/modules/zylo-liquid/components/TankVisual";
 import { TrendChart } from "@/modules/zylo-liquid/components/TrendChart";
 import { CalibrationModal } from "@/modules/zylo-liquid/components/CalibrationModal";
+import { SEVERITY_TONE } from "@/modules/zylo-liquid/components/SeverityBadge";
 import { MeasurementHistoryTable } from "@/modules/zylo-liquid/screens/tank-detail/MeasurementHistoryTable";
 import { ComingSoonTabContent } from "@/modules/zylo-liquid/screens/settings/ComingSoonTabContent";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
@@ -149,7 +150,10 @@ export default function TankDetailScreen() {
 
   const activeAlerts = data.alerts.filter((a) => a.status === "active");
   const bannerAlert = activeAlerts.find((a) => a.type === "leak") ?? activeAlerts.find((a) => a.type === "level_high") ?? activeAlerts[0] ?? null;
-  const bannerTone = bannerAlert && bannerAlert.severity === "critical" ? "error" : "warning";
+  // Réutilise le même mapping sévérité→ton que le Centre d'alertes (jamais
+  // une simplification locale à 2 tons qui perdrait les niveaux "medium"/
+  // "low" — cf. refonte 2026-09-20).
+  const bannerTone = bannerAlert ? SEVERITY_TONE[bannerAlert.severity] : "warning";
   const bannerLeakRate = bannerAlert?.type === "leak" ? data.leakEvents.find((e) => e.result === "anomaly")?.leakRateLph ?? null : null;
 
   const activeSensorMappings = data.sensorMappings.filter((m) => m.active);

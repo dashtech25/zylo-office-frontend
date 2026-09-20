@@ -11,12 +11,16 @@ const alertVariants = cva("flex items-start gap-3 rounded-card border p-4 text-b
       warning: "border-warning/20 bg-warning-muted text-warning",
       error: "border-error/20 bg-error-muted text-error",
       info: "border-info/20 bg-info-muted text-info",
+      // Aligné sur Badge/SeverityBadge (2026-09-20, refonte Centre
+      // d'alertes) — même ton "low" (jaune) pour une sévérité "Faible",
+      // jamais un gris/warning générique par défaut.
+      low: "border-low/20 bg-low-muted text-low",
     },
   },
   defaultVariants: { tone: "info" },
 });
 
-const icons = { success: CheckCircle2, warning: AlertTriangle, error: XCircle, info: Info };
+const icons = { success: CheckCircle2, warning: AlertTriangle, error: XCircle, info: Info, low: AlertTriangle };
 type AlertTone = keyof typeof icons;
 
 export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {

@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { useFormatter } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 
 import { listReconciliationRecords, type Station, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Card } from "@/shared/ui";
+import { DiscrepancyListItem } from "@/modules/zylo-liquid/components/DiscrepancyListItem";
 
 const MAX_VISIBLE = 5;
 
@@ -60,19 +60,13 @@ export function DashboardStockDiscrepanciesWidget({
             const label = station ? `${station.name} — ${tankLabel}` : tankLabel;
             return (
               <li key={record.id}>
-                <Link
+                <DiscrepancyListItem
                   href="/zylo-liquid/reconciliation"
-                  className="flex w-full items-start gap-2 rounded-card px-1 py-2 text-left transition-colors hover:bg-surface-muted"
-                >
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-body-sm font-medium text-text">{label}</p>
-                    <p className="truncate text-caption text-text-muted">
-                      {record.discrepancyValue ?? "—"} {record.discrepancyUnit ?? ""}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-caption text-text-muted">{formatDate(record.evaluatedAt)}</span>
-                </Link>
+                  icon={AlertTriangle}
+                  label={label}
+                  value={record.discrepancyValue !== null ? `${record.discrepancyValue.toFixed(2)} ${record.discrepancyUnit ?? ""}` : "—"}
+                  timeLabel={formatDate(record.evaluatedAt)}
+                />
               </li>
             );
           })}
