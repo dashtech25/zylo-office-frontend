@@ -22,6 +22,16 @@ export const SEVERITY_DOT_CLASS: Record<AlertSeverity, string> = {
   low: "bg-low",
 };
 
+// Accent de bordure gauche par sévérité (cartes/lignes d'alerte pleine
+// largeur) — même mapping que `SEVERITY_TONE`/`SEVERITY_DOT_CLASS`, jamais
+// une quatrième redéfinition locale (ex. AlertRow avant refonte 2026-09-20).
+export const SEVERITY_BORDER_CLASS: Record<AlertSeverity, string> = {
+  critical: "border-l-4 border-l-error",
+  high: "border-l-4 border-l-warning",
+  medium: "border-l-4 border-l-info",
+  low: "border-l-4 border-l-low",
+};
+
 export interface SeverityBadgeProps {
   severity: AlertSeverity;
   className?: string;

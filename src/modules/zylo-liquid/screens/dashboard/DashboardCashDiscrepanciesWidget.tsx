@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { Scale } from "lucide-react";
 import { useFormatter } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 
 import { listReconciliationRecords, type Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Card } from "@/shared/ui";
-import { cn } from "@/shared/lib/cn";
+import { DiscrepancyListItem } from "@/modules/zylo-liquid/components/DiscrepancyListItem";
 
 const MAX_VISIBLE = 5;
 
@@ -74,21 +73,13 @@ export function DashboardCashDiscrepanciesWidget({
         <ul className="flex flex-col gap-1">
           {records.slice(0, MAX_VISIBLE).map((record) => (
             <li key={record.id}>
-              <Link
+              <DiscrepancyListItem
                 href="/zylo-liquid/caisse-ecarts"
-                className={cn("flex w-full items-start gap-2 rounded-card px-1 py-2 text-left transition-colors hover:bg-surface-muted")}
-              >
-                <Scale className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <p className="text-body-sm font-medium text-text">{SUBJECT_TYPE_LABELS[record.subjectType] ?? record.subjectType}</p>
-                  <p className="truncate text-caption text-text-muted">
-                    {record.discrepancyValue !== null ? `${record.discrepancyValue.toFixed(2)} ${record.discrepancyUnit ?? ""}` : "—"}
-                  </p>
-                </div>
-                <span className="shrink-0 text-caption text-text-muted">
-                  {format.dateTime(new Date(record.evaluatedAt), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </Link>
+                icon={Scale}
+                label={SUBJECT_TYPE_LABELS[record.subjectType] ?? record.subjectType}
+                value={record.discrepancyValue !== null ? `${record.discrepancyValue.toFixed(2)} ${record.discrepancyUnit ?? ""}` : "—"}
+                timeLabel={format.dateTime(new Date(record.evaluatedAt), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              />
             </li>
           ))}
         </ul>

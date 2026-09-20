@@ -1,14 +1,13 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { acknowledgeAlert, type Alert, type Station, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { Card, Modal } from "@/shared/ui";
-import { cn } from "@/shared/lib/cn";
 
+import { AlertCard } from "@/modules/zylo-liquid/components/AlertCard";
 import { AlertRow } from "@/modules/zylo-liquid/screens/alerts/AlertRow";
 
 const MAX_VISIBLE = 5;
@@ -65,28 +64,23 @@ export function DashboardAlertsWidget({
       {alerts.length === 0 ? (
         <p className="text-body-sm text-text-muted">{t("alerts.empty")}</p>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           {alerts.slice(0, MAX_VISIBLE).map((alert) => {
             const station = stations.find((s) => s.id === alert.stationId);
-            const tone = alert.type === "leak" || alert.type === "sensor_offline" ? "error" : "warning";
+            const tank = tanks.find((tk) => tk.id === alert.tankId);
             return (
-              <li key={alert.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAlertId(alert.id)}
-                  className="flex w-full items-start gap-2 rounded-card px-1 py-2 text-left transition-colors hover:bg-surface-muted"
-                >
-                  <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", tone === "error" ? "text-error" : "text-warning")} aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-body-sm font-medium text-text">{t(`alerts.types.${alert.type}`)}</p>
-                    <p className="truncate text-caption text-text-muted">{station?.name}</p>
-                  </div>
-                  <span className="shrink-0 text-caption text-text-muted">{formatRelativeTime(alert.triggeredAt)}</span>
-                </button>
-              </li>
+              <AlertCard
+                key={alert.id}
+                type={alert.type}
+                severity={alert.severity}
+                title={t(`alerts.types.${alert.type}`)}
+                location={station ? (tank ? `${station.name} · ${tank.displayName}` : station.name) : "—"}
+                timeAgo={formatRelativeTime(alert.triggeredAt)}
+                onClick={() => setSelectedAlertId(alert.id)}
+              />
             );
           })}
-        </ul>
+        </div>
       )}
 
       {selectedAlert && (
