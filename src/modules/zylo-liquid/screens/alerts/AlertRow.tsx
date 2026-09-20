@@ -16,18 +16,21 @@ import type { AlertSeverity, AlertStatus } from "@/modules/zylo-liquid/services/
 // télémétriques, litres pour les alertes de rapprochement livraison.
 const VOLUME_ALERT_TYPES = new Set(["delivery_discrepancy", "delivery_undeclared"]);
 
-const SEVERITY_TONE: Record<AlertSeverity, "error" | "warning" | "info"> = {
+// 4 tons désormais tous distincts (2026-09-20, refonte Centre d'alertes) —
+// medium/low retombaient auparavant sur les mêmes tons que high/critical
+// (aucun ton "low" n'existait avant l'ajout du jaune vif à `Badge`).
+const SEVERITY_TONE: Record<AlertSeverity, "error" | "warning" | "info" | "low"> = {
   critical: "error",
   high: "warning",
-  medium: "warning",
-  low: "info",
+  medium: "info",
+  low: "low",
 };
 
 const SEVERITY_BORDER: Record<AlertSeverity, string> = {
   critical: "border-l-4 border-l-error",
   high: "border-l-4 border-l-warning",
-  medium: "border-l-4 border-l-warning",
-  low: "",
+  medium: "border-l-4 border-l-info",
+  low: "border-l-4 border-l-low",
 };
 
 const STATUS_TONE: Record<AlertStatus, "error" | "warning" | "info" | "success"> = {

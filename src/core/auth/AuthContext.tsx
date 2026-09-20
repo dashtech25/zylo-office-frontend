@@ -22,7 +22,11 @@ interface AuthContextValue {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Exporté (en plus de useAuth) uniquement pour permettre à Storybook
+// d'injecter une valeur simulée via <AuthContext.Provider> sans passer par
+// AuthProvider (qui appelle une vraie API) — jamais utilisé ailleurs dans
+// l'app, toujours via useAuth().
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

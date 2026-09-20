@@ -36,17 +36,20 @@ export interface StationMapPoint {
   alertsLabel?: string;
 }
 
+// Alignées sur les tokens sémantiques globaux (2026-09-20) — `var()`
+// fonctionne dans les marqueurs Mapbox (éléments DOM/HTML bruts en dehors
+// de React) exactement comme dans un style Tailwind, même source unique.
 const STATUS_COLOR: Record<StationMapStatus, string> = {
-  online: "#1F9D55",
-  alert: "#D97706",
-  critical: "#DC2626",
-  offline: "#6B7280",
+  online: "var(--color-success)",
+  alert: "var(--color-warning)",
+  critical: "var(--color-error)",
+  offline: "var(--color-text-muted)",
 };
 
 const TONE_COLOR: Record<"success" | "warning" | "neutral", string> = {
-  success: "#1F9D55",
-  warning: "#D97706",
-  neutral: "#6B7280",
+  success: "var(--color-success)",
+  warning: "var(--color-warning)",
+  neutral: "var(--color-text-muted)",
 };
 
 // Fonds de carte proposés au choix (demande commanditaire 2026-09-17 : "le

@@ -23,6 +23,12 @@ export default defineConfig({
         ],
         test: {
           name: 'storybook',
+          // Certaines stories montent des composants réels qui déclenchent un
+          // vrai appel réseau vers l'API applicative (aucun backend démarré
+          // dans cet environnement de test) — le délai par défaut (5s) est
+          // parfois trop court pour laisser l'échec réseau se propager avant
+          // que le composant retombe sur son état vide déjà prévu.
+          testTimeout: 20000,
           browser: {
             enabled: true,
             headless: true,

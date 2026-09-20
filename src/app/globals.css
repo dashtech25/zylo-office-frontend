@@ -22,29 +22,43 @@
   --color-secondary-active: #1c2830;
   --color-secondary-muted: #e7eaed;
 
-  /* Feedback générique — repris de la palette IEC 62682/ISA-101 du
-     prototype Zylo Liquid (prototype.html, variables --ok/--major/--crit/--brand) */
-  --color-success: #0d9488;
-  --color-success-muted: #e6f6f4;
-  --color-warning: #d97706;
-  --color-warning-muted: #fdf3e7;
-  --color-error: #dc2626;
-  --color-error-muted: #fdeaea;
-  --color-info: #5ebcfc;
-  --color-info-muted: #eef8ff;
+  /* Feedback générique — aligné 2026-09-20 sur la palette Tailwind vive
+     (demande explicite : plus aucune couleur sémantique désaturée) :
+     critique=red-500, élevé=orange-500, moyen/info=blue-500,
+     succès/résolu=green-500, faible=yellow-500 (nouveau, voir plus bas).
+     Anciennes valeurs (teal/amber-600/cyan pâle) abandonnées — elles
+     rendaient les alertes "ternes" par rapport à la maquette de référence. */
+  --color-success: #22c55e;
+  --color-success-muted: #dcfce7;
+  --color-warning: #f97316;
+  --color-warning-muted: #ffedd5;
+  --color-error: #ef4444;
+  --color-error-muted: #fee2e2;
+  --color-info: #3b82f6;
+  --color-info-muted: #dbeafe;
+  /* Faible/"low" — 5e couleur sémantique demandée (jaune vif), absente de
+     l'ancien système à 4 tons (success/warning/error/info) : le niveau de
+     sévérité "Faible" retombait sur du gris neutre faute d'un ton dédié,
+     exactement le défaut de couleur "terne" signalé. */
+  --color-low: #eab308;
+  --color-low-muted: #fef9c3;
 
   /* Sévérité — tokens réservés aux futurs statuts métier (équipements,
      alarmes, commandes...). Les composants génériques ignorent ces noms :
      ils exposent une prop `tone`, le mapping statut→tone vit dans les
-     modules, jamais dans shared/ui (cf. rapport AlloTech §13/§16). */
-  --color-severity-critical: #dc2626;
-  --color-severity-critical-bg: #fdeaea;
-  --color-severity-major: #d97706;
-  --color-severity-major-bg: #fdf3e7;
+     modules, jamais dans shared/ui (cf. rapport AlloTech §13/§16).
+     critical/major/ok recalés sur error/warning/success (même valeurs,
+     2026-09-20) pour ne jamais diverger visuellement des tons génériques ;
+     minor/maintenance/pending/idle inchangés (hors périmètre de la demande
+     — pas des niveaux de sévérité d'alerte). */
+  --color-severity-critical: #ef4444;
+  --color-severity-critical-bg: #fee2e2;
+  --color-severity-major: #f97316;
+  --color-severity-major-bg: #ffedd5;
   --color-severity-minor: #0891b2;
   --color-severity-minor-bg: #e6f6fa;
-  --color-severity-ok: #0d9488;
-  --color-severity-ok-bg: #e6f6f4;
+  --color-severity-ok: #22c55e;
+  --color-severity-ok-bg: #dcfce7;
   --color-severity-maintenance: #7c3aed;
   --color-severity-maintenance-bg: #f2ecfd;
   --color-severity-pending: #ca8a04;
@@ -102,6 +116,8 @@
   --color-error-muted: var(--color-error-muted);
   --color-info: var(--color-info);
   --color-info-muted: var(--color-info-muted);
+  --color-low: var(--color-low);
+  --color-low-muted: var(--color-low-muted);
 
   --color-severity-critical: var(--color-severity-critical);
   --color-severity-critical-bg: var(--color-severity-critical-bg);

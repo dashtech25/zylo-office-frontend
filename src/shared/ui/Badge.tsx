@@ -19,6 +19,12 @@ const badgeVariants = cva(
         warning: "bg-warning-muted text-warning",
         error: "bg-error-muted text-error",
         info: "bg-info-muted text-info",
+        // "Faible"/low — seul ton sans équivalent dans le quatuor
+        // success/warning/error/info d'origine (2026-09-20, refonte Centre
+        // d'alertes) : sans lui, une sévérité "Faible" retombait sur
+        // `neutral` (gris), la couleur "terne à la place d'une couleur
+        // sémantique" explicitement signalée à corriger.
+        low: "bg-low-muted text-low",
         critical: "bg-severity-critical-bg text-severity-critical",
         major: "bg-severity-major-bg text-severity-major",
         minor: "bg-severity-minor-bg text-severity-minor",
