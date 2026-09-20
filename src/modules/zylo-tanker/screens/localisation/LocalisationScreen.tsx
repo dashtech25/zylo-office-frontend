@@ -15,7 +15,7 @@ import {
   EmptyState,
   Kpi,
   PageHeader,
-  Select,
+  SearchableSelect,
   Stack,
   Table,
   TableBody,
@@ -475,7 +475,7 @@ export default function LocalisationScreen() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="mb-1 block text-body-sm text-text-muted">Statut</label>
-              <Select
+              <SearchableSelect
                 aria-label="Filtrer par statut"
                 options={STATUS_FILTER_OPTIONS}
                 value={statusFilter}
@@ -484,7 +484,7 @@ export default function LocalisationScreen() {
             </div>
             <div>
               <label className="mb-1 block text-body-sm text-text-muted">Destination</label>
-              <Select
+              <SearchableSelect
                 aria-label="Filtrer par destination"
                 options={destinationOptions}
                 value={destinationFilter}
@@ -493,7 +493,7 @@ export default function LocalisationScreen() {
             </div>
             <div>
               <label className="mb-1 block text-body-sm text-text-muted">Alarme</label>
-              <Select
+              <SearchableSelect
                 aria-label="Filtrer par alarme"
                 options={ALARM_FILTER_OPTIONS}
                 value={alarmFilter}
@@ -502,7 +502,7 @@ export default function LocalisationScreen() {
             </div>
             <div>
               <label className="mb-1 block text-body-sm text-text-muted">Vitesse</label>
-              <Select
+              <SearchableSelect
                 aria-label="Filtrer par vitesse"
                 options={SPEED_FILTER_OPTIONS}
                 value={speedFilter}

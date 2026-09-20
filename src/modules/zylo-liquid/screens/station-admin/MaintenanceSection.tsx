@@ -17,7 +17,7 @@ import {
   type InterventionType,
   type Technician,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -123,13 +123,13 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
                 {error && <Alert tone="error">{error}</Alert>}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField label={t("interventions.form.equipment")}>
-                    {() => <Select aria-label={t("interventions.form.equipment")} value={equipmentId || undefined} onValueChange={setEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={equipment.map((e) => ({ value: e.id, label: e.name }))} />}
+                    {() => <SearchableSelect aria-label={t("interventions.form.equipment")} value={equipmentId || undefined} onValueChange={setEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={equipment.map((e) => ({ value: e.id, label: e.name }))} />}
                   </FormField>
                   <FormField label={t("interventions.form.priority")}>
-                    {() => <Select aria-label={t("interventions.form.priority")} value={priority} onValueChange={(v) => setPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
+                    {() => <SearchableSelect aria-label={t("interventions.form.priority")} value={priority} onValueChange={(v) => setPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
                   </FormField>
                   <FormField label={t("interventions.form.type")}>
-                    {() => <Select aria-label={t("interventions.form.type")} value={type} onValueChange={(v) => setType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
+                    {() => <SearchableSelect aria-label={t("interventions.form.type")} value={type} onValueChange={(v) => setType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
                   </FormField>
                   <div className="sm:col-span-2">
                     <FormField label={t("interventions.form.description")}>{(field) => <Textarea {...field} value={description} onChange={(e) => setDescription(e.target.value)} />}</FormField>
@@ -172,7 +172,7 @@ export function MaintenanceSection({ organizationId, stationId }: { organization
                         <TableCell>{technician?.name ?? "—"}</TableCell>
                         <TableCell>
                           {iv.status !== "closed" && !iv.technicianId && (
-                            <Select aria-label={t("interventions.selectTechnician")} placeholder={t("interventions.assign")} options={technicians.map((tec) => ({ value: tec.id, label: tec.name }))} onValueChange={(technicianId) => handleAssign(iv.id, technicianId)} />
+                            <SearchableSelect aria-label={t("interventions.selectTechnician")} placeholder={t("interventions.assign")} options={technicians.map((tec) => ({ value: tec.id, label: tec.name }))} onValueChange={(technicianId) => handleAssign(iv.id, technicianId)} />
                           )}
                           {iv.status !== "closed" && iv.technicianId && closingId !== iv.id && (
                             <Button variant="outline" size="sm" onClick={() => setClosingId(iv.id)}>{t("interventions.close")}</Button>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 
 import type { useExploitation } from "./useExploitation";
 
@@ -87,7 +87,7 @@ export function ProductFormModal({
         {error && <Alert tone="error">{error}</Alert>}
         <FormField label={t("product")}>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("product")}
               value={fuelProductId || undefined}
               onValueChange={setFuelProductId}

@@ -12,7 +12,7 @@ import {
   type SecurityEquipmentConformityStatus,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatDueDate, formatFreshness } from "@/shared/lib/formatDateTime";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -100,7 +100,7 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
           {error && <Alert tone="error">{error}</Alert>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label={t("form.category")}>
-              {() => <Select aria-label={t("form.category")} value={category} onValueChange={(v) => setCategory(v as SecurityEquipmentCategory)} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
+              {() => <SearchableSelect aria-label={t("form.category")} value={category} onValueChange={(v) => setCategory(v as SecurityEquipmentCategory)} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
             </FormField>
             <FormField label={t("form.label")}>{(field) => <Input {...field} value={label} onChange={(e) => setLabel(e.target.value)} />}</FormField>
             <FormField label={t("form.lastControlAt")}>{(field) => <Input {...field} type="date" value={lastControlAt} onChange={(e) => setLastControlAt(e.target.value)} />}</FormField>
@@ -153,7 +153,7 @@ export function SecuritySection({ organizationId, stationId }: { organizationId:
                         )}
                       </TableCell>
                       <TableCell>
-                        <Select
+                        <SearchableSelect
                           aria-label={t("table.conformityStatus")}
                           value={eq.conformityStatus}
                           onValueChange={(v) => handleUpdateStatus(eq.id, v as SecurityEquipmentConformityStatus)}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { createPump, updatePump, type Pump, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 
 export interface PumpFormModalProps {
   organizationId: string;
@@ -97,7 +97,7 @@ export function PumpFormModal({ organizationId, stationId, tanks, pump, open, on
         </FormField>
         <FormField label={t("form.tank")} required>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("form.tank")}
               value={tankId || undefined}
               onValueChange={setTankId}
@@ -109,7 +109,7 @@ export function PumpFormModal({ organizationId, stationId, tanks, pump, open, on
         {pump !== null && (
           <FormField label={t("form.status")}>
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label={t("form.status")}
                 value={active ? "active" : "inactive"}
                 onValueChange={(value) => setActive(value === "active")}

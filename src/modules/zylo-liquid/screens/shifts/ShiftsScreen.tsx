@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useShifts } from "./useShifts";
@@ -65,7 +65,7 @@ export default function ShiftsScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.tank")}>
-            {() => <Select aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={data.tanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
+            {() => <SearchableSelect aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={data.tanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
           </FormField>
           <FormField label={t("form.shiftStart")}>
             {(field) => <Input {...field} type="datetime-local" value={shiftStart} onChange={(e) => setShiftStart(e.target.value)} />}
@@ -77,7 +77,7 @@ export default function ShiftsScreen() {
             {(field) => <Input {...field} type="number" step="1" value={declaredCashAmount} onChange={(e) => setDeclaredCashAmount(e.target.value)} />}
           </FormField>
           <FormField label={t("form.currency")}>
-            {() => <Select aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
+            {() => <SearchableSelect aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
           </FormField>
         </div>
         <Button className="mt-4" onClick={handleCreate} loading={creating}>

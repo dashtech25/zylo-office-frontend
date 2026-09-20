@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { CreateTrackingLocationInput, TrackingLocation, TrackingLocationType } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { MapPin } from "lucide-react";
 
 import { useTrucks } from "./useTrucks";
@@ -282,7 +282,7 @@ function TrackingLocationFormModal({
           </FormField>
           <FormField label={t("type.label")}>
             {() => (
-              <Select aria-label={t("type.label")} value={type} onValueChange={(v) => setType(v as TrackingLocationType)}
+              <SearchableSelect aria-label={t("type.label")} value={type} onValueChange={(v) => setType(v as TrackingLocationType)}
                 options={LOCATION_TYPES.map((v) => ({ value: v, label: t(`type.${v}`) }))} />
             )}
           </FormField>

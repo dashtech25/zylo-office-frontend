@@ -51,6 +51,8 @@ const ALERT_TYPE_CONFIG: Record<AlertType, { icon: LucideIcon; tone: Tone }> = {
   delivery_declaration_pending: { icon: Truck, tone: "low" },
   stock_declared_discrepancy: { icon: Scale, tone: "warning" },
   truck_stop_unqualified: { icon: MapPin, tone: "secondary" },
+  manual_gauging_discrepancy: { icon: Scale, tone: "maintenance" },
+  quality_check_discrepancy: { icon: Droplet, tone: "warning" },
 };
 
 /** Groupe de filtre (panneau de filtres du Centre d'alertes) par type —
@@ -73,6 +75,8 @@ export const ALERT_TYPE_GROUP: Record<AlertType, string> = {
   delivery_declaration_pending: "deliveries",
   stock_declared_discrepancy: "salesCash",
   truck_stop_unqualified: "transport",
+  manual_gauging_discrepancy: "salesCash",
+  quality_check_discrepancy: "salesCash",
 };
 
 /** Types pouvant être résolus manuellement (`PATCH /alerts/{id}`, note de

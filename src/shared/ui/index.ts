@@ -22,7 +22,6 @@ export * from "./Pagination";
 export * from "./ProgressBar";
 export * from "./QuickActionButton";
 export * from "./SearchableSelect";
-export * from "./Select";
 export * from "./ShareButton";
 export * from "./Skeleton";
 export * from "./Spinner";

@@ -16,7 +16,7 @@ import {
   updateUserProfile,
   type StationStaff,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Badge, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 import { domainsGrantedByPermissions, STAFF_PERMISSION_DOMAINS } from "./staffPermissionDomains";
 
@@ -285,7 +285,7 @@ export function StaffMemberDetailModal({
                   <div className="flex flex-col gap-2 rounded-card border border-border-subtle p-3">
                     <FormField label={t("role")}>
                       {() => (
-                        <Select
+                        <SearchableSelect
                           aria-label={t("role")}
                           value={pendingRoleId || undefined}
                           onValueChange={setPendingRoleId}

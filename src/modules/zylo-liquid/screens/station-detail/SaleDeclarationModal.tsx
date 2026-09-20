@@ -13,7 +13,7 @@ import {
   type Tank,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 
 const PAYMENT_METHODS = ["cash", "card", "fleet", "credit"] as const;
 
@@ -165,7 +165,7 @@ export function SaleDeclarationModal({ organizationId, stationId, pumps, tanks, 
         {formError && <Alert tone="error">{formError}</Alert>}
         <FormField label={t("form.pump")} required>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("form.pump")}
               value={pumpId || undefined}
               onValueChange={setPumpId}
@@ -193,7 +193,7 @@ export function SaleDeclarationModal({ organizationId, stationId, pumps, tanks, 
         </FormField>
         <FormField label={t("form.currency")} required>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("form.currency")}
               value={currencyId || undefined}
               onValueChange={setCurrencyId}
@@ -204,7 +204,7 @@ export function SaleDeclarationModal({ organizationId, stationId, pumps, tanks, 
         </FormField>
         <FormField label={t("form.paymentMethod")} required>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("form.paymentMethod")}
               value={paymentMethod}
               onValueChange={(v) => setPaymentMethod(v as (typeof PAYMENT_METHODS)[number])}
@@ -215,7 +215,7 @@ export function SaleDeclarationModal({ organizationId, stationId, pumps, tanks, 
         {paymentMethod === "credit" && (
           <FormField label={t("form.commercialAccount")} required>
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label={t("form.commercialAccount")}
                 value={commercialAccountId || undefined}
                 onValueChange={setCommercialAccountId}

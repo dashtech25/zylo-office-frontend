@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { resolveStorageUrl, uploadFile } from "@/core/api/storage";
 import { createDocument, deleteDocument, getDocumentDownloadUrl, listDocumentsByEntity } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -94,7 +94,7 @@ export function DocumentsSection({ organizationId, stationId }: { organizationId
           <p className="text-body-sm text-text-muted">{t("form.hint")}</p>
           <FormField label={t("form.sensitivityLevel")}>
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label={t("form.sensitivityLevel")}
                 value={sensitivityLevel}
                 onValueChange={(v) => setSensitivityLevel(v as "normal" | "restreint")}

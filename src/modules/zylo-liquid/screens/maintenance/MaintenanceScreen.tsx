@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { Intervention, InterventionPriority, InterventionType } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton, Tabs, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton, Tabs, Textarea } from "@/shared/ui";
 
 import { useMaintenance } from "./useMaintenance";
 
@@ -105,10 +105,10 @@ export default function MaintenanceScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("equipment.form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("equipment.form.station")}>
-            {() => <Select aria-label={t("equipment.form.station")} value={eqStationId || undefined} onValueChange={setEqStationId} placeholder={t("equipment.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <SearchableSelect aria-label={t("equipment.form.station")} value={eqStationId || undefined} onValueChange={setEqStationId} placeholder={t("equipment.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("equipment.form.type")}>
-            {() => <Select aria-label={t("equipment.form.type")} value={eqType} onValueChange={(v) => setEqType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: v }))} />}
+            {() => <SearchableSelect aria-label={t("equipment.form.type")} value={eqType} onValueChange={(v) => setEqType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: v }))} />}
           </FormField>
           <FormField label={t("equipment.form.name")}>
             {(field) => <Input {...field} value={eqName} onChange={(e) => setEqName(e.target.value)} />}
@@ -170,13 +170,13 @@ export default function MaintenanceScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("interventions.form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("interventions.form.equipment")}>
-            {() => <Select aria-label={t("interventions.form.equipment")} value={ivEquipmentId || undefined} onValueChange={setIvEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={data.equipment.map((e) => ({ value: e.id, label: e.name }))} />}
+            {() => <SearchableSelect aria-label={t("interventions.form.equipment")} value={ivEquipmentId || undefined} onValueChange={setIvEquipmentId} placeholder={t("interventions.form.selectEquipment")} options={data.equipment.map((e) => ({ value: e.id, label: e.name }))} />}
           </FormField>
           <FormField label={t("interventions.form.priority")}>
-            {() => <Select aria-label={t("interventions.form.priority")} value={ivPriority} onValueChange={(v) => setIvPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
+            {() => <SearchableSelect aria-label={t("interventions.form.priority")} value={ivPriority} onValueChange={(v) => setIvPriority(v as InterventionPriority)} options={PRIORITIES.map((p) => ({ value: p, label: t(`interventions.priority.${p}`) }))} />}
           </FormField>
           <FormField label={t("interventions.form.type")}>
-            {() => <Select aria-label={t("interventions.form.type")} value={ivType} onValueChange={(v) => setIvType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
+            {() => <SearchableSelect aria-label={t("interventions.form.type")} value={ivType} onValueChange={(v) => setIvType(v as InterventionType)} options={TYPES.map((ty) => ({ value: ty, label: t(`interventions.type.${ty}`) }))} />}
           </FormField>
           <div className="sm:col-span-3">
             <FormField label={t("interventions.form.description")}>
@@ -224,7 +224,7 @@ export default function MaintenanceScreen() {
                   <TableCell>{technician?.name ?? "—"}</TableCell>
                   <TableCell>
                     {iv.status !== "closed" && !iv.technicianId && (
-                      <Select
+                      <SearchableSelect
                         aria-label={t("interventions.selectTechnician")}
                         placeholder={t("interventions.assign")}
                         options={data.technicians.map((tec) => ({ value: tec.id, label: tec.name }))}

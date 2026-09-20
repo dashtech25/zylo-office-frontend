@@ -21,7 +21,7 @@ import {
   Modal,
   PageHeader,
   Pagination,
-  Select,
+  SearchableSelect,
   Skeleton,
   Table,
   TableBody,
@@ -108,7 +108,7 @@ export default function UiPreviewPage() {
         <CardHeader>
           <div>
             <CardTitle>Formulaire</CardTitle>
-            <CardDescription>Input, Select, Textarea, Checkbox, FormField</CardDescription>
+            <CardDescription>Input, SearchableSelect, Textarea, Checkbox, FormField</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -120,7 +120,7 @@ export default function UiPreviewPage() {
           </FormField>
           <FormField label="Unité de mesure">
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label="Unité de mesure"
                 value={selectValue}
                 onValueChange={setSelectValue}

@@ -8,7 +8,7 @@ import { assignRole, listMembers, listRoles, unassignRole, type OrganizationMemb
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { usePermissions } from "@/core/rbac/PermissionContext";
 import { listStations, type Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, Button, Card, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
+import { Badge, Button, Card, Modal, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 import { GrantsModal } from "./GrantsModal";
 
@@ -203,14 +203,14 @@ export default function UsersPage() {
         >
           <Stack gap="sm">
             {assignError && <p className="text-body-sm text-error">{assignError}</p>}
-            <Select
+            <SearchableSelect
               aria-label={t("selectRole")}
               value={selectedRoleId || "__none__"}
               onValueChange={(v) => setSelectedRoleId(v === "__none__" ? "" : v)}
               options={[{ value: "__none__", label: t("selectRole") }, ...roles.map((r) => ({ value: r.id, label: r.name }))]}
             />
             <div>
-              <Select
+              <SearchableSelect
                 aria-label={t("selectScopeStation")}
                 value={selectedStationId || "__all__"}
                 onValueChange={(v) => setSelectedStationId(v === "__all__" ? "" : v)}

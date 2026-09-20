@@ -3,7 +3,7 @@
 import { Search } from "lucide-react";
 
 import type { City, FuelProduct } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Badge, type BadgeProps, Input, Select } from "@/shared/ui";
+import { Badge, type BadgeProps, Input, SearchableSelect } from "@/shared/ui";
 
 export interface FilterOption {
   value: string;
@@ -90,10 +90,10 @@ export function StationsFilterBar({
       )}
       <div className="flex flex-wrap gap-3">
         <div className="w-full sm:w-44">
-          <Select aria-label={statusLabel} value={statusValue} onValueChange={onStatusChange} options={statusOptions} />
+          <SearchableSelect aria-label={statusLabel} value={statusValue} onValueChange={onStatusChange} options={statusOptions} />
         </div>
         <div className="w-full sm:w-44">
-          <Select
+          <SearchableSelect
             aria-label={cityLabel}
             value={cityFilter || undefined}
             onValueChange={(v) => onCityFilterChange(v === "__all__" ? "" : v)}
@@ -102,7 +102,7 @@ export function StationsFilterBar({
           />
         </div>
         <div className="w-full sm:w-44">
-          <Select
+          <SearchableSelect
             aria-label={productLabel}
             value={productFilter || undefined}
             onValueChange={(v) => onProductFilterChange(v === "__all__" ? "" : v)}
@@ -111,7 +111,7 @@ export function StationsFilterBar({
           />
         </div>
         <div className="w-full sm:w-44">
-          <Select aria-label={sortLabel} value={sortValue} onValueChange={onSortChange} options={sortOptions} />
+          <SearchableSelect aria-label={sortLabel} value={sortValue} onValueChange={onSortChange} options={sortOptions} />
         </div>
         <div className="min-w-[200px] flex-1">
           <Input icon={<Search className="size-4" aria-hidden />} placeholder={searchPlaceholder} value={search} onChange={(e) => onSearchChange(e.target.value)} aria-label={searchPlaceholder} />

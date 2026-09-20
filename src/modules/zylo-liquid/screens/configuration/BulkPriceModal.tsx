@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { StationPicker } from "@/modules/zylo-liquid/components/StationPicker";
 import { createPriceHistory, type City, type Currency, type FuelProduct, type PriceHistoryEntry, type Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Badge, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 
 export interface BulkPriceModalProps {
   organizationId: string;
@@ -141,7 +141,7 @@ export function BulkPriceModal({ organizationId, open, onOpenChange, stations, c
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("product")}>
-            {() => <Select aria-label={t("product")} value={fuelProductId || undefined} onValueChange={setFuelProductId} placeholder={t("selectProduct")} options={fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
+            {() => <SearchableSelect aria-label={t("product")} value={fuelProductId || undefined} onValueChange={setFuelProductId} placeholder={t("selectProduct")} options={fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
           </FormField>
           <FormField label={t("currency")}>
             {() => <Input value={currenciesInSelection[0] ?? "—"} disabled />}

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { CardSkeleton } from "@/shared/ui/Skeleton";
 
 import { useCredit } from "./useCredit";
@@ -74,7 +74,7 @@ export default function CreditScreen() {
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.name")}>{(field) => <Input {...field} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
           <FormField label={t("form.currency")}>
-            {() => <Select aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
+            {() => <SearchableSelect aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
           </FormField>
           <FormField label={t("form.creditLimit")}>
             {(field) => <Input {...field} type="number" step="1" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} />}

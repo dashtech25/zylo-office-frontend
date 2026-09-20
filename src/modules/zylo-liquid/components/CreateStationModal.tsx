@@ -24,7 +24,7 @@ import {
   type WeeklyHours,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { cn } from "@/shared/lib/cn";
-import { Alert, Button, Checkbox, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Button, Checkbox, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 
 import { generateCode } from "@/modules/zylo-liquid/utils/generateCode";
 import { listIanaTimezones } from "@/modules/zylo-liquid/utils/timezones";
@@ -323,7 +323,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
 
             <FormField label={t("createModal.country")} required hint={t("createModal.countryHint")}>
               {(field) => (
-                <Select
+                <SearchableSelect
                   {...field}
                   value={countryId}
                   onValueChange={handleCountryChange}
@@ -334,7 +334,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
 
             <FormField label={t("createModal.city")} hint={t("createModal.cityHint")}>
               {(field) => (
-                <Select
+                <SearchableSelect
                   {...field}
                   value={cityId}
                   onValueChange={setCityId}
@@ -351,7 +351,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
 
             <FormField label={t("createModal.currencyOverride")} hint={t("createModal.currencyOverrideHint")}>
               {(field) => (
-                <Select
+                <SearchableSelect
                   {...field}
                   value={currencyOverrideId}
                   onValueChange={setCurrencyOverrideId}
@@ -375,7 +375,7 @@ export function CreateStationModal({ organizationId, open, onOpenChange, onCreat
 
             <FormField label={t("createModal.timezone")} required hint={t("createModal.timezoneHint")}>
               {(field) => (
-                <Select
+                <SearchableSelect
                   {...field}
                   value={timezone}
                   onValueChange={(next) => {

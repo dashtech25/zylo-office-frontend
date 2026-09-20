@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import type { CalibrationPoint, FuelProduct } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { generateCode } from "@/modules/zylo-liquid/utils/generateCode";
-import { Alert, Button, Checkbox, FormField, Input, Select } from "@/shared/ui";
+import { Alert, Button, Checkbox, FormField, Input, SearchableSelect } from "@/shared/ui";
 
 export interface TankSensorRow {
   serial: string;
@@ -130,7 +130,7 @@ export function TankProductField({
       {fuelMode === "existing" ? (
         <FormField label={t("product")} required>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("product")}
               value={fuelProductId}
               onValueChange={(v) => patch({ fuelProductId: v })}
@@ -275,7 +275,7 @@ export function TankFieldsSection({
             </FormField>
             <FormField label={t("measurementType")}>
               {() => (
-                <Select
+                <SearchableSelect
                   aria-label={t("measurementType")}
                   value={sensor.measurementType}
                   onValueChange={(v) =>

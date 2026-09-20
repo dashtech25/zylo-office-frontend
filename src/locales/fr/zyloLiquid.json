@@ -185,6 +185,24 @@
           "Un arrêt hors trajet habituel"
         ],
         "impact": "Cet arrêt reste non qualifié tant qu'il n'est pas associé à un lieu connu ou classé volontairement comme exceptionnel."
+      },
+      "manual_gauging_discrepancy": {
+        "intro": "La hauteur jaugée manuellement diffère de la mesure télémétrique la plus proche dans le temps au-delà de la tolérance autorisée. Cela peut être dû à :",
+        "causes": [
+          "Une erreur de lecture ou de saisie du jaugeage manuel",
+          "Une sonde de niveau mal calibrée",
+          "Un jaugeage effectué trop loin dans le temps de la mesure télémétrique"
+        ],
+        "impact": "Un écart persistant signale un problème de fiabilité de la mesure (jaugeage ou capteur) tant qu'il n'est pas expliqué."
+      },
+      "quality_check_discrepancy": {
+        "intro": "Le contrôle qualité/eau déclaré ne correspond pas à la présence ou l'absence d'une alerte eau détectée sur la même cuve dans la fenêtre de temps configurée. Cela peut être dû à :",
+        "causes": [
+          "Une eau détectée par le contrôle manuel mais sous le seuil de déclenchement du capteur",
+          "Un contrôle déclaré à tort (eau signalée sans en avoir)",
+          "Un capteur ayant détecté de l'eau depuis résorbée avant le contrôle manuel"
+        ],
+        "impact": "Un écart signale soit une contamination non détectée par le capteur, soit une déclaration à vérifier — dans les deux cas un risque qualité tant qu'il n'est pas expliqué."
       }
     },
     "systemOperational": "Système opérationnel"
@@ -1847,7 +1865,9 @@
       "calibration_missing": "Barème de calibration manquant",
       "station_offline": "Silence complet — aucune cuve ne transmet",
       "stock_declared_discrepancy": "Écart ventes déclarées / stock détecté",
-      "truck_stop_unqualified": "Arrêt de camion/navire non qualifié"
+      "truck_stop_unqualified": "Arrêt de camion/navire non qualifié",
+      "manual_gauging_discrepancy": "Écart de jaugeage manuel",
+      "quality_check_discrepancy": "Écart de contrôle qualité/eau"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -1923,7 +1943,7 @@
   },
   "dashboardSections": {
     "alertsAndAnomalies": "Alertes & anomalies",
-    "alertsAndAnomaliesSubtitle": "Tout ce qui demande une décision — alertes actives, écarts de stock, écarts de caisse.",
+    "alertsAndAnomaliesSubtitle": "Tout ce qui demande une décision, y compris les écarts de stock, de livraison, de jaugeage et de contrôle qualité.",
     "sales": "Ventes",
     "salesSubtitle": "Volume vendu et chiffre d'affaires, sur la période sélectionnée.",
     "salesEmpty": "Aucune vente sur la période sélectionnée.",

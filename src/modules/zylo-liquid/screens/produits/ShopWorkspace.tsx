@@ -9,7 +9,7 @@ import { exportTable } from "@/core/api/exportTable";
 import { parseXlsxFile } from "@/core/api/importTable";
 import { ApiError } from "@/core/api/client";
 import type { BulkImportSellableProductRow, PaymentMethod } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
 import { CardSkeleton, ListSkeleton } from "@/shared/ui/Skeleton";
 
 import { useProduits } from "./useProduits";
@@ -377,7 +377,7 @@ export function ShopWorkspace({ organizationId, fixedStationId }: { organization
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {!fixedStationId && (
             <FormField label={t("catalog.form.station")}>
-              {() => <Select aria-label={t("catalog.form.station")} value={catStationId || undefined} onValueChange={setCatStationId} placeholder={t("catalog.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+              {() => <SearchableSelect aria-label={t("catalog.form.station")} value={catStationId || undefined} onValueChange={setCatStationId} placeholder={t("catalog.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
             </FormField>
           )}
           <FormField label={t("catalog.form.name")}>
@@ -396,7 +396,7 @@ export function ShopWorkspace({ organizationId, fixedStationId }: { organization
             {(field) => <Input {...field} type="number" step="1" value={catPrice} onChange={(e) => setCatPrice(e.target.value)} />}
           </FormField>
           <FormField label={t("catalog.form.currency")}>
-            {() => <Select aria-label={t("catalog.form.currency")} value={catCurrencyId || undefined} onValueChange={setCatCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
+            {() => <SearchableSelect aria-label={t("catalog.form.currency")} value={catCurrencyId || undefined} onValueChange={setCatCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
           </FormField>
           <FormField label={t("catalog.form.stock")}>
             {(field) => <Input {...field} type="number" step="1" min="0" value={catStock} onChange={(e) => setCatStock(e.target.value)} />}
@@ -555,7 +555,7 @@ export function ShopWorkspace({ organizationId, fixedStationId }: { organization
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {!fixedStationId && (
             <FormField label={t("sale.station")}>
-              {() => <Select aria-label={t("sale.station")} value={saleStationId || undefined} onValueChange={setSaleStationId} placeholder={t("sale.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+              {() => <SearchableSelect aria-label={t("sale.station")} value={saleStationId || undefined} onValueChange={setSaleStationId} placeholder={t("sale.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
             </FormField>
           )}
           <FormField label={t("sale.searchPlaceholder")}>
@@ -613,11 +613,11 @@ export function ShopWorkspace({ organizationId, fixedStationId }: { organization
         )}
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("sale.paymentMethod")}>
-            {() => <Select aria-label={t("sale.paymentMethod")} value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)} options={PAYMENT_METHODS.map((m) => ({ value: m, label: tPay(`paymentMethod.${m}`) }))} />}
+            {() => <SearchableSelect aria-label={t("sale.paymentMethod")} value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)} options={PAYMENT_METHODS.map((m) => ({ value: m, label: tPay(`paymentMethod.${m}`) }))} />}
           </FormField>
           {paymentMethod === "credit" && (
             <FormField label={t("sale.commercialAccount")}>
-              {() => <Select aria-label={t("sale.commercialAccount")} value={commercialAccountId || undefined} onValueChange={setCommercialAccountId} placeholder={t("sale.selectAccount")} options={data.commercialAccounts.map((a) => ({ value: a.id, label: a.name }))} />}
+              {() => <SearchableSelect aria-label={t("sale.commercialAccount")} value={commercialAccountId || undefined} onValueChange={setCommercialAccountId} placeholder={t("sale.selectAccount")} options={data.commercialAccounts.map((a) => ({ value: a.id, label: a.name }))} />}
             </FormField>
           )}
         </div>

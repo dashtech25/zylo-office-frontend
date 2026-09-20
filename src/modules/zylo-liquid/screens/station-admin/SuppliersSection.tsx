@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import type { Supplier, StationSupplier, SupplierCategory } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatDueDate } from "@/shared/lib/formatDateTime";
-import { Alert, Badge, Button, Card, EmptyState, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, Input, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { SupplierFormModal } from "../station-detail/SupplierFormModal";
@@ -96,14 +96,14 @@ export function SuppliersSection({ organizationId, stationId }: { organizationId
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-muted" aria-hidden />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-8" />
         </div>
-        <Select
+        <SearchableSelect
           aria-label={t("filterCategory")}
           value={categoryFilter || undefined}
           onValueChange={setCategoryFilter}
           placeholder={t("filterCategory")}
           options={[{ value: "", label: t("allCategories") }, ...CATEGORIES.map((c) => ({ value: c, label: t(`modal.category.${c}`) }))]}
         />
-        <Select
+        <SearchableSelect
           aria-label={t("filterStatus")}
           value={statusFilter || undefined}
           onValueChange={setStatusFilter}

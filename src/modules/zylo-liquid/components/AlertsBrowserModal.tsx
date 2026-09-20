@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { AlertRow } from "@/modules/zylo-liquid/screens/alerts/AlertRow";
 import { useAlertsList, type AlertRow as AlertRowData, type AlertStatusFilter } from "@/modules/zylo-liquid/screens/alerts/useAlertsList";
-import { ActivityRow, Button, EmptyState, Modal, Select, Stack } from "@/shared/ui";
+import { ActivityRow, Button, EmptyState, Modal, SearchableSelect, Stack } from "@/shared/ui";
 import { ListSkeleton } from "@/shared/ui/Skeleton";
 
 const STATUS_VALUES: AlertStatusFilter[] = ["all", "active", "acknowledged", "resolved"];
@@ -78,7 +78,7 @@ export function AlertsBrowserModal({
       ) : (
         <Stack>
           <div className="w-full sm:w-56">
-            <Select
+            <SearchableSelect
               aria-label={t("page.filterStatus")}
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as AlertStatusFilter)}

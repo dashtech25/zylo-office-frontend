@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useVentes } from "./useVentes";
@@ -72,10 +72,10 @@ export default function VentesScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.station")}>
-            {() => <Select aria-label={t("form.station")} value={stationId || undefined} onValueChange={setStationId} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <SearchableSelect aria-label={t("form.station")} value={stationId || undefined} onValueChange={setStationId} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("form.product")}>
-            {() => <Select aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={setFuelProductId} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
+            {() => <SearchableSelect aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={setFuelProductId} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
           </FormField>
           <FormField label={t("form.eventAt")}>
             {(field) => <Input {...field} type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />}
@@ -87,11 +87,11 @@ export default function VentesScreen() {
             {(field) => <Input {...field} type="number" step="1" value={priceAmount} onChange={(e) => setPriceAmount(e.target.value)} />}
           </FormField>
           <FormField label={t("form.currency")}>
-            {() => <Select aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
+            {() => <SearchableSelect aria-label={t("form.currency")} value={currencyId || undefined} onValueChange={setCurrencyId} placeholder="—" options={data.currencies.map((c) => ({ value: c.id, label: c.code }))} />}
           </FormField>
           <FormField label={t("form.paymentMethod")}>
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label={t("form.paymentMethod")}
                 value={paymentMethod}
                 onValueChange={(v) => setPaymentMethod(v as (typeof PAYMENT_METHODS)[number])}
@@ -102,7 +102,7 @@ export default function VentesScreen() {
           {paymentMethod === "credit" && (
             <FormField label={t("form.commercialAccount")}>
               {() => (
-                <Select
+                <SearchableSelect
                   aria-label={t("form.commercialAccount")}
                   value={commercialAccountId || undefined}
                   onValueChange={setCommercialAccountId}

@@ -259,7 +259,9 @@ export type AlertType =
   | "calibration_missing"
   | "truck_stop_unqualified"
   | "station_offline"
-  | "stock_declared_discrepancy";
+  | "stock_declared_discrepancy"
+  | "manual_gauging_discrepancy"
+  | "quality_check_discrepancy";
 
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
 export type AlertStatus = "active" | "acknowledged" | "resolved";

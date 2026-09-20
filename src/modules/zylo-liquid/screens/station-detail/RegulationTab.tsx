@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 
 import type { RegulatoryCertaintyLevel } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatDueDate } from "@/shared/lib/formatDateTime";
-import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Card, CardSectionHeader, EmptyState, FormField, Input, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Textarea } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { RegulatoryDocumentModal } from "./RegulatoryDocumentModal";
@@ -197,7 +197,7 @@ export function RegulationTab({ organizationId, stationId }: { organizationId: s
           <FormField label={t("form.issuedAt")}>{(f) => <Input {...f} type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} />}</FormField>
           <FormField label={t("form.expiresAt")}>{(f) => <Input {...f} type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />}</FormField>
           <FormField label={t("form.certaintyLevel")}>
-            {() => <Select aria-label={t("form.certaintyLevel")} value={certaintyLevel} onValueChange={(v) => setCertaintyLevel(v as RegulatoryCertaintyLevel)} options={CERTAINTY_LEVELS.map((c) => ({ value: c, label: t(`certainty.${c}`) }))} />}
+            {() => <SearchableSelect aria-label={t("form.certaintyLevel")} value={certaintyLevel} onValueChange={(v) => setCertaintyLevel(v as RegulatoryCertaintyLevel)} options={CERTAINTY_LEVELS.map((c) => ({ value: c, label: t(`certainty.${c}`) }))} />}
           </FormField>
         </div>
         <div className="mt-3">

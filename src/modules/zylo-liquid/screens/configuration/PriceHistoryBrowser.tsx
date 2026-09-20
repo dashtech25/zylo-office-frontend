@@ -13,7 +13,7 @@ import {
   type FuelProduct,
   type Station,
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Button, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Button, Input, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 const PAGE_SIZE = 25;
@@ -82,7 +82,7 @@ export function PriceHistoryBrowser({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <Select
+        <SearchableSelect
           aria-label={t("station")}
           value={stationId}
           onValueChange={(v) => {
@@ -91,7 +91,7 @@ export function PriceHistoryBrowser({
           }}
           options={[{ value: "", label: t("allStations") }, ...stations.map((s) => ({ value: s.id, label: s.name }))]}
         />
-        <Select
+        <SearchableSelect
           aria-label={t("product")}
           value={fuelProductId}
           onValueChange={(v) => {

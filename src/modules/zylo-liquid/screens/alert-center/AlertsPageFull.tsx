@@ -173,6 +173,7 @@ const ALERT_TYPE_LABEL: Record<AlertType, string> = {
   price_missing: "Configuration", sensor_mapping_missing: "Configuration", calibration_missing: "Configuration",
   delivery_discrepancy: "Livraison", delivery_undeclared: "Livraison", delivery_declaration_pending: "Livraison",
   stock_declared_discrepancy: "Métier", truck_stop_unqualified: "Transport",
+  manual_gauging_discrepancy: "Métier", quality_check_discrepancy: "Métier",
 };
 
 /** Assemblage complet de la page "Gestion des alertes" — filtres + liste +

@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { createEquipment, listEquipment, type Equipment } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatFreshness } from "@/shared/lib/formatDateTime";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 import { PartStateBox, usePartData } from "../station-detail/PartState";
 
@@ -91,7 +91,7 @@ export function EquipmentSection({ organizationId, stationId }: { organizationId
           {error && <Alert tone="error">{error}</Alert>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label={t("form.type")}>
-              {() => <Select aria-label={t("form.type")} value={type} onValueChange={(v) => setType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: t(`type.${v}`) }))} />}
+              {() => <SearchableSelect aria-label={t("form.type")} value={type} onValueChange={(v) => setType(v as (typeof EQUIPMENT_TYPES)[number])} options={EQUIPMENT_TYPES.map((v) => ({ value: v, label: t(`type.${v}`) }))} />}
             </FormField>
             <FormField label={t("form.name")}>{(field) => <Input {...field} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
             <FormField label={t("form.manufacturer")}>{(field) => <Input {...field} value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />}</FormField>
