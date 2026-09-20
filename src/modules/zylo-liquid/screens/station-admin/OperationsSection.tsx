@@ -7,7 +7,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { Station } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatFreshness } from "@/shared/lib/formatDateTime";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Badge, Button, Card, EmptyState, Input, Kpi, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, Input, Kpi, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { KpiSkeleton, ListSkeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useExploitation } from "../station-detail/useExploitation";
@@ -118,7 +118,7 @@ export function OperationsSection({ organizationId, station }: { organizationId:
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-muted" aria-hidden />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-8" />
             </div>
-            <Select
+            <SearchableSelect
               aria-label={t("filterStatus")}
               value={statusFilter || undefined}
               onValueChange={setStatusFilter}
@@ -328,7 +328,7 @@ function CommercialConfigTab({ data }: { data: ReturnType<typeof useExploitation
         {error && <Alert tone="error">{error}</Alert>}
         <div>
           <p className="mb-1 text-body-sm font-medium text-text">{t("policy.product")}</p>
-          <Select
+          <SearchableSelect
             aria-label={t("policy.product")}
             value={productId || undefined}
             onValueChange={handleSelectProduct}
@@ -340,7 +340,7 @@ function CommercialConfigTab({ data }: { data: ReturnType<typeof useExploitation
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <p className="mb-1 text-body-sm font-medium text-text">{t("policy.type")}</p>
-                <Select
+                <SearchableSelect
                   aria-label={t("policy.type")}
                   value={policyType}
                   onValueChange={setPolicyType}
@@ -352,7 +352,7 @@ function CommercialConfigTab({ data }: { data: ReturnType<typeof useExploitation
               </div>
               <div>
                 <p className="mb-1 text-body-sm font-medium text-text">{t("policy.period")}</p>
-                <Select
+                <SearchableSelect
                   aria-label={t("policy.period")}
                   value={applicationPeriod}
                   onValueChange={setApplicationPeriod}

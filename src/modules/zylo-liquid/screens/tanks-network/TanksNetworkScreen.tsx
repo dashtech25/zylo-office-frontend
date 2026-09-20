@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { computeTankVisualData, TankVisual } from "@/modules/zylo-liquid/components/TankVisual";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Badge, Card, EmptyState, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Card, EmptyState, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useTanksNetwork } from "./useTanksNetwork";
@@ -119,7 +119,7 @@ export default function TanksNetworkScreen() {
                 <Input icon={<Search className="size-4" aria-hidden />} placeholder={t("searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("searchPlaceholder")} />
               </div>
               <div className="w-full sm:w-56">
-                <Select
+                <SearchableSelect
                   aria-label={t("filterStation")}
                   value={stationFilter || undefined}
                   onValueChange={(v) => setStationFilter(v === "__all__" ? "" : v)}
@@ -128,7 +128,7 @@ export default function TanksNetworkScreen() {
                 />
               </div>
               <div className="w-full sm:w-56">
-                <Select
+                <SearchableSelect
                   aria-label={t("filterProduct")}
                   value={productFilter || undefined}
                   onValueChange={(v) => setProductFilter(v === "__all__" ? "" : v)}

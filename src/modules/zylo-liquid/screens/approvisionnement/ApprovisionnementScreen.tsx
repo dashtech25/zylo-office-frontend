@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import { listTanks, reconcileDeliveryDeclaration, type Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 
 import { useApprovisionnement } from "./useApprovisionnement";
 
@@ -114,13 +114,13 @@ export default function ApprovisionnementScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.station")}>
-            {() => <Select aria-label={t("form.station")} value={stationId || undefined} onValueChange={handleStationChange} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <SearchableSelect aria-label={t("form.station")} value={stationId || undefined} onValueChange={handleStationChange} placeholder={t("form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("form.product")}>
-            {() => <Select aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={handleProductChange} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
+            {() => <SearchableSelect aria-label={t("form.product")} value={fuelProductId || undefined} onValueChange={handleProductChange} placeholder={t("form.selectProduct")} options={data.fuelProducts.map((p) => ({ value: p.id, label: p.name }))} />}
           </FormField>
           <FormField label={t("form.tank")}>
-            {() => <Select aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={stationTanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
+            {() => <SearchableSelect aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={stationTanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
           </FormField>
           <FormField label={t("form.eventAt")}>
             {(field) => <Input {...field} type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />}

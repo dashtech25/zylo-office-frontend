@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { OrganizationMember } from "@/core/api/rbac";
 import type { RegulatoryDocument, UpdateRegulatoryDocumentInput, ZyloDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatDueDate } from "@/shared/lib/formatDateTime";
-import { Alert, Badge, Button, FormField, Input, Modal, Select, Skeleton, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, FormField, Input, Modal, SearchableSelect, Skeleton, Textarea } from "@/shared/ui";
 
 const STATUS_TONE = { valid: "success", renew_soon: "warning", expired: "error", unknown: "neutral" } as const;
 const CERTAINTY_TONE = { high: "success", medium: "warning", low: "neutral" } as const;
@@ -242,7 +242,7 @@ export function RegulatoryDocumentModal({
             {editing ? (
               <FormField label={t("modal.responsible")}>
                 {() => (
-                  <Select
+                  <SearchableSelect
                     aria-label={t("modal.responsible")}
                     value={editResponsibleId || undefined}
                     onValueChange={setEditResponsibleId}

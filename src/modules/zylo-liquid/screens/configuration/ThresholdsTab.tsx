@@ -6,12 +6,12 @@ import { useMemo, useState } from "react";
 
 import { EditTankModal } from "@/modules/zylo-liquid/screens/tank-detail/EditTankModal";
 import type { FuelProduct, Station, Tank } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Input, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Input, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 
 type SortKey = "station" | "tank" | "product" | "high" | "preAlarm" | "low" | "water";
 type SortDirection = "asc" | "desc";
 
-// Radix `Select.Item` refuse une valeur vide ("" est réservé au reset
+// Radix `SearchableSelect.Item` refuse une valeur vide ("" est réservé au reset
 // interne du composant) — sentinelle dédiée pour "tous les produits".
 const ALL_PRODUCTS = "__all__";
 
@@ -122,7 +122,7 @@ export function ThresholdsTab({
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-muted" aria-hidden />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaceholder")} className="pl-8" />
         </div>
-        <Select
+        <SearchableSelect
           aria-label={t("filterProduct")}
           value={productFilter}
           onValueChange={setProductFilter}

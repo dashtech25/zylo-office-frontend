@@ -185,6 +185,24 @@
           "A stop off the usual route"
         ],
         "impact": "This stop remains unqualified until it is matched to a known location or deliberately marked as exceptional."
+      },
+      "manual_gauging_discrepancy": {
+        "intro": "The manually gauged height differs from the closest telemetry reading in time beyond the allowed tolerance. This can be due to:",
+        "causes": [
+          "A reading or entry error on the manual gauging",
+          "A poorly calibrated level sensor",
+          "A gauging taken too far in time from the telemetry reading"
+        ],
+        "impact": "A persistent gap signals a measurement reliability issue (gauging or sensor) until it is explained."
+      },
+      "quality_check_discrepancy": {
+        "intro": "The declared quality/water check does not match the presence or absence of a water alert on the same tank within the configured time window. This can be due to:",
+        "causes": [
+          "Water detected by the manual check below the sensor's trigger threshold",
+          "A check declared incorrectly (water reported when there was none)",
+          "Water detected by the sensor but since cleared before the manual check"
+        ],
+        "impact": "A gap signals either contamination not caught by the sensor, or a declaration to verify — either way a quality risk until it is explained."
       }
     },
     "systemOperational": "System operational"
@@ -1847,7 +1865,9 @@
       "calibration_missing": "Missing calibration chart",
       "station_offline": "Total silence — no tank reporting",
       "stock_declared_discrepancy": "Declared sales / detected stock gap",
-      "truck_stop_unqualified": "Unqualified truck/vessel stop"
+      "truck_stop_unqualified": "Unqualified truck/vessel stop",
+      "manual_gauging_discrepancy": "Manual gauging discrepancy",
+      "quality_check_discrepancy": "Quality/water check discrepancy"
     },
     "page": {
       "title": "Alert center",
@@ -1923,7 +1943,7 @@
   },
   "dashboardSections": {
     "alertsAndAnomalies": "Alerts & anomalies",
-    "alertsAndAnomaliesSubtitle": "Everything that needs a decision — active alerts, stock discrepancies, cash discrepancies.",
+    "alertsAndAnomaliesSubtitle": "Everything that needs a decision, including stock, delivery, gauging and quality-check discrepancies.",
     "sales": "Sales",
     "salesSubtitle": "Volume sold and revenue, for the selected period.",
     "salesEmpty": "No sales for the selected period.",

@@ -24,7 +24,7 @@ import {
 } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { formatDurationMinutes, formatFreshness } from "@/shared/lib/formatDateTime";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, Modal, SearchableSelect, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 import { Tabs } from "@/shared/ui/Tabs";
 
@@ -827,7 +827,7 @@ function DeliveryDetailModal({
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <FormField label={t("line.tank")}>
                             {() => (
-                              <Select
+                              <SearchableSelect
                                 aria-label={t("line.tank")}
                                 value={editTankId || undefined}
                                 onValueChange={(value) => setEditTankId(value)}
@@ -840,7 +840,7 @@ function DeliveryDetailModal({
                         </div>
                         <FormField label={t("line.order")}>
                           {() => (
-                            <Select
+                            <SearchableSelect
                               aria-label={t("line.order")}
                               value={editOrderLineId || undefined}
                               onValueChange={(value) => setEditOrderLineId(value)}
@@ -1122,7 +1122,7 @@ function DeliveryFormModal({
           <FormField label={t("eventAt")}>{(f) => <Input {...f} type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />}</FormField>
           <FormField label={t("supplier")}>
             {() => (
-              <Select
+              <SearchableSelect
                 aria-label={t("supplier")}
                 value={supplierId || undefined}
                 onValueChange={setSupplierId}
@@ -1152,7 +1152,7 @@ function DeliveryFormModal({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField label={t("tank")}>
                     {() => (
-                      <Select
+                      <SearchableSelect
                         aria-label={t("tank")}
                         value={line.tankId || undefined}
                         onValueChange={(value) => updateLine(line.key, { tankId: value, purchaseOrderLineId: "" })}
@@ -1165,7 +1165,7 @@ function DeliveryFormModal({
                 </div>
                 <FormField label={t("orderLine")}>
                   {() => (
-                    <Select
+                    <SearchableSelect
                       aria-label={t("orderLine")}
                       value={line.purchaseOrderLineId || undefined}
                       onValueChange={(value) => {

@@ -3,6 +3,7 @@
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/cn";
+import { normalizeSearchText } from "@/shared/lib/normalizeSearchText";
 
 export interface SearchableSelectOption {
   value: string;
@@ -39,8 +40,8 @@ export function SearchableSelect({
   value,
   onValueChange,
   placeholder,
-  searchPlaceholder,
-  emptyLabel,
+  searchPlaceholder = "Search...",
+  emptyLabel = "No results",
   disabled,
   invalid,
   "aria-label": ariaLabel,
@@ -68,10 +69,10 @@ export function SearchableSelect({
   }, [open]);
 
   const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = normalizeSearchText(query.trim());
     if (!normalized) return options;
     return options.filter(
-      (o) => o.label.toLowerCase().includes(normalized) || (o.description ?? "").toLowerCase().includes(normalized)
+      (o) => normalizeSearchText(o.label).includes(normalized) || normalizeSearchText(o.description ?? "").includes(normalized)
     );
   }, [options, query]);
 

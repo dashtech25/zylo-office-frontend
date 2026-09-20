@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
 import type { RegulatoryCertaintyLevel, RegulatoryDocument } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, Textarea } from "@/shared/ui";
 import { Skeleton, TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useReglementaire } from "./useReglementaire";
@@ -102,7 +102,7 @@ export default function ReglementaireScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("documents.form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("documents.form.station")}>
-            {() => <Select aria-label={t("documents.form.station")} value={docStationId || undefined} onValueChange={setDocStationId} placeholder={t("documents.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <SearchableSelect aria-label={t("documents.form.station")} value={docStationId || undefined} onValueChange={setDocStationId} placeholder={t("documents.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("documents.form.type")}>
             {(field) => <Input {...field} value={docType} onChange={(e) => setDocType(e.target.value)} />}
@@ -114,7 +114,7 @@ export default function ReglementaireScreen() {
             {(field) => <Input {...field} type="date" value={docExpiresAt} onChange={(e) => setDocExpiresAt(e.target.value)} />}
           </FormField>
           <FormField label={t("documents.form.certaintyLevel")}>
-            {() => <Select aria-label={t("documents.form.certaintyLevel")} value={docCertainty} onValueChange={(v) => setDocCertainty(v as RegulatoryCertaintyLevel)} options={CERTAINTY_LEVELS.map((c) => ({ value: c, label: t(`documents.certainty.${c}`) }))} />}
+            {() => <SearchableSelect aria-label={t("documents.form.certaintyLevel")} value={docCertainty} onValueChange={(v) => setDocCertainty(v as RegulatoryCertaintyLevel)} options={CERTAINTY_LEVELS.map((c) => ({ value: c, label: t(`documents.certainty.${c}`) }))} />}
           </FormField>
         </div>
         <Button className="mt-4" onClick={handleCreateDocument} loading={docCreating}>
@@ -183,7 +183,7 @@ export default function ReglementaireScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("declarations.form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("declarations.form.station")}>
-            {() => <Select aria-label={t("declarations.form.station")} value={decStationId || undefined} onValueChange={setDecStationId} placeholder={t("declarations.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+            {() => <SearchableSelect aria-label={t("declarations.form.station")} value={decStationId || undefined} onValueChange={setDecStationId} placeholder={t("declarations.form.selectStation")} options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
           </FormField>
           <FormField label={t("declarations.form.type")}>
             {(field) => <Input {...field} value={decType} onChange={(e) => setDecType(e.target.value)} />}

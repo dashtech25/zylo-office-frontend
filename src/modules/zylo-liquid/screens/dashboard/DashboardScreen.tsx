@@ -388,14 +388,12 @@ import { useCaisseStationRows } from "@/modules/zylo-liquid/screens/caisse/useCa
 import { aggregateCaisseCurrencyBlocks, aggregateCaisseProducts } from "@/modules/zylo-liquid/screens/caisse/cashAggregation";
 import type { CurrencyCashBlock, NetworkProductCashLine } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { DashboardAlertsWidget } from "./DashboardAlertsWidget";
-import { DashboardCashDiscrepanciesWidget } from "./DashboardCashDiscrepanciesWidget";
 import { DashboardDeliveriesWidget } from "./DashboardDeliveriesWidget";
 import { DashboardSalesBlock } from "./DashboardSalesBlock";
 import { DashboardStationsMapBlock } from "./DashboardStationsMapBlock";
 import { DashboardStockTrendChart } from "./DashboardStockTrendChart";
 import { DashboardRegulatoryDocumentsWidget } from "./DashboardRegulatoryDocumentsWidget";
 import { DashboardCreditOutstandingWidget } from "./DashboardCreditOutstandingWidget";
-import { DashboardStockDiscrepanciesWidget } from "./DashboardStockDiscrepanciesWidget";
 import { useNetworkDashboard, type Period } from "@/modules/zylo-liquid/hooks/useNetworkDashboard";
 import PompisteDashboard from "./PompisteDashboard";
 
@@ -542,22 +540,20 @@ function NetworkDashboardScreen() {
         </Card>
       )}
 
-      {/* Rangée 1 — "Est-ce que je dois agir maintenant ?" : tout ce qui
-          demande une décision, réuni en premier, avant même le stock/les
-          ventes. Bloc rétractable (même patron que la section "Produits
-          pétroliers" plus bas — chaque rangée du dashboard doit avoir son
-          propre gros bloc titré et repliable, demande explicite de
-          l'utilisateur) contenant 3 cartes au même style visuel (titre +
-          compteur + liste de 5 max) — alertes déjà existantes, écarts de
-          stock et écarts de caisse nouveaux, tous deux lecture seule (lien
-          vers l'écran dédié, jamais de modale ici, cf. widgets eux-mêmes). */}
+      {/* Rangée 1 — "Est-ce que je dois agir maintenant ?" : bloc rétractable
+          (même patron que la section "Produits pétroliers" plus bas) autour
+          d'une seule carte "Alertes actives". Les écarts de stock et de
+          caisse (jaugeage manuel, contrôle qualité/eau) sont désormais des
+          types d'`Alert` à part entière (`stock_declared_discrepancy`,
+          `manual_gauging_discrepancy`, `quality_check_discrepancy`,
+          refonte 2026-09-20) : ils apparaissent ici automatiquement, plus de
+          widget dédié qui dupliquerait la même information avec un état
+          potentiellement périmé (`ReconciliationRecord` est un journal
+          historique jamais nettoyé, contrairement à `Alert` qui reflète
+          l'état courant). */}
       {organizationId && (
         <CollapsibleSection title={t("dashboardSections.alertsAndAnomalies")} subtitle={t("dashboardSections.alertsAndAnomaliesSubtitle")}>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
-            <DashboardStockDiscrepanciesWidget organizationId={organizationId} stations={data.stations} tanks={data.tanks} />
-            <DashboardCashDiscrepanciesWidget organizationId={organizationId} stations={data.stations} />
-          </div>
+          <DashboardAlertsWidget organizationId={organizationId} alerts={data.activeAlerts} count={data.activeAlertsCount} stations={data.stations} tanks={data.tanks} />
         </CollapsibleSection>
       )}
 

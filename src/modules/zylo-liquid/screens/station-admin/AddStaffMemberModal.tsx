@@ -8,7 +8,7 @@ import { ApiError } from "@/core/api/client";
 import { listRoles, type Role } from "@/core/api/rbac";
 import { uploadFile } from "@/core/api/storage";
 import { createStationStaff, type CreateStationStaffResult } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Button, FormField, Input, Modal, Select } from "@/shared/ui";
+import { Alert, Button, FormField, Input, Modal, SearchableSelect } from "@/shared/ui";
 import { usePartData } from "../station-detail/PartState";
 
 /** Mockup emalioration/personnel/formulaire d'ajout de personnel.png —
@@ -191,7 +191,7 @@ export function AddStaffMemberModal({
           <p className="text-body-sm font-medium text-text">{t("jobInfoTitle")}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label={t("role")}>
-              {() => <Select aria-label={t("role")} value={roleId || undefined} onValueChange={setRoleId} placeholder={t("selectRole")} options={roles.map((r) => ({ value: r.id, label: r.name }))} />}
+              {() => <SearchableSelect aria-label={t("role")} value={roleId || undefined} onValueChange={setRoleId} placeholder={t("selectRole")} options={roles.map((r) => ({ value: r.id, label: r.name }))} />}
             </FormField>
             <FormField label={t("employeeNumber")}>{(field) => <Input {...field} value={employeeNumber} onChange={(e) => setEmployeeNumber(e.target.value)} />}</FormField>
           </div>

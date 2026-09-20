@@ -12,7 +12,7 @@ import { HolykellTab } from "@/modules/zylo-liquid/screens/settings/HolykellTab"
 import { OrganisationTab } from "@/modules/zylo-liquid/screens/settings/OrganisationTab";
 import { SystemeTab } from "@/modules/zylo-liquid/screens/settings/SystemeTab";
 import { TrackingTab } from "@/modules/zylo-liquid/screens/settings/TrackingTab";
-import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, FormField, Input, Modal, Select, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, TableRowSkeleton } from "@/shared/ui";
+import { Alert, Badge, Button, Card, CardSkeleton, ColorPicker, EmptyState, FormField, Input, Modal, SearchableSelect, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Tabs, TableRowSkeleton } from "@/shared/ui";
 
 import { BulkPriceModal } from "./BulkPriceModal";
 import { MissingConfigBanner, type MissingConfigItem } from "./MissingConfigBanner";
@@ -329,7 +329,7 @@ export default function ConfigurationScreen() {
             </FormField>
           )}
           <FormField label={t("prices.product")}>
-            {() => <Select aria-label={t("prices.product")} value={priceProductId || undefined} onValueChange={setPriceProductId} placeholder={t("prices.selectProduct")} options={data.products.map((p) => ({ value: p.id, label: p.name }))} />}
+            {() => <SearchableSelect aria-label={t("prices.product")} value={priceProductId || undefined} onValueChange={setPriceProductId} placeholder={t("prices.selectProduct")} options={data.products.map((p) => ({ value: p.id, label: p.name }))} />}
           </FormField>
           <FormField label={t("prices.currency")}>
             {() =>
@@ -343,7 +343,7 @@ export default function ConfigurationScreen() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Select
+                  <SearchableSelect
                     aria-label={t("prices.currency")}
                     value={effectiveCurrencyId || undefined}
                     onValueChange={setPriceCurrencyId}

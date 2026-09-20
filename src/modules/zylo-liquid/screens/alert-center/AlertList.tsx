@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import { Card, EmptyState, Select } from "@/shared/ui";
+import { Card, EmptyState, SearchableSelect } from "@/shared/ui";
 import { Inbox } from "lucide-react";
 import type { AlertSeverity, AlertType } from "@/modules/zylo-liquid/services/zyloLiquidApi";
 import { AlertCard } from "@/modules/zylo-liquid/components/AlertCard";
@@ -37,7 +37,7 @@ export function AlertList({ items, selectedId, onSelect, sort, onSortChange }: A
       <div className="flex items-center justify-between gap-3 border-b border-border-subtle p-4">
         <h4 className="text-body-md font-semibold text-text">{t("count", { count: items.length })}</h4>
         <div className="w-40 shrink-0">
-          <Select
+          <SearchableSelect
             aria-label={t("sortLabel")}
             value={sort}
             onValueChange={(value) => onSortChange(value as AlertListSort)}

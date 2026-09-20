@@ -8,7 +8,7 @@ import { useOrganization } from "@/core/organization/OrganizationContext";
 import { formatLiters } from "@/modules/zylo-liquid/utils/formatLiters";
 import { formatMoney } from "@/modules/zylo-liquid/utils/formatMoney";
 import { downloadCsv } from "@/modules/zylo-liquid/utils/downloadCsv";
-import { Alert, Button, Card, EmptyState, Input, Kpi, PageHeader, Select, Stack, Table, TableBody, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
+import { Alert, Button, Card, EmptyState, Input, Kpi, PageHeader, SearchableSelect, Stack, Table, TableBody, TableHead, TableHeaderCell, TableRow, Tabs } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { DeliveriesInProgressSection } from "./DeliveriesInProgressSection";
@@ -83,7 +83,7 @@ export default function DeliveriesScreen() {
       <Card>
         <div className="flex flex-wrap gap-3">
           <div className="w-full sm:w-56">
-            <Select
+            <SearchableSelect
               aria-label={t("filters.station")}
               value={stationId || "__all__"}
               onValueChange={(v) => setStationId(v === "__all__" ? "" : v)}

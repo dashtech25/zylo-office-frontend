@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useOrganization } from "@/core/organization/OrganizationContext";
-import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, FormField, Input, PageHeader, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/shared/ui";
 import { TableRowSkeleton } from "@/shared/ui/Skeleton";
 
 import { useReconciliation } from "./useReconciliation";
@@ -54,7 +54,7 @@ export default function ReconciliationScreen() {
         <h2 className="text-h4 font-semibold text-text">{t("form.title")}</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <FormField label={t("form.tank")}>
-            {() => <Select aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={data.tanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
+            {() => <SearchableSelect aria-label={t("form.tank")} value={tankId || undefined} onValueChange={setTankId} placeholder={t("form.selectTank")} options={data.tanks.map((tk) => ({ value: tk.id, label: tk.displayName }))} />}
           </FormField>
           <FormField label={t("form.day")}>{(field) => <Input {...field} type="date" value={day} onChange={(e) => setDay(e.target.value)} />}</FormField>
         </div>

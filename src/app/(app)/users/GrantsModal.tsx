@@ -13,7 +13,7 @@ import {
   type Permission,
   type PermissionGrant,
 } from "@/core/api/rbac";
-import { Badge, Button, EmptyState, Input, Modal, Select, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
+import { Badge, Button, EmptyState, Input, Modal, SearchableSelect, Stack, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, TableRowSkeleton } from "@/shared/ui";
 import { ShieldAlert } from "lucide-react";
 
 interface GrantsModalData {
@@ -172,13 +172,13 @@ export function GrantsModal({
           <p className="mb-2 text-body-sm font-semibold text-text">{t("addTitle")}</p>
           {error && <p className="mb-2 text-body-sm text-error">{error}</p>}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Select
+            <SearchableSelect
               aria-label={t("columns.permission")}
               value={permissionCode || "__none__"}
               onValueChange={(v) => setPermissionCode(v === "__none__" ? "" : v)}
               options={[{ value: "__none__", label: t("selectPermission") }, ...catalog.map((p) => ({ value: p.code, label: p.description ?? p.code }))]}
             />
-            <Select
+            <SearchableSelect
               aria-label={t("columns.effect")}
               value={effect}
               onValueChange={(v) => setEffect(v as "allow" | "deny")}

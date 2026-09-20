@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import type { CreateSupplierInput, Supplier, StationSupplier, SupplierCategory, UpdateStationSupplierInput } from "@/modules/zylo-liquid/services/zyloLiquidApi";
-import { Alert, Button, FormField, Input, Modal, Select, Tabs, Textarea } from "@/shared/ui";
+import { Alert, Button, FormField, Input, Modal, SearchableSelect, Tabs, Textarea } from "@/shared/ui";
 
 const CATEGORIES: SupplierCategory[] = ["carburant", "equipement", "maintenance", "securite", "service", "autre"];
 
@@ -138,11 +138,11 @@ export function SupplierFormModal({
         <FormField label={t("name")} required>{(f) => <Input {...f} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
         <FormField label={t("type")}>{(f) => <Input {...f} value={type} onChange={(e) => setType(e.target.value)} placeholder={t("typePlaceholder")} />}</FormField>
         <FormField label={t("categoryLabel")}>
-          {() => <Select aria-label={t("categoryLabel")} value={category || undefined} onValueChange={(v) => setCategory(v as SupplierCategory)} placeholder={t("selectCategory")} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
+          {() => <SearchableSelect aria-label={t("categoryLabel")} value={category || undefined} onValueChange={(v) => setCategory(v as SupplierCategory)} placeholder={t("selectCategory")} options={CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))} />}
         </FormField>
         <FormField label={t("status")}>
           {() => (
-            <Select
+            <SearchableSelect
               aria-label={t("status")}
               value={supplier ? String(supplier.active) : "true"}
               onValueChange={(v) => isEdit && supplier && onUpdateSupplier(supplier.id, { active: v === "true" })}
