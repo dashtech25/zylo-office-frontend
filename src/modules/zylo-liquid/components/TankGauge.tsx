@@ -30,11 +30,15 @@ export interface TankGaugeProps {
   size: "detailed" | "compact";
 }
 
+// Alignées sur les tokens sémantiques globaux (2026-09-20, refonte Centre
+// d'alertes — même palette vive partout, jamais un hex local divergent) :
+// water reprend WATER_COLOR de TankVisual.tsx (var(--color-info)), même
+// bleu, pour ne pas afficher deux bleus différents pour l'eau selon la vue.
 const COLORS = {
-  high: "#E74C3C",
-  preAlarm: "#E67E22",
-  low: "#3498DB",
-  water: "#85C1E9",
+  high: "var(--color-error)",
+  preAlarm: "var(--color-warning)",
+  low: "var(--color-info)",
+  water: "var(--color-info)",
 } as const;
 
 export function TankGauge({ tank, state, fuelColor, size }: TankGaugeProps) {
@@ -84,10 +88,10 @@ export function TankGauge({ tank, state, fuelColor, size }: TankGaugeProps) {
 
   const thresholds = detailed
     ? [
-        { key: "high", mm: tank.heightAlarmMm, color: COLORS.high, reached: heightMm !== null && heightMm >= tank.heightAlarmMm, badge: "SEUIL HAUT", badgeBg: "#FDEDEC", badgeText: COLORS.high },
+        { key: "high", mm: tank.heightAlarmMm, color: COLORS.high, reached: heightMm !== null && heightMm >= tank.heightAlarmMm, badge: "SEUIL HAUT", badgeBg: "var(--color-error-muted)", badgeText: COLORS.high },
         { key: "preAlarm", mm: tank.heightAlertMm, color: COLORS.preAlarm, reached: heightMm !== null && heightMm >= tank.heightAlertMm, badge: null, badgeBg: "", badgeText: "" },
-        { key: "low", mm: tank.lowAlarmMm, color: COLORS.low, reached: heightMm !== null && heightMm <= tank.lowAlarmMm, badge: "NIVEAU BAS", badgeBg: "#EBF5FB", badgeText: "#2980B9" },
-        { key: "water", mm: tank.alertWaterMaxMm, color: COLORS.water, reached: waterHeightMm >= tank.alertWaterMaxMm, badge: "EAU DÉTECTÉE", badgeBg: "#EBF5FB", badgeText: "#2980B9" },
+        { key: "low", mm: tank.lowAlarmMm, color: COLORS.low, reached: heightMm !== null && heightMm <= tank.lowAlarmMm, badge: "NIVEAU BAS", badgeBg: "var(--color-info-muted)", badgeText: "var(--color-info)" },
+        { key: "water", mm: tank.alertWaterMaxMm, color: COLORS.water, reached: waterHeightMm >= tank.alertWaterMaxMm, badge: "EAU DÉTECTÉE", badgeBg: "var(--color-info-muted)", badgeText: "var(--color-info)" },
       ]
     : [];
 
@@ -101,7 +105,7 @@ export function TankGauge({ tank, state, fuelColor, size }: TankGaugeProps) {
         {hasData && (
           <>
             {fuelFrac > 0 && <rect x={bx} y={by + bh - totalLiquidFrac * bh} width={bw} height={fuelFrac * bh} fill={fuelColor} opacity={0.85} />}
-            {waterFrac > 0 && <rect x={bx} y={by + bh - waterFrac * bh} width={bw} height={waterFrac * bh} fill="#2980B9" opacity={0.9} />}
+            {waterFrac > 0 && <rect x={bx} y={by + bh - waterFrac * bh} width={bw} height={waterFrac * bh} fill="var(--color-info)" opacity={0.9} />}
           </>
         )}
       </g>

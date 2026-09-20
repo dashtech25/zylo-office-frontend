@@ -1,4 +1,194 @@
 {
+  "alertCenter": {
+    "header": {
+      "title": "Gestion des alertes",
+      "subtitle": "Surveillez l'état de votre réseau de stations et intervenez rapidement.",
+      "markAllAsRead": "Marquer tout comme lu",
+      "filters": "Filtres"
+    },
+    "summary": {
+      "active": "Alertes actives",
+      "toHandle": "À traiter",
+      "informational": "Informatives",
+      "resolved24h": "Résolues (24h)"
+    },
+    "filters": {
+      "typesTitle": "Types d'alertes",
+      "all": "Tous",
+      "severityTitle": "Gravité",
+      "statusTitle": "Statut",
+      "groups": {
+        "levelThresholds": "Seuils de niveau",
+        "sensorsAvailability": "Capteurs / disponibilité",
+        "leakTest": "Test d'étanchéité",
+        "missingConfiguration": "Configuration manquante",
+        "deliveries": "Livraisons",
+        "salesCash": "Ventes / caisse",
+        "transport": "Transport"
+      }
+    },
+    "list": {
+      "count": "{count, plural, one {# alerte} other {# alertes}}",
+      "sortLabel": "Trier",
+      "sortMostRecent": "Plus récentes",
+      "sortMostSevere": "Plus graves",
+      "empty": "Aucune alerte ne correspond aux filtres sélectionnés."
+    },
+    "detail": {
+      "backToList": "Retour à la liste",
+      "close": "Fermer",
+      "tabDetails": "Détails",
+      "tabContext": "Contexte",
+      "tabHistory": "Historique",
+      "tabActions": "Actions & recommandations",
+      "generalInfoTitle": "Informations générales",
+      "probableCauseTitle": "Cause probable",
+      "possibleImpactTitle": "Impact possible",
+      "quickActionsTitle": "Actions rapides",
+      "comingSoon": "Cet onglet sera construit dans une prochaine étape.",
+      "viewStation": "Voir la station",
+      "viewTank": "Voir la cuve",
+      "detectedAtLabel": "Détectée le",
+      "typeLabel": "Type d'alerte",
+      "severityLabel": "Gravité",
+      "stationLabel": "Station",
+      "tankLabel": "Cuve",
+      "productLabel": "Produit",
+      "manualResolveHint": "Peut être résolue manuellement une fois la cause corrigée."
+    },
+    "causes": {
+      "level_high": {
+        "intro": "Le niveau mesuré a dépassé le seuil haut configuré sur cette cuve. Cela peut être dû à :",
+        "causes": [
+          "Une livraison récente plus importante que prévu",
+          "Une erreur de configuration du seuil",
+          "Une cuve remplie au-delà de sa capacité utile"
+        ],
+        "impact": "Risque de débordement, de dommage à la cuve et de perte de carburant."
+      },
+      "level_high_pre_alarm": {
+        "intro": "Le niveau mesuré approche du seuil haut critique. Cela peut être dû à :",
+        "causes": [
+          "Une livraison en cours ou récente",
+          "Une consommation plus faible que prévu"
+        ],
+        "impact": "Sans action, le niveau haut critique pourrait être atteint prochainement."
+      },
+      "level_low": {
+        "intro": "Le niveau mesuré est descendu sous le seuil bas configuré. Cela peut être dû à :",
+        "causes": [
+          "Des ventes plus importantes que prévu",
+          "Un retard de livraison",
+          "Une fuite non détectée"
+        ],
+        "impact": "Risque de rupture de stock et d'arrêt de vente sur cette cuve."
+      },
+      "water": {
+        "intro": "Le niveau d'eau dans la cuve dépasse le seuil configuré. Cela peut être dû à :",
+        "causes": [
+          "Condensation",
+          "Infiltration",
+          "Problème de sonde"
+        ],
+        "impact": "Risque de dégradation du carburant, arrêt de la pompe et fausse lecture du niveau."
+      },
+      "leak": {
+        "intro": "Le test d'étanchéité de cette cuve a mesuré un débit de perte supérieur au seuil autorisé. Cela peut être dû à :",
+        "causes": [
+          "Une fissure ou une soudure défectueuse sur la cuve",
+          "Un raccord ou une vanne non étanche",
+          "Une erreur de mesure liée à la température ou à la calibration"
+        ],
+        "impact": "Perte de carburant continue et risque environnemental tant que la fuite n'est pas confirmée et traitée."
+      },
+      "sensor_offline": {
+        "intro": "Le capteur de niveau de cette cuve ne transmet plus de mesure. Cela peut être dû à :",
+        "causes": [
+          "Une coupure d'alimentation du capteur",
+          "Un problème de communication réseau/GSM",
+          "Une panne matérielle du capteur"
+        ],
+        "impact": "Aucune mesure de niveau n'est disponible pour cette cuve tant que le capteur reste hors ligne."
+      },
+      "station_offline": {
+        "intro": "Aucune des cuves configurées de cette station ne transmet. Cela peut être dû à :",
+        "causes": [
+          "Coupure secteur à la station",
+          "Panne du boîtier de communication",
+          "Coupure réseau/GSM locale"
+        ],
+        "impact": "Aucune donnée de niveau, aucune alerte de seuil ne pourra se déclencher tant que le silence persiste."
+      },
+      "price_missing": {
+        "intro": "Ce produit est vendu à cette station mais aucun prix n'est configuré, ni spécifique à la station ni par défaut sur le réseau. Cela peut être dû à :",
+        "causes": [
+          "Un prix jamais saisi pour ce produit",
+          "Un prix réseau par défaut expiré ou supprimé"
+        ],
+        "impact": "La valeur monétaire du stock de ce produit ne peut pas être calculée tant qu'aucun prix n'est configuré."
+      },
+      "sensor_mapping_missing": {
+        "intro": "Cette cuve est pilotée par capteur mais aucune sonde de niveau active n'y est associée. Cela peut être dû à :",
+        "causes": [
+          "Un capteur jamais associé après l'installation",
+          "Une association supprimée par erreur"
+        ],
+        "impact": "Aucune mesure de niveau ne sera reçue pour cette cuve tant qu'un capteur n'est pas associé."
+      },
+      "calibration_missing": {
+        "intro": "Aucun point de calibration n'existe pour cette cuve — la conversion hauteur/volume est donc impossible. Cela peut être dû à :",
+        "causes": [
+          "Une cuve nouvellement créée sans table de calibration importée",
+          "Une table de calibration supprimée par erreur"
+        ],
+        "impact": "Toute la télémétrie de cette cuve est inexploitable tant qu'une table de calibration n'est pas renseignée."
+      },
+      "delivery_discrepancy": {
+        "intro": "Le volume déclaré pour cette livraison diffère du volume détecté par télémétrie au-delà de la tolérance autorisée. Cela peut être dû à :",
+        "causes": [
+          "Une erreur de saisie sur le volume déclaré",
+          "Une livraison partielle ou incomplète",
+          "Un écart de mesure du capteur"
+        ],
+        "impact": "Le stock réel de la cuve peut diverger de ce qui est enregistré tant que l'écart n'est pas expliqué."
+      },
+      "delivery_undeclared": {
+        "intro": "Une hausse de niveau a été détectée par télémétrie sans aucune déclaration de livraison correspondante. Cela peut être dû à :",
+        "causes": [
+          "Une livraison reçue mais pas encore déclarée",
+          "Un oubli de saisie de la déclaration"
+        ],
+        "impact": "Le stock comptable de la cuve ne reflète pas encore cette livraison tant qu'elle n'est pas déclarée."
+      },
+      "delivery_declaration_pending": {
+        "intro": "Une livraison a été déclarée mais aucune détection télémétrique correspondante n'a encore été trouvée. Cela peut être dû à :",
+        "causes": [
+          "Un délai normal avant que la mesure ne soit synchronisée",
+          "Une livraison déclarée sur la mauvaise cuve"
+        ],
+        "impact": "Cette alerte est volontairement moins grave qu'un écart avéré — elle se transformera en écart ou se résoudra selon la suite de la réconciliation."
+      },
+      "stock_declared_discrepancy": {
+        "intro": "Le volume vendu déclaré en caisse diffère du volume vendu déduit de la télémétrie au-delà de la tolérance autorisée. Cela peut être dû à :",
+        "causes": [
+          "Une erreur de saisie lors de la déclaration de caisse",
+          "Une vente non déclarée",
+          "Une anomalie de mesure de la cuve"
+        ],
+        "impact": "Un écart réel peut signaler un risque de perte financière (vol potentiel) tant qu'il n'est pas expliqué."
+      },
+      "truck_stop_unqualified": {
+        "intro": "Un arrêt confirmé de ce véhicule ne correspond à aucun lieu connu enregistré à proximité. Cela peut être dû à :",
+        "causes": [
+          "Un nouveau lieu de livraison/arrêt jamais enregistré",
+          "Une imprécision GPS ponctuelle",
+          "Un arrêt hors trajet habituel"
+        ],
+        "impact": "Cet arrêt reste non qualifié tant qu'il n'est pas associé à un lieu connu ou classé volontairement comme exceptionnel."
+      }
+    },
+    "systemOperational": "Système opérationnel"
+  },
   "rapports": {
     "pageTitle": "Rapports & KPI",
     "pageSubtitle": "Tous les indicateurs calculables aujourd'hui à partir des données réelles du réseau — survolez le ⓘ à côté de chaque information pour savoir précisément ce qu'elle vous permet de connaître.",
@@ -662,14 +852,28 @@
     "locations": {
       "newLocation": "Nouveau lieu",
       "empty": "Aucun lieu enregistré.",
-      "table": { "name": "Nom", "type": "Type", "radius": "Rayon" },
-      "type": { "label": "Type", "port": "Port", "entrepot": "Entrepôt", "depot_fournisseur": "Dépôt fournisseur", "libre": "Libre" },
+      "table": {
+        "name": "Nom",
+        "type": "Type",
+        "radius": "Rayon"
+      },
+      "type": {
+        "label": "Type",
+        "port": "Port",
+        "entrepot": "Entrepôt",
+        "depot_fournisseur": "Dépôt fournisseur",
+        "libre": "Libre"
+      },
       "createTitle": "Nouveau lieu",
       "editTitle": "Modifier le lieu",
       "required": "Le nom et la position sont requis.",
       "name": "Nom du lieu",
       "namePlaceholder": "Ex. Port de Douala",
-      "method": { "search": "Rechercher une adresse", "current": "Ma position actuelle", "coordinates": "Coordonnées" },
+      "method": {
+        "search": "Rechercher une adresse",
+        "current": "Ma position actuelle",
+        "coordinates": "Coordonnées"
+      },
       "useCurrentPosition": "Utiliser ma position actuelle",
       "geolocationUnsupported": "La géolocalisation n'est pas disponible sur cet appareil.",
       "geolocationDenied": "Impossible d'obtenir votre position — vérifiez l'autorisation de localisation.",
@@ -1601,7 +1805,15 @@
       "is24hHint": "Si coché, les heures d'ouverture/fermeture ci-dessus sont ignorées",
       "closedWeekdays": "Jours de fermeture hebdomadaire",
       "closedWeekdaysHint": "Cocher les jours où la station est fermée toute la journée. Aucune case cochée = ouvert tous les jours.",
-      "weekdayShort": { "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam", "7": "Dim" },
+      "weekdayShort": {
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Jeu",
+        "5": "Ven",
+        "6": "Sam",
+        "7": "Dim"
+      },
       "notes": "Notes",
       "notesHint": "Notes internes sur cette station, facultatives",
       "submit": "Créer la station",
@@ -1634,7 +1846,8 @@
       "sensor_mapping_missing": "Sonde non associée",
       "calibration_missing": "Barème de calibration manquant",
       "station_offline": "Silence complet — aucune cuve ne transmet",
-      "stock_declared_discrepancy": "Écart ventes déclarées / stock détecté"
+      "stock_declared_discrepancy": "Écart ventes déclarées / stock détecté",
+      "truck_stop_unqualified": "Arrêt de camion/navire non qualifié"
     },
     "page": {
       "title": "Centre d'alertes",
@@ -2004,7 +2217,15 @@
         "notSet": "Non renseigné",
         "operationalStatus": "Statut"
       },
-      "weekdayShort": { "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam", "7": "Dim" }
+      "weekdayShort": {
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Jeu",
+        "5": "Ven",
+        "6": "Sam",
+        "7": "Dim"
+      }
     },
     "regulationTab": {
       "tableTitle": "Tableau des déclarations réglementaires",
@@ -2550,8 +2771,16 @@
         "submit": "Choisir un fichier"
       },
       "empty": "Aucun document pour cette station.",
-      "table": { "fileName": "Fichier", "sensitivityLevel": "Sensibilité", "download": "Télécharger", "delete": "Supprimer" },
-      "sensitivity": { "normal": "Normal", "restreint": "Restreint" }
+      "table": {
+        "fileName": "Fichier",
+        "sensitivityLevel": "Sensibilité",
+        "download": "Télécharger",
+        "delete": "Supprimer"
+      },
+      "sensitivity": {
+        "normal": "Normal",
+        "restreint": "Restreint"
+      }
     },
     "personnel": {
       "pageTitle": "Personnel",
@@ -2567,7 +2796,11 @@
         "required": "Membre et rôle requis."
       },
       "empty": "Aucun membre affecté à cette station.",
-      "table": { "member": "Membre", "roles": "Rôle(s)", "unassign": "Retirer {role}" },
+      "table": {
+        "member": "Membre",
+        "roles": "Rôle(s)",
+        "unassign": "Retirer {role}"
+      },
       "addModal": {
         "title": "Ajouter un membre du personnel",
         "successTitle": "Membre créé",
@@ -2653,7 +2886,11 @@
         "zone_atex": "Zone ATEX",
         "autre": "Autre"
       },
-      "conformityStatus": { "conforme": "Conforme", "non_conforme": "Non conforme", "a_controler": "À contrôler" }
+      "conformityStatus": {
+        "conforme": "Conforme",
+        "non_conforme": "Non conforme",
+        "a_controler": "À contrôler"
+      }
     },
     "suppliers": {
       "form": {
@@ -2665,7 +2902,10 @@
         "required": "Fournisseur requis."
       },
       "empty": "Aucun fournisseur associé à cette station.",
-      "table": { "supplier": "Fournisseur", "status": "Statut" },
+      "table": {
+        "supplier": "Fournisseur",
+        "status": "Statut"
+      },
       "statusActive": "Actif",
       "statusInactive": "Retiré",
       "deactivate": "Retirer",
@@ -2683,7 +2923,11 @@
     "history": {
       "title": "Historique des modifications",
       "empty": "Aucun évènement enregistré pour cette station.",
-      "table": { "date": "Date", "action": "Action", "summary": "Détail" }
+      "table": {
+        "date": "Date",
+        "action": "Action",
+        "summary": "Détail"
+      }
     }
   },
   "tankVisual": {

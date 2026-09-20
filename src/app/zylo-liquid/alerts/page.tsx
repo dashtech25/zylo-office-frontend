@@ -1,1 +1,1 @@
-export { default } from "@/modules/zylo-liquid/screens/alerts/AlertsScreen";
+export { default } from "@/modules/zylo-liquid/screens/alert-center/AlertCenterScreen";

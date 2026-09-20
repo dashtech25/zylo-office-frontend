@@ -1,4 +1,194 @@
 {
+  "alertCenter": {
+    "header": {
+      "title": "Alert management",
+      "subtitle": "Monitor your station network status and act quickly.",
+      "markAllAsRead": "Mark all as read",
+      "filters": "Filters"
+    },
+    "summary": {
+      "active": "Active alerts",
+      "toHandle": "To handle",
+      "informational": "Informational",
+      "resolved24h": "Resolved (24h)"
+    },
+    "filters": {
+      "typesTitle": "Alert types",
+      "all": "All",
+      "severityTitle": "Severity",
+      "statusTitle": "Status",
+      "groups": {
+        "levelThresholds": "Level thresholds",
+        "sensorsAvailability": "Sensors / availability",
+        "leakTest": "Leak test",
+        "missingConfiguration": "Missing configuration",
+        "deliveries": "Deliveries",
+        "salesCash": "Sales / cash",
+        "transport": "Transport"
+      }
+    },
+    "list": {
+      "count": "{count, plural, one {# alert} other {# alerts}}",
+      "sortLabel": "Sort",
+      "sortMostRecent": "Most recent",
+      "sortMostSevere": "Most severe",
+      "empty": "No alert matches the selected filters."
+    },
+    "detail": {
+      "backToList": "Back to list",
+      "close": "Close",
+      "tabDetails": "Details",
+      "tabContext": "Context",
+      "tabHistory": "History",
+      "tabActions": "Actions & recommendations",
+      "generalInfoTitle": "General information",
+      "probableCauseTitle": "Probable cause",
+      "possibleImpactTitle": "Possible impact",
+      "quickActionsTitle": "Quick actions",
+      "comingSoon": "This tab will be built in a later step.",
+      "viewStation": "View station",
+      "viewTank": "View tank",
+      "detectedAtLabel": "Detected on",
+      "typeLabel": "Alert type",
+      "severityLabel": "Severity",
+      "stationLabel": "Station",
+      "tankLabel": "Tank",
+      "productLabel": "Product",
+      "manualResolveHint": "Can be resolved manually once the underlying cause is fixed."
+    },
+    "causes": {
+      "level_high": {
+        "intro": "The measured level exceeded this tank's configured high threshold. This can be due to:",
+        "causes": [
+          "A recent delivery larger than expected",
+          "A misconfigured threshold",
+          "A tank filled beyond its usable capacity"
+        ],
+        "impact": "Risk of overflow, tank damage and fuel loss."
+      },
+      "level_high_pre_alarm": {
+        "intro": "The measured level is approaching the critical high threshold. This can be due to:",
+        "causes": [
+          "An ongoing or recent delivery",
+          "Lower than expected consumption"
+        ],
+        "impact": "Without action, the critical high threshold could be reached soon."
+      },
+      "level_low": {
+        "intro": "The measured level dropped below this tank's configured low threshold. This can be due to:",
+        "causes": [
+          "Higher than expected sales",
+          "A delayed delivery",
+          "An undetected leak"
+        ],
+        "impact": "Risk of stockout and sales interruption on this tank."
+      },
+      "water": {
+        "intro": "Water level in the tank exceeds the configured threshold. This can be due to:",
+        "causes": [
+          "Condensation",
+          "Infiltration",
+          "Sensor issue"
+        ],
+        "impact": "Risk of fuel degradation, pump shutdown and inaccurate level readings."
+      },
+      "leak": {
+        "intro": "This tank's leak test measured a loss rate above the allowed threshold. This can be due to:",
+        "causes": [
+          "A crack or faulty weld on the tank",
+          "A leaking fitting or valve",
+          "A measurement error linked to temperature or calibration"
+        ],
+        "impact": "Ongoing fuel loss and environmental risk until the leak is confirmed and addressed."
+      },
+      "sensor_offline": {
+        "intro": "This tank's level sensor stopped reporting measurements. This can be due to:",
+        "causes": [
+          "A power outage on the sensor",
+          "A network/GSM communication issue",
+          "A hardware failure of the sensor"
+        ],
+        "impact": "No level measurement is available for this tank while the sensor stays offline."
+      },
+      "station_offline": {
+        "intro": "None of this station's configured tanks are reporting. This can be due to:",
+        "causes": [
+          "A power outage at the station",
+          "A communication gateway failure",
+          "A local network/GSM outage"
+        ],
+        "impact": "No level data and no threshold alert can trigger while the silence continues."
+      },
+      "price_missing": {
+        "intro": "This product is actively sold at this station but has no resolvable price, neither station-specific nor a network default. This can be due to:",
+        "causes": [
+          "A price never entered for this product",
+          "An expired or removed network default price"
+        ],
+        "impact": "This product's stock monetary value cannot be calculated until a price is configured."
+      },
+      "sensor_mapping_missing": {
+        "intro": "This sensor-driven tank has no active level sensor mapped to it. This can be due to:",
+        "causes": [
+          "A sensor never mapped after installation",
+          "A mapping removed by mistake"
+        ],
+        "impact": "No level measurement will be received for this tank until a sensor is mapped."
+      },
+      "calibration_missing": {
+        "intro": "No calibration points exist for this tank — the height-to-volume conversion is therefore impossible. This can be due to:",
+        "causes": [
+          "A newly created tank without an imported calibration chart",
+          "A calibration chart removed by mistake"
+        ],
+        "impact": "All telemetry for this tank is unusable until a calibration chart is provided."
+      },
+      "delivery_discrepancy": {
+        "intro": "The declared volume for this delivery differs from the telemetry-detected volume beyond the allowed tolerance. This can be due to:",
+        "causes": [
+          "A data entry error on the declared volume",
+          "A partial or incomplete delivery",
+          "A sensor measurement gap"
+        ],
+        "impact": "The tank's real stock may diverge from what is recorded until the gap is explained."
+      },
+      "delivery_undeclared": {
+        "intro": "A level rise was detected by telemetry with no matching delivery declaration. This can be due to:",
+        "causes": [
+          "A delivery received but not yet declared",
+          "A missed declaration entry"
+        ],
+        "impact": "The tank's book stock does not yet reflect this delivery until it is declared."
+      },
+      "delivery_declaration_pending": {
+        "intro": "A delivery was declared but no matching telemetry detection has been found yet. This can be due to:",
+        "causes": [
+          "A normal delay before the measurement syncs",
+          "A delivery declared on the wrong tank"
+        ],
+        "impact": "This alert is deliberately less severe than a proven discrepancy — it will turn into a discrepancy or resolve as reconciliation continues."
+      },
+      "stock_declared_discrepancy": {
+        "intro": "The declared sold volume (cash declarations) differs from the telemetry-derived sold volume beyond the allowed tolerance. This can be due to:",
+        "causes": [
+          "A data entry error in the cash declaration",
+          "An undeclared sale",
+          "A tank measurement anomaly"
+        ],
+        "impact": "A real gap may signal a financial loss risk (potential theft) until it is explained."
+      },
+      "truck_stop_unqualified": {
+        "intro": "A confirmed stop for this vehicle does not match any known nearby location. This can be due to:",
+        "causes": [
+          "A new delivery/stop location never registered",
+          "A one-off GPS inaccuracy",
+          "A stop off the usual route"
+        ],
+        "impact": "This stop remains unqualified until it is matched to a known location or deliberately marked as exceptional."
+      }
+    },
+    "systemOperational": "System operational"
+  },
   "rapports": {
     "pageTitle": "Reports & KPI",
     "pageSubtitle": "Every indicator that can be computed today from the network's real data — hover the ⓘ next to any information to see exactly what it tells you.",
@@ -662,14 +852,28 @@
     "locations": {
       "newLocation": "New location",
       "empty": "No location registered.",
-      "table": { "name": "Name", "type": "Type", "radius": "Radius" },
-      "type": { "label": "Type", "port": "Port", "entrepot": "Warehouse", "depot_fournisseur": "Supplier depot", "libre": "Free" },
+      "table": {
+        "name": "Name",
+        "type": "Type",
+        "radius": "Radius"
+      },
+      "type": {
+        "label": "Type",
+        "port": "Port",
+        "entrepot": "Warehouse",
+        "depot_fournisseur": "Supplier depot",
+        "libre": "Free"
+      },
       "createTitle": "New location",
       "editTitle": "Edit location",
       "required": "Name and position are required.",
       "name": "Location name",
       "namePlaceholder": "E.g. Port of Douala",
-      "method": { "search": "Search an address", "current": "My current position", "coordinates": "Coordinates" },
+      "method": {
+        "search": "Search an address",
+        "current": "My current position",
+        "coordinates": "Coordinates"
+      },
       "useCurrentPosition": "Use my current position",
       "geolocationUnsupported": "Geolocation is not available on this device.",
       "geolocationDenied": "Could not get your position — check location permission.",
@@ -1601,7 +1805,15 @@
       "is24hHint": "When checked, the opening/closing times above are ignored",
       "closedWeekdays": "Weekly closing days",
       "closedWeekdaysHint": "Check the days the station is closed all day. No day checked = open every day.",
-      "weekdayShort": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
+      "weekdayShort": {
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+        "7": "Sun"
+      },
       "notes": "Notes",
       "notesHint": "Internal notes about this station, optional",
       "submit": "Create station",
@@ -1634,7 +1846,8 @@
       "sensor_mapping_missing": "Sensor not mapped",
       "calibration_missing": "Missing calibration chart",
       "station_offline": "Total silence — no tank reporting",
-      "stock_declared_discrepancy": "Declared sales / detected stock gap"
+      "stock_declared_discrepancy": "Declared sales / detected stock gap",
+      "truck_stop_unqualified": "Unqualified truck/vessel stop"
     },
     "page": {
       "title": "Alert center",
@@ -2004,7 +2217,15 @@
         "notSet": "Not set",
         "operationalStatus": "Status"
       },
-      "weekdayShort": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" }
+      "weekdayShort": {
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+        "7": "Sun"
+      }
     },
     "regulationTab": {
       "tableTitle": "Regulatory declarations table",
@@ -2550,8 +2771,16 @@
         "submit": "Choose a file"
       },
       "empty": "No document for this station.",
-      "table": { "fileName": "File", "sensitivityLevel": "Sensitivity", "download": "Download", "delete": "Delete" },
-      "sensitivity": { "normal": "Normal", "restreint": "Restricted" }
+      "table": {
+        "fileName": "File",
+        "sensitivityLevel": "Sensitivity",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "sensitivity": {
+        "normal": "Normal",
+        "restreint": "Restricted"
+      }
     },
     "personnel": {
       "pageTitle": "Staff",
@@ -2567,7 +2796,11 @@
         "required": "Member and role required."
       },
       "empty": "No member assigned to this station.",
-      "table": { "member": "Member", "roles": "Role(s)", "unassign": "Remove {role}" },
+      "table": {
+        "member": "Member",
+        "roles": "Role(s)",
+        "unassign": "Remove {role}"
+      },
       "addModal": {
         "title": "Add a staff member",
         "successTitle": "Member created",
@@ -2653,7 +2886,11 @@
         "zone_atex": "ATEX zone",
         "autre": "Other"
       },
-      "conformityStatus": { "conforme": "Compliant", "non_conforme": "Non-compliant", "a_controler": "To be checked" }
+      "conformityStatus": {
+        "conforme": "Compliant",
+        "non_conforme": "Non-compliant",
+        "a_controler": "To be checked"
+      }
     },
     "suppliers": {
       "form": {
@@ -2665,7 +2902,10 @@
         "required": "Supplier required."
       },
       "empty": "No supplier linked to this station.",
-      "table": { "supplier": "Supplier", "status": "Status" },
+      "table": {
+        "supplier": "Supplier",
+        "status": "Status"
+      },
       "statusActive": "Active",
       "statusInactive": "Removed",
       "deactivate": "Remove",
@@ -2683,7 +2923,11 @@
     "history": {
       "title": "Change history",
       "empty": "No event recorded for this station.",
-      "table": { "date": "Date", "action": "Action", "summary": "Detail" }
+      "table": {
+        "date": "Date",
+        "action": "Action",
+        "summary": "Detail"
+      }
     }
   },
   "tankVisual": {

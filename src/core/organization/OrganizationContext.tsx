@@ -16,7 +16,9 @@ interface OrganizationContextValue {
   reload: () => Promise<void>;
 }
 
-const OrganizationContext = createContext<OrganizationContextValue | null>(null);
+// Exporté (en plus de useOrganization) uniquement pour Storybook — voir
+// AuthContext.tsx pour la justification.
+export const OrganizationContext = createContext<OrganizationContextValue | null>(null);
 
 /** Charge les organisations réelles de l'utilisateur (GET /organizations,
  * zylo-office-backend#56) — jamais une organisation supposée ou codée en

@@ -48,10 +48,12 @@ export interface TruckMapStop {
   durationLabel: string;
 }
 
+// Alignées sur les tokens sémantiques globaux (2026-09-20) — même
+// justification que StationsMap.tsx.
 const STATUS_COLOR: Record<TruckMapStatus, string> = {
-  moving: "#1F9D55",
-  stopped: "#D97706",
-  unknown: "#6B7280",
+  moving: "var(--color-success)",
+  stopped: "var(--color-warning)",
+  unknown: "var(--color-text-muted)",
 };
 
 const ROUTE_SOURCE_ID = "truck-route";

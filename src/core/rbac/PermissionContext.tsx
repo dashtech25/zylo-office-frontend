@@ -15,7 +15,9 @@ interface PermissionContextValue {
   reload: () => Promise<void>;
 }
 
-const PermissionContext = createContext<PermissionContextValue | null>(null);
+// Exporté (en plus de usePermissions) uniquement pour Storybook — voir
+// AuthContext.tsx pour la justification.
+export const PermissionContext = createContext<PermissionContextValue | null>(null);
 
 /** Point d'extension anticipé par `ProtectedRoute.tsx` ("une future
  * vérification de permission par module s'ajoutera ici sans toucher aux
